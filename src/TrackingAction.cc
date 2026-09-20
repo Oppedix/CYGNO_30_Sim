@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file TrackingAction.cc
-/// \brief Implementation of the TrackingAction class
+/// \brief Control ion-chain tracking, label the last ion and accumulate decay statistics.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -131,12 +131,16 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
     else       fEvent->AddDecayChain(" ---> " + name);
     //
     //G4cout << "here in tracking action " << fEvent  << " set to " << name <<G4endl;
+    // These labels follow tracking order, not a per-secondary ancestry map.
+    // The SD label is not reset at the start of an event.
     fEvent->SetLastDecay(name);
     
     fDetector->GetSensitiveDetector()->SetLastDecay(name);
     //full chain: put at rest; if not: kill secondary      
     G4Track* tr = (G4Track*) track;
 
+    // Existing model: stop ion recoil motion and allow at-rest decay; optional
+    // stop isotope terminates its ground-state track. Keep this physics policy.
     if (fFullChain) {
       tr->SetKineticEnergy(0.);
       tr->SetTrackStatus(fStopButAlive);

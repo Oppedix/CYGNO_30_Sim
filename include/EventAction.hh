@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file EventAction.hh
-/// \brief Definition of the EventAction class
+/// \brief Reset event bookkeeping, update the source position and print the decay chain.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

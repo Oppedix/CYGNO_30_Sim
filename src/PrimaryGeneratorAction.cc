@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file PrimaryGeneratorAction.cc
-/// \brief Implementation of the PrimaryGeneratorAction class
+/// \brief Configure the particle gun and sample source-component positions.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -55,6 +55,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition* particle = particleTable->FindParticle("geantino");  
     
+  // Legacy unused draw: retain it because removing it changes the RNG sequence.
   double randNum = G4UniformRand();
 
   fParticleGun->SetParticleEnergy(0*eV);
@@ -83,6 +84,9 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
 
+  // Geantino is the initial placeholder: replace it with the selected neutral,
+  // ground-state ion only once. Later isotope-property changes alone do not
+  // replace an already selected gun particle. RadioactiveDecay handles daughters.
   if (fParticleGun->GetParticleDefinition() == G4Geantino::Geantino()) {  
     
     G4double ionCharge   = 0.*eplus;
@@ -101,6 +105,10 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 
+// Choose a component uniformly from its ordered list, then move a surface point
+// inward by a random depth along the surface normal. This is the existing source
+// model, not a uniform-in-volume sampler. All placements currently have no rotation.
+// Accepted names are the exact strings below; unknown names have no guard yet.
 G4ThreeVector PrimaryGeneratorAction::GetPointOnDetectorElement(G4String El){
 
   std::vector<G4String> Elements;

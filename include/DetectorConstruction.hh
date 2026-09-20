@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file DetectorConstruction.hh
-/// \brief Definition of the DetectorConstruction class
+/// \brief Build CYGNO materials and repeated module geometry; attach gas sensitivity.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -57,6 +57,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   G4double GetWorldSizeY() {return fWorldSize_y;};
   G4double GetWorldSizeZ() {return fWorldSize_z;}; 
 
+  // Singular pointers retain only the LAST placement in each construction loop.
+  // Use the ordered name lists/store below when selecting among all sources.
   G4VPhysicalVolume* GetCathodesVolumes() {return fPhysicalCathodes;}
   G4VPhysicalVolume* GetGEMVolumesPlus() {return fPhysicGEMsPlus;}
   G4VPhysicalVolume* GetGEMVolumesMinus() {return fPhysicGEMsMinus;}

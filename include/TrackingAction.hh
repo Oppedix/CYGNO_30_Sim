@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file TrackingAction.hh
-/// \brief Definition of the TrackingAction class
+/// \brief Control ion-chain tracking, label the last ion and accumulate decay statistics.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

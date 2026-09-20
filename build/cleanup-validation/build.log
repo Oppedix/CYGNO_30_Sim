@@ -1,0 +1,27 @@
+[  7%] Building CXX object CMakeFiles/rdecay01.dir/src/ActionInitialization.cc.o
+[ 23%] Building CXX object CMakeFiles/rdecay01.dir/src/DetectorConstruction.cc.o
+[ 23%] Building CXX object CMakeFiles/rdecay01.dir/rdecay01.cc.o
+[ 30%] Building CXX object CMakeFiles/rdecay01.dir/src/EventAction.cc.o
+[ 38%] Building CXX object CMakeFiles/rdecay01.dir/src/HistoManager.cc.o
+[ 46%] Building CXX object CMakeFiles/rdecay01.dir/src/PrimaryGeneratorAction.cc.o
+[ 53%] Building CXX object CMakeFiles/rdecay01.dir/src/PhysicsList.cc.o
+[ 61%] Building CXX object CMakeFiles/rdecay01.dir/src/Run.cc.o
+[ 69%] Building CXX object CMakeFiles/rdecay01.dir/src/RunAction.cc.o
+[ 76%] Building CXX object CMakeFiles/rdecay01.dir/src/SensitiveDetector.cc.o
+[ 84%] Building CXX object CMakeFiles/rdecay01.dir/src/TrackingAction.cc.o
+[ 92%] Building CXX object CMakeFiles/rdecay01.dir/src/TrackingMessenger.cc.o
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/SensitiveDetector.cc:92:1: warning: non-void function does not return a value [-Wreturn-type]
+   92 | }
+      | ^
+1 warning generated.
+[100%] Linking CXX executable rdecay01
+[100%] Built target rdecay01
+[ 50%] Building CXX object CMakeFiles/geometry_snapshot.dir/geometry_snapshot.cc.o
+[ 50%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/DetectorConstruction.cc.o
+[ 75%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/SensitiveDetector.cc.o
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/SensitiveDetector.cc:92:1: warning: non-void function does not return a value [-Wreturn-type]
+   92 | }
+      | ^
+1 warning generated.
+[100%] Linking CXX executable geometry_snapshot
+[100%] Built target geometry_snapshot

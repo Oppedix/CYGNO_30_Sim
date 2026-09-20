@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file rdecay01.cc
-/// \brief Main program of the radioactivedecay/rdecay01 example
+/// \brief Application entry point: select UI/batch mode, geometry, active physics and actions.
 //
 //
 //
@@ -54,6 +54,7 @@ int main(int argc,char** argv) {
   G4UIExecutive* ui = 0;
   if (argc == 1) ui = new G4UIExecutive(argc,argv);
 
+  // Macro /random/setSeeds can override this wall-clock seed for regression runs.
   //choose the Random engine
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(time(0));
@@ -68,6 +69,8 @@ int main(int argc,char** argv) {
   runManager->SetNumberOfThreads(1);
   //runManager->SetVerboseLevel(0);
   
+  // Legacy behavior: argv[2] is parsed but ANY third argument selects 4 threads.
+  // See docs/KNOWN_ISSUES.md before relying on a requested thread count.
   if (argc==3) {
     G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
     runManager->SetNumberOfThreads(4);
@@ -83,12 +86,8 @@ int main(int argc,char** argv) {
 
   G4PhysListFactory factory;
 
-  /*
-  G4VModularPhysicsList* physicsList = factory.GetReferencePhysList("FTFP_BERT_HP");
-  physicsList->SetVerboseLevel(0);
-  */
-  
-  
+  // This reference list is the active physics configuration. The custom
+  // PhysicsList class in src/PhysicsList.cc is not used here.
   G4VModularPhysicsList* physicsList = factory.GetReferencePhysList("QGSP_BIC_EMZ");
   physicsList->SetVerboseLevel(0);
   physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); 
@@ -97,6 +96,8 @@ int main(int argc,char** argv) {
 
   runManager->SetUserInitialization(new ActionInitialization(theDetector));
 
+  // Construct geometry/physics before executing the user macro. Commands that
+  // require the PreInit state may therefore be unsuitable in batch macros.
   //initialize G4 kernel
   runManager->Initialize();
 

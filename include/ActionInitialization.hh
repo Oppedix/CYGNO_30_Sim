@@ -25,7 +25,7 @@
 //
 //
 /// \file ActionInitialization.hh
-/// \brief Definition of the ActionInitialization class
+/// \brief Register run/event/tracking callbacks and a primary generator for each worker.
 
 #ifndef ActionInitialization_h
 #define ActionInitialization_h 1

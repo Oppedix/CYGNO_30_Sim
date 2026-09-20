@@ -1,3 +1,4 @@
+// Legacy custom physics list, compiled but NOT instantiated by rdecay01.cc.
 #ifndef PhysicsList_h
 #define PhysicsList_h 1
 

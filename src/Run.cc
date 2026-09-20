@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file Run.cc
-/// \brief Implementation of the Run class
+/// \brief Accumulate worker decay statistics, merge them and print a run summary.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

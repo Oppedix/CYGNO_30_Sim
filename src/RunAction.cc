@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file RunAction.cc
-/// \brief Implementation of the RunAction class
+/// \brief Book the Hits ntuple and open/write/close the Geant4 ROOT-format output.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -50,6 +50,8 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
   fRunMessenger = new G4GenericMessenger(this, "/output/","Output file");
   fRunMessenger->DeclareProperty("OutFile", fOutFileName, "Output file name");
 
+  // /output/OutFile supplies a basename, not a directory. The fixed output
+  // directory must already exist relative to the process working directory.
   fOutFileName="outfiles_V2";
 }
 
@@ -84,6 +86,10 @@ void RunAction::BeginOfRunAction(const G4Run*)
   analysisManager->OpenFile("outfiles_V2/"+fOutFileName+".root");
     //}
 
+  // Geant4/g4tools writes ROOT format; linking CERN ROOT is unnecessary here.
+  // Booking order defines the numeric column IDs used by ProcessHits.
+  // No ntuple merging is enabled: MT workers write files with _tN suffixes.
+  // Booking on every run is legacy behavior; use a fresh process per macro run.
   analysisManager->CreateNtuple("Hits","Hits");
   analysisManager->CreateNtupleIColumn("EventNumber");
   analysisManager->CreateNtupleSColumn("ParticleName");

@@ -1,3 +1,4 @@
+// Write one Hits ntuple row for every step delivered by a sensitive gas volume.
 #include "SensitiveDetector.hh"
 #include "G4Step.hh"
 #include "G4TouchableHistory.hh"
@@ -15,6 +16,9 @@ SensitiveDetector::SensitiveDetector(G4String name) :
 SensitiveDetector::~SensitiveDetector()
 {}
 
+// Called for steps in the shared GasVolume logical volume. There is no energy
+// threshold or particle filter: even zero-deposit steps become ntuple rows.
+// This implementation writes directly, without a G4VHit/hits-collection layer.
 G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist)
 {
 
@@ -23,15 +27,20 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   G4StepPoint* preStepPoint = aStep->GetPreStepPoint();
   G4StepPoint* postStepPoint = aStep->GetPostStepPoint();
 
+  // Pre-step WORLD coordinates, in Geant4 internal length units (mm).
   G4ThreeVector posParticle = preStepPoint->GetPosition();
 
   G4String particleName = track->GetParticleDefinition()->GetParticleName();
+  // ParticleID is the event-local track ID, not a PDG particle code.
   G4int particleID = track->GetTrackID();
   G4double EdepStep = aStep->GetTotalEnergyDeposit();
+  // Gas copy number: 0..74 on +Z, 75..149 on -Z (see DetectorConstruction).
   G4int VolumeCopyNumber = track->GetVolume()->GetCopyNo();
   G4int particleParentID = track->GetParentID();
   G4ThreeVector TranslationVolVec = track->GetVolume()->GetTranslation(); 
 
+  // Nucleus is the most recently tracked ion label, not an ancestry lookup.
+  // ProcessType is the track CREATOR process, not the process for this step.
   G4String DecayElement = GetLastDecay();
   G4String ProcessType = "";
   
@@ -60,6 +69,8 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   
   G4AnalysisManager* AnalysisManager = G4AnalysisManager::Instance(); 
 
+  // Column order must match RunAction::BeginOfRunAction. EnergyDeposit is in
+  // internal energy units (MeV); coordinates/energy are stored without conversion.
   AnalysisManager->FillNtupleIColumn(0,evt);
   AnalysisManager->FillNtupleSColumn(1,particleName);
   AnalysisManager->FillNtupleIColumn(2,particleID);
@@ -74,5 +85,8 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   AnalysisManager->FillNtupleSColumn(11,ProcessType);
   
   AnalysisManager->AddNtupleRow(0);
+
+  // Known defect retained for separate review: this G4bool callback has no
+  // return statement. Proposed fix: return true after writing the row. See docs.
 
 }

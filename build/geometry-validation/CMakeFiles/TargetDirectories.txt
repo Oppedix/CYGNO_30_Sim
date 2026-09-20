@@ -1,0 +1,3 @@
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/geometry-validation/CMakeFiles/geometry_snapshot.dir
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/geometry-validation/CMakeFiles/edit_cache.dir
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/geometry-validation/CMakeFiles/rebuild_cache.dir

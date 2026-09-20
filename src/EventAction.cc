@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file EventAction.cc
-/// \brief Implementation of the EventAction class
+/// \brief Reset event bookkeeping, update the source position and print the decay chain.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -69,6 +69,9 @@ void EventAction::BeginOfEventAction(const G4Event*)
  fDecayChain = " ";
  fEvisTot = 0.;
  
+ // Geant4 already called GeneratePrimaries for this event. This updates the
+ // gun for the NEXT event; the first vertex uses the gun default (origin).
+ // Retained intentionally: moving sampling would change source behavior.
  fPrimary->GetParticleGun()->SetParticlePosition(fPrimary->GetPointOnDetectorElement( fElement ));
 
  //fPrimary->GetParticleGun()->GeneratePrimaryVertex(); 
@@ -91,6 +94,9 @@ void EventAction::EndOfEventAction(const G4Event* evt)
    G4cout << "    End of event. Decay chain:" << fDecayChain 
           << G4endl << G4endl;
 
+ // TrackingAction accumulates decay-secondary kinetic energy in fEvisTot,
+ // excluding neutrinos. It is NOT the gas energy deposited in Hits; the legacy
+ // histogram/run forwarding below is disabled, so no event-total row is written.
  //total visible energy
  /*G4AnalysisManager::Instance()->FillH1(9, fEvisTot);
  Run* run 

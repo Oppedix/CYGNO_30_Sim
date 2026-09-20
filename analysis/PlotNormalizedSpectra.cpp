@@ -1,3 +1,6 @@
+// ROOT post-processing: normalize elabHits spectra using hard-coded masses,
+// activities and generated-event counts, then apply the existing fiducial cuts.
+// These inputs and the reconstructed geometry require review before a new study.
 #include <iostream>
 #include <cstring>
 #include <map>
@@ -228,6 +231,8 @@ void BuildDetectorMap(std::map<Int_t,TVector3>& aMap){
   Double_t VolumeSize_y=800;
   Double_t VolumeSize_z = 500;
 
+  // Legacy 3 mm gap differs from simulation 4 mm; Z also omits 0.25 mm.
+  // Preserved to avoid silently changing fiducial selections. See docs/KNOWN_ISSUES.md.
   Double_t DetectorSpace=3;
   
   int counter=0;

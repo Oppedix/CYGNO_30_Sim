@@ -1,3 +1,4 @@
+// Write one Hits ntuple row for every step delivered by a sensitive gas volume.
 #ifndef DETECTOR_HH
 #define DETECTOR_HH
 
@@ -13,6 +14,7 @@ public:
   SensitiveDetector(G4String);
   ~SensitiveDetector();
 
+  // TrackingAction updates this label when an ion begins tracking.
   void SetLastDecay(G4String aString){lastDecay = aString;}
   G4String GetLastDecay(){return lastDecay;}
   

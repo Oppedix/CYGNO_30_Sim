@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file TrackingMessenger.hh
-/// \brief Definition of the TrackingMessenger class
+/// \brief Expose decay-chain and activity-window settings as Geant4 UI commands.
 //
 //
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

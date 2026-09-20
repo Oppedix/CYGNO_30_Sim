@@ -1,3 +1,4 @@
+// Legacy custom physics list, compiled but NOT instantiated by rdecay01.cc.
 #include "PhysicsList.hh"
 #include "G4EmStandardPhysics.hh" 
 #include "G4Radioactivation.hh"

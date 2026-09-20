@@ -1,3 +1,6 @@
+// ROOT post-processing: read step-level Hits, group selected charged-particle
+// deposits by the existing event/nucleus/process logic and volume, write elabHits.
+// Legacy branch bindings and grouping caveats are listed in docs/KNOWN_ISSUES.md.
 #include <iostream>
 #include "TFile.h"
 #include "TTree.h"

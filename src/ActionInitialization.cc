@@ -25,7 +25,7 @@
 //
 //
 /// \file ActionInitialization.cc
-/// \brief Implementation of the ActionInitialization class
+/// \brief Register run/event/tracking callbacks and a primary generator for each worker.
 
 #include "ActionInitialization.hh"
 #include "PrimaryGeneratorAction.hh"
@@ -48,6 +48,7 @@ ActionInitialization::~ActionInitialization()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// In MT mode the master summarizes merged runs; it does not generate events.
 void ActionInitialization::BuildForMaster() const
 {
   RunAction* runAction = new RunAction(0);
@@ -57,6 +58,8 @@ void ActionInitialization::BuildForMaster() const
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Each worker gets its own actions. Geant4 invokes these at run, event and
+// track boundaries; gas steps go directly to SensitiveDetector (no SteppingAction).
 void ActionInitialization::Build() const
 {
   

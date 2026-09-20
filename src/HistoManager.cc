@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file HistoManager.cc
-/// \brief Implementation of the HistoManager class
+/// \brief Legacy example histogram booking; Book() currently has no active implementation.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

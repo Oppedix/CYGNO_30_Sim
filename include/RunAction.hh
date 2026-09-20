@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 /// \file RunAction.hh
-/// \brief Definition of the RunAction class
+/// \brief Book the Hits ntuple and open/write/close the Geant4 ROOT-format output.
 //
 // 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
