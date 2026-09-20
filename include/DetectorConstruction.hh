@@ -38,6 +38,11 @@
 #include "G4PhysicalVolumeStore.hh"
 #include "SensitiveDetector.hh"
 #include "globals.hh"
+#include "../common/DetectorGeometry.hh"
+#include <map>
+
+class G4Material;
+class G4LogicalVolume;
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -50,8 +55,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     DetectorConstruction();
    ~DetectorConstruction();
 
-    virtual     
-    G4VPhysicalVolume* Construct();
+    // Geant4 calls this during kernel initialization to build the full World.
+    G4VPhysicalVolume* Construct() override;
                         
   G4double GetWorldSizeX() {return fWorldSize_x;};
   G4double GetWorldSizeY() {return fWorldSize_y;};
@@ -91,9 +96,30 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   std::vector<G4String> GetLensList() {return fListLens;}
   std::vector<G4String> GetSensorsList() {return fListSensors;}
 
-  SensitiveDetector* GetSensitiveDetector(){return fSensitiveDetector;}
+  // G4LogicalVolume stores its sensitive detector separately for each worker.
+  SensitiveDetector* GetSensitiveDetector();
   
   private:
+  struct Materials {
+    G4Material *air, *copper, *glass, *pmma, *alumina, *silicon, *gas;
+  };
+  Materials DefineMaterials();
+  G4VPhysicalVolume* BuildWorld();
+  void BuildCathodes();
+  void BuildGEMs();
+  void BuildFieldCage();
+  void BuildVessel();
+  void BuildOptics();
+  void BuildSensitiveGasVolumes();
+  G4VPhysicalVolume* PlaceInModule(const cygno::geometry::ModulePlacement& module,
+      G4LogicalVolume* logical, const G4ThreeVector& localOffset,
+      const G4String& namePrefix, G4int localCopy,
+      std::vector<G4String>& sourceNames);
+
+  Materials fMaterials{};
+  std::vector<cygno::geometry::ModulePlacement> fModuleLayout;
+  G4LogicalVolume* fWorldLogical = nullptr;
+  std::map<G4String, G4double> fMassMap;
   
   G4double fWorldSize_x;
   G4double fWorldSize_y;
@@ -141,9 +167,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   G4LogicalVolume* fLogicalGasVolume;
 
-  SensitiveDetector* fSensitiveDetector;
   
-  virtual void ConstructSDandField();
+  // Called for each worker after geometry construction; no field is installed.
+  void ConstructSDandField() override;
   
 };
 

@@ -69,6 +69,7 @@ G4Run* RunAction::GenerateRun()
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called once per run on master/workers, before the first event is generated.
 void RunAction::BeginOfRunAction(const G4Run*)
 { 
   // keep run condition
@@ -111,6 +112,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called after event processing; the master receives merged Run statistics.
 void RunAction::EndOfRunAction(const G4Run*)
 {
   if (isMaster) fRun->EndOfRun();

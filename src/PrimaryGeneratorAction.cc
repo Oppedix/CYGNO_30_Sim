@@ -40,6 +40,7 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "G4VSolid.hh"
+#include "G4Exception.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -67,6 +68,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
   fPrimaryMessenger->DeclareProperty("AtomicNumber", fZIsotope, "Select atomic number");
   fPrimaryMessenger->DeclareProperty("MassNumber", fAIsotope, "Select mass number");
     
+  // default isotope is Uranium-238, the most common isotope of Uranium. The user can change it via the /isotope command in the macro file or interactive session.
   fZIsotope = 92, fAIsotope = 238;
   
 }
@@ -81,6 +83,7 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called once per event, before BeginOfEventAction, to create primary vertices.
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
 
@@ -108,7 +111,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 // Choose a component uniformly from its ordered list, then move a surface point
 // inward by a random depth along the surface normal. This is the existing source
 // model, not a uniform-in-volume sampler. All placements currently have no rotation.
-// Accepted names are the exact strings below; unknown names have no guard yet.
+// Accepted names are the exact strings below; invalid names fail explicitly.
 G4ThreeVector PrimaryGeneratorAction::GetPointOnDetectorElement(G4String El){
 
   std::vector<G4String> Elements;
@@ -144,6 +147,18 @@ G4ThreeVector PrimaryGeneratorAction::GetPointOnDetectorElement(G4String El){
   }
 
   
+  // Reject an invalid component instead of indexing an empty source list. Do
+  // not guess what the legacy ambiguous names "GEMs" or "Rings" should mean.
+  if (Elements.empty()) {
+    G4ExceptionDescription message;
+    message << "Unknown or empty radioactive component: " << El
+            << ". Choose Cathodes, GEMsOuter, GEMsCore, RingSupports, RingStrips, "
+            << "Resistors, Vessel, Lens or Sensors.";
+    G4Exception("PrimaryGeneratorAction::GetPointOnDetectorElement",
+                "CYGNO_SOURCE", FatalException, message);
+    return {};
+  }
+
   G4int min = 0;
   G4int max = Elements.size();
   
@@ -160,6 +175,8 @@ G4ThreeVector PrimaryGeneratorAction::GetPointOnDetectorElement(G4String El){
   G4ThreeVector TranslationVolume = vol->GetObjectTranslation(); // get the translation vector of that physical volume
   
   G4ThreeVector Point = TranslationVolume + PointOnSurface - G4UniformRand()*width*Normal; //random point in the random volume as the translation vector + a point on the surface + a random depth 
+
+  // the goal is generate contamination uniformly thorugh the thickness of that detector component
 
   //std::cout << G4UniformRand()*width*Normal << std::endl;
   

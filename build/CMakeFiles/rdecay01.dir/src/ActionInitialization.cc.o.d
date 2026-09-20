@@ -1003,6 +1003,7 @@ CMakeFiles/rdecay01.dir/src/ActionInitialization.cc.o: \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UIparameter.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UImessenger.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UIdirectory.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/../common/DetectorGeometry.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/PrimaryGeneratorAction.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VUserPrimaryGeneratorAction.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4ParticleGun.hh \

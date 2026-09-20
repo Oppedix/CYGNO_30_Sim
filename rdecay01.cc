@@ -49,14 +49,21 @@
 #include "G4PhysListFactory.hh"
 
 int main(int argc,char** argv) {
+  //argc is the number of command line arguments,
+  //argv is an array of character strings representing the arguments
 
-  //detect interactive mode (if no arguments) and define UI session
+  //For instance ./rdecay01 has argc=1 and argv[0]="./rdecay01", 
+  // while ./rdecay01 vis.mac has argc=2 and argv[1]="vis.mac"  
+
+  //if no macro was provided, the application will run in interactive mode and a G4UIExecutive will be created.
   G4UIExecutive* ui = 0;
   if (argc == 1) ui = new G4UIExecutive(argc,argv);
+  
 
   // Macro /random/setSeeds can override this wall-clock seed for regression runs.
   //choose the Random engine
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
+  //seed the random number generator with the current time
   CLHEP::HepRandom::setTheSeed(time(0));
   
   //use G4SteppingVerboseWithUnits
@@ -69,11 +76,15 @@ int main(int argc,char** argv) {
   runManager->SetNumberOfThreads(1);
   //runManager->SetVerboseLevel(0);
   
-  // Legacy behavior: argv[2] is parsed but ANY third argument selects 4 threads.
-  // See docs/KNOWN_ISSUES.md before relying on a requested thread count.
+  // Optional batch argument selects the worker count; one worker is the default.
   if (argc==3) {
     G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
-    runManager->SetNumberOfThreads(4);
+    if (nThreads < 1) {
+      G4cerr << "The number of worker threads must be positive." << G4endl;
+      delete runManager;
+      return 1;
+    }
+    runManager->SetNumberOfThreads(nThreads);
   }
   
   //
@@ -83,12 +94,15 @@ int main(int argc,char** argv) {
   DetectorConstruction* theDetector = new DetectorConstruction();
   
   runManager->SetUserInitialization(theDetector);
+  //the above makes sure geant calls the Construct() method of DetectorConstruction to build the geometry.
 
   G4PhysListFactory factory;
 
   // This reference list is the active physics configuration. The custom
   // PhysicsList class in src/PhysicsList.cc is not used here.
   G4VModularPhysicsList* physicsList = factory.GetReferencePhysList("QGSP_BIC_EMZ");
+  //you can modify the above to add or remove physics processes, for example to add radioactive decay:
+  //physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); as done below
   physicsList->SetVerboseLevel(0);
   physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); 
 

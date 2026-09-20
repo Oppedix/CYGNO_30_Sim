@@ -25,7 +25,6 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   G4Track* track = aStep->GetTrack();
 
   G4StepPoint* preStepPoint = aStep->GetPreStepPoint();
-  G4StepPoint* postStepPoint = aStep->GetPostStepPoint();
 
   // Pre-step WORLD coordinates, in Geant4 internal length units (mm).
   G4ThreeVector posParticle = preStepPoint->GetPosition();
@@ -34,10 +33,10 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   // ParticleID is the event-local track ID, not a PDG particle code.
   G4int particleID = track->GetTrackID();
   G4double EdepStep = aStep->GetTotalEnergyDeposit();
-  // Gas copy number: 0..74 on +Z, 75..149 on -Z (see DetectorConstruction).
+  // Gas copy number: 0..74 on local +Z, 75..149 on local -Z.
+  // Module ID = (ix*5+iy)*3+iz; see common/DetectorGeometry.hh.
   G4int VolumeCopyNumber = track->GetVolume()->GetCopyNo();
   G4int particleParentID = track->GetParentID();
-  G4ThreeVector TranslationVolVec = track->GetVolume()->GetTranslation(); 
 
   // Nucleus is the most recently tracked ion label, not an ancestry lookup.
   // ProcessType is the track CREATOR process, not the process for this step.
@@ -86,7 +85,8 @@ G4bool SensitiveDetector::ProcessHits(G4Step * aStep, G4TouchableHistory* Rohist
   
   AnalysisManager->AddNtupleRow(0);
 
-  // Known defect retained for separate review: this G4bool callback has no
-  // return statement. Proposed fix: return true after writing the row. See docs.
+  // A row was recorded. Returning success fixes the former undefined return
+  // without changing which steps are stored or any of their column values.
+  return true;
 
 }

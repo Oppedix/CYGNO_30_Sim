@@ -1,53 +1,18 @@
-/*
-Detector Number for the positive side of the Z axis
-|2 5 8 11 14 17 20 23 26 ... 74|
-|1 4 7 10 13 16 19 22 25 ... 73|
-|0 3 6 9  12 15 18 21 24 ... 72|
-Detector Number for the negative side of the Z axis
-|75+2 ... 75+74|
-|75+1 ... 75+73|
-|75+0 ... 75+72|
-*/
-
-
-
-
-void BuildDetectorMap(std::map<Int_t,TVector3>& aMap){
-
-  Double_t VolumeSize_x=500;
-  Double_t VolumeSize_y=800;
-  Double_t VolumeSize_z = 500;
-
-  Double_t DetectorSpace=3;
-  
-  int counter=0;
-  
-  for(int i=-12;i<13;i++){
-    for(int j=-1;j<2;j++){
-      aMap[counter] = TVector3( i*(VolumeSize_x+DetectorSpace) , j*(VolumeSize_y+DetectorSpace) , VolumeSize_z/2  );
-      counter++;
-    }
-  }
-  
-  
-  for(int i=-12;i<13;i++){
-    for(int j=-1;j<2;j++){
-      aMap[counter] = TVector3( i*(VolumeSize_x+DetectorSpace) , j*(VolumeSize_y+DetectorSpace) , -VolumeSize_z/2  );
-      counter++;
-    }
-  }
-
-}
-
-
-
+#include "DetectorGeometry.hh"
+#include "TFile.h"
+#include "TTree.h"
+#include "TH1D.h"
+#include "TCanvas.h"
+#include <cstring>
+#include <iostream>
+#include <vector>
 
 
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum){
 
-  Double_t VolumeSize_x=500;
-  Double_t VolumeSize_y=800;
-  Double_t VolumeSize_z = 500;
+  const Double_t VolumeSize_x=cygno::geometry::module.cathodeX;
+  const Double_t VolumeSize_y=cygno::geometry::module.cathodeY;
+  const Double_t VolumeSize_z=cygno::geometry::module.driftLength;
 
   Double_t FiducialCut_xy = 20;
   Double_t FiducialCut_z = 20; 
@@ -62,8 +27,6 @@ bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double
   
   return cond;
 }
-
-
 
 
 void PlotSpectra(std::string filename){

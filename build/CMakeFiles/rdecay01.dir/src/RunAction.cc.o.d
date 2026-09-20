@@ -1066,6 +1066,7 @@ CMakeFiles/rdecay01.dir/src/RunAction.cc.o: \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VReadOutGeometry.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SensitiveVolumeList.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VSDFilter.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/../common/DetectorGeometry.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VSolid.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VSolid.icc \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/HistoManager.hh \

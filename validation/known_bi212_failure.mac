@@ -1,0 +1,12 @@
+# Known failure reproduced on the pre-refactor executable; see validation/README.md.
+# Bi-212 exercises daughters, stopping and the activity window.
+/run/verbose 0
+/event/verbose 0
+/random/setSeeds 12345 67890
+/detector/RadElement Cathodes
+/isotope/AtomicNumber 83
+/isotope/MassNumber 212
+/rdecay01/timeWindow 0 s 2 h
+/rdecay01/fullChain true
+/output/OutFile known_bi212_failure
+/run/beamOn 40

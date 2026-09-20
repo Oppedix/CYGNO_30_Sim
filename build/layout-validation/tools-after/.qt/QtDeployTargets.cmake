@@ -1,0 +1,4 @@
+set(__QT_DEPLOY_TARGET_geometry_snapshot_FILE /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/tools-after/geometry_snapshot)
+set(__QT_DEPLOY_TARGET_geometry_snapshot_TYPE EXECUTABLE)
+set(__QT_DEPLOY_TARGET_geometry_audit_FILE /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/tools-after/geometry_audit)
+set(__QT_DEPLOY_TARGET_geometry_audit_TYPE EXECUTABLE)

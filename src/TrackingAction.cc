@@ -88,6 +88,7 @@ void TrackingAction::SetAStopDecay(G4int A)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called before transporting each track (primary or secondary).
 void TrackingAction::PreUserTrackingAction(const G4Track* track)
 {
   
@@ -169,6 +170,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called when that track stops; its last step supplies the decay secondaries.
 void TrackingAction::PostUserTrackingAction(const G4Track* track)
 {
   //keep only ions

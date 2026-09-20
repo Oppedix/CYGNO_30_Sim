@@ -1,0 +1,9 @@
+[ 15%] Building CXX object CMakeFiles/rdecay01.dir/rdecay01.cc.o
+[ 15%] Building CXX object CMakeFiles/rdecay01.dir/src/ActionInitialization.cc.o
+[ 23%] Building CXX object CMakeFiles/rdecay01.dir/src/DetectorConstruction.cc.o
+[ 30%] Building CXX object CMakeFiles/rdecay01.dir/src/PrimaryGeneratorAction.cc.o
+[ 38%] Linking CXX executable rdecay01
+[100%] Built target rdecay01
+[ 25%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/DetectorConstruction.cc.o
+[ 50%] Linking CXX executable geometry_snapshot
+[100%] Built target geometry_snapshot

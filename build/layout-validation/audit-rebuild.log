@@ -1,0 +1,8 @@
+[ 30%] Building CXX object CMakeFiles/geometry_audit.dir/geometry_audit.cc.o
+[ 60%] Built target geometry_snapshot
+[ 70%] Linking CXX executable geometry_audit
+[100%] Built target geometry_audit
+[ 10%] Building CXX object CMakeFiles/geometry_audit.dir/geometry_audit.cc.o
+[ 60%] Built target geometry_snapshot
+[ 70%] Linking CXX executable geometry_audit
+[100%] Built target geometry_audit

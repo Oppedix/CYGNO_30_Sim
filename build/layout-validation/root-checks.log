@@ -1,0 +1,19 @@
+In file included from /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/validation/analysis_geometry.cc:8:
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/analysis/PlotNormalizedSpectra.cpp:212:1: warning: non-void function does not return a value [-Wreturn-type]
+  212 | }
+      | ^
+1 warning generated.
+In file included from /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/validation/analysis_geometry.cc:8:
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/analysis/PlotNormalizedSpectra_single.cpp:203:1: warning: non-void function does not return a value [-Wreturn-type]
+  203 | }
+      | ^
+1 warning generated.
+In file included from /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/validation/analysis_geometry.cc:8:
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/analysis/PlotNormalizedSpectra_GEMchain.cpp:204:1: warning: non-void function does not return a value [-Wreturn-type]
+  204 | }
+      | ^
+1 warning generated.
+PlotNormalizedSpectra.cpp: 150 centers match Geant4; unchanged 20 mm fiducial boundaries pass
+PlotNormalizedSpectra_single.cpp: 150 centers match Geant4; unchanged 20 mm fiducial boundaries pass
+PlotNormalizedSpectra_GEMchain.cpp: 150 centers match Geant4; unchanged 20 mm fiducial boundaries pass
+PlotSpectrum.C: 150 centers match Geant4; unchanged 20 mm fiducial boundaries pass

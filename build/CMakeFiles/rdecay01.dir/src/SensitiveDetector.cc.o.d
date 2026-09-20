@@ -1190,4 +1190,5 @@ CMakeFiles/rdecay01.dir/src/SensitiveDetector.cc.o: \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VUserDetectorConstruction.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4PhysicalVolumeStore.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VStoreNotifier.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VNotifier.hh
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VNotifier.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/../common/DetectorGeometry.hh

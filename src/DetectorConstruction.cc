@@ -24,92 +24,69 @@
 // ********************************************************************
 //
 /// \file DetectorConstruction.cc
-/// \brief Build CYGNO materials and repeated module geometry; attach gas sensitivity.
-//
-// 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
+/// \brief Build reusable component solids/materials, then place them in one shared module layout.
 #include "DetectorConstruction.hh"
-#include "G4NistManager.hh"
 #include "G4Box.hh"
-#include "G4LogicalVolume.hh"
-#include "G4PVPlacement.hh"
-#include "G4SystemOfUnits.hh"
-#include "G4PVReplica.hh"
-#include "G4VPVParameterisation.hh"
 #include "G4Colour.hh"
-#include "G4VisAttributes.hh"
+#include "G4LogicalVolume.hh"
+#include "G4Material.hh"
+#include "G4NistManager.hh"
+#include "G4PVPlacement.hh"
+#include "G4SDManager.hh"
 #include "G4SubtractionSolid.hh"
-#include "G4PhysicalVolumeStore.hh"
+#include "G4SystemOfUnits.hh"
 #include "G4Tubs.hh"
-#include <G4UnitsTable.hh>
+#include "G4UnitsTable.hh"
+#include "G4VisAttributes.hh"
 
-#include "SensitiveDetector.hh"
-
-#include <array>
-
+namespace geo = cygno::geometry;
 namespace {
-// Keep signed grid indices because historical names/copy numbers use them.
-struct ModulePosition {
-  G4int xIndex;
-  G4int yIndex;
-  G4ThreeVector center;
-};
-
-constexpr G4int kFirstModuleX = -12;
-constexpr G4int kLastModuleX = 12;
-constexpr G4int kFirstModuleY = -1;
-constexpr G4int kLastModuleY = 1;
-using ModuleColumn = std::array<ModulePosition, kLastModuleY - kFirstModuleY + 1>;
-using ModulePositions = std::array<ModuleColumn, kLastModuleX - kFirstModuleX + 1>;
-
-// Group the 75 XY positions by X column. Layered components must retain their
-// original X -> side/layer -> Y placement order: source sampling uses list order.
-ModulePositions BuildModulePositions(G4double sizeX, G4double sizeY, G4double gap)
-{
-  ModulePositions positions{};
-  for (G4int i = kFirstModuleX; i <= kLastModuleX; ++i) {
-    for (G4int j = kFirstModuleY; j <= kLastModuleY; ++j) {
-      positions[i - kFirstModuleX][j - kFirstModuleY] =
-        {i, j, G4ThreeVector(i*(sizeX+gap), j*(sizeY+gap), 0)};
-    }
-  }
-  return positions;
+const auto& d = geo::module; // Shared values are mm; convert explicitly at Geant4 calls.
+G4ThreeVector InGeant4Units(const geo::Point& point) {
+  return G4ThreeVector(point.x*mm, point.y*mm, point.z*mm);
 }
-} // namespace
-
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
-{
-  fWorldSize_x = 14*m;
-  fWorldSize_y = 3*m;
-  fWorldSize_z = 3*m;  
-
-  fListCathodes.clear();
-  fListGEMsOuter.clear();
-  fListGEMsCore.clear();
-  fListSupportRings.clear();
-  fListRingStrips.clear();
-  fListLens.clear();
-  fListSensors.clear();
+G4VisAttributes* SolidColour(const G4Colour& colour) {
+  auto* attributes = new G4VisAttributes(colour);
+  attributes->SetForceSolid(true);
+  return attributes;
+}
 }
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-DetectorConstruction::~DetectorConstruction()
-{}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+DetectorConstruction::DetectorConstruction() : G4VUserDetectorConstruction()
+{
+  const auto half = geo::WorldHalfSize();
+  fWorldSize_x = 2*half.x*mm;
+  fWorldSize_y = 2*half.y*mm;
+  fWorldSize_z = 2*half.z*mm;
+}
+DetectorConstruction::~DetectorConstruction() = default;
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-  //
-  // define a material
-  //
+  // Retain source lists across the application lifetime, rebuilding their contents
+  // when Geant4 reconstructs geometry. Names resolve through its physical store.
+  fListCathodes.clear(); fListGEMsOuter.clear(); fListGEMsCore.clear();
+  fListSupportRings.clear(); fListRingStrips.clear(); fListResistors.clear();
+  fListLens.clear(); fListSensors.clear(); fListDetector.clear();
+  fMassMap = {{"Cathodes",0}, {"SupportRings",0}, {"RingStrips",0}, {"Resistor",0},
+              {"GEMsOuter",0}, {"GEMsCore",0}, {"Vessel",0}, {"Lens",0}, {"Sensors",0}};
+  fModuleLayout = geo::BuildModuleLayout();
+  fMaterials = DefineMaterials();
+  auto* world = BuildWorld();
+  BuildCathodes();
+  BuildGEMs();
+  BuildFieldCage();
+  BuildVessel();
+  BuildOptics();
+  BuildSensitiveGasVolumes();
+  fPhysVolStore = G4PhysicalVolumeStore::GetInstance();
+  for (const auto& entry : fMassMap)
+    G4cout << "Mass of: " << entry.first << " = " << G4BestUnit(entry.second,"Mass") << G4endl;
+  return world;
+}
 
+DetectorConstruction::Materials DetectorConstruction::DefineMaterials()
+{
   G4NistManager* nist = G4NistManager::Instance();
   
   G4Material* Air =
@@ -200,771 +177,205 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   CYGNO_gas->AddMaterial(He_gas, He_gas->GetDensity()/densityMix*100*perCent);
   CYGNO_gas->AddMaterial(CF4_gas, CF4_gas->GetDensity()/densityMix*100*perCent);
 
-  std::map<G4String,G4double> MassMap={
-    {"Cathodes",0},
-    {"SupportRings",0},
-    {"RingStrips",0},
-    {"Resistor",0},
-    {"GEMsOuter",0},
-    {"GEMsCore",0},
-    {"Vessel",0},
-    {"Lens",0},
-    {"Sensors",0}
-  };
-  
-  //     
-  // World
-  // A solid defines shape; a logical volume adds material and attributes;
-  // a physical placement locates that logical volume in its mother.
-  // G4Box takes HALF lengths. All detector parts below are World daughters.
-  //
-  
-  G4Box*  
-  solidWorld = new G4Box("World",                          //its name
-                   fWorldSize_x/2,fWorldSize_y/2,fWorldSize_z/2);//its size
-                   
-  G4LogicalVolume*                         
-  logicWorld = new G4LogicalVolume(solidWorld,             //its solid
-                                   Air,                    //its material
-                                   "World");               //its name
-  G4VPhysicalVolume*                                   
-  physiWorld = new G4PVPlacement(0,                      //no rotation
-                                 G4ThreeVector(),        //at (0,0,0)
-                                 logicWorld,             //its logical volume
-                                 "World",                //its name
-                                 0,                      //its mother  volume
-                                 false,                  //no boolean operation
-                                 0);                     //copy number
-
-  //
-  //Cathode
-  //
-
-  G4double CathodeSize_x = 50*cm;
-  G4double CathodeSize_y = 80*cm;
-  G4double CathodeSize_z = 0.05*cm;
-
-  fCathodeWidth=CathodeSize_z;
-  
-  G4Colour CathodeColor(0.6, 0.4, 0.2,0.0);
-  G4VisAttributes* cathodeVisAttributes = new G4VisAttributes(CathodeColor);
-  cathodeVisAttributes->SetForceSolid(true);
-
-  
-  // Historical convention: CathodeSize_z is passed as a HALF length,
-  // while neighboring Z offsets use CathodeSize_z/2. See docs/KNOWN_ISSUES.md.
-  G4Box*
-    solidCathode = new G4Box("Cathode",
-			CathodeSize_x/2,CathodeSize_y/2,CathodeSize_z);
-
-  G4LogicalVolume*
-    logicCathode = new G4LogicalVolume(solidCathode,
-				       Copper,
-				       "Cathode");
-  
-  logicCathode->SetVisAttributes(cathodeVisAttributes);
-    
-  G4double detectorSpace = 0.4*cm; // 4 mm gap; analysis has a legacy 3 mm value.
-  const auto modulePositions =
-    BuildModulePositions(CathodeSize_x, CathodeSize_y, detectorSpace);
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      fPhysicalCathodes = new G4PVPlacement(0,
-					    G4ThreeVector(module.center.x(),module.center.y(),0),
-					    logicCathode,
-					    "Cathode_"+std::to_string( (j+2)*100+(i+12) ),
-					    logicWorld,
-					    false,
-					    i+37);
-      
-      fListCathodes.push_back("Cathode_"+std::to_string( (j+2)*100+(i+12)) );
-      MassMap["Cathodes"]+=logicCathode->GetMass();
-
-      
-    }
-  }
-  
-  //
-  //GEMs outer
-  //
-  
-  G4double GEMOuterSize_x = 50*cm;
-  G4double GEMOuterSize_y = 80*cm;
-  G4double GEMOuterSize_z = 0.05*mm;
-
-  G4double GEMCoreSize_xSub = 50.01*cm;
-  G4double GEMCoreSize_ySub = 80.01*cm;
-  G4double GEMCoreSize_zSub = 0.005*mm;
-
-  G4double GEMGap = 0.2*cm;
-  G4double GEMDistanceFromCathode = 50*cm;
-
-  
-  fGEMOuterWidth = (GEMOuterSize_z-GEMCoreSize_zSub)/2;
-
-  G4Colour CuColor(0.45,0.25,0.0,0.0);
-  G4VisAttributes* GEMVisAttributes = new G4VisAttributes(CuColor);
-  GEMVisAttributes->SetForceSolid(true);
-  
-  G4Box*
-    solidOuterGEM = new G4Box("GEMOuter",
-			GEMOuterSize_x/2,GEMOuterSize_y/2,GEMOuterSize_z/2);
-  G4Box*
-    solidCoreGEMSub = new G4Box("GEMCore",
-			GEMCoreSize_xSub/2,GEMCoreSize_ySub/2,GEMCoreSize_zSub/2);
-
-  G4VSolid* solidGEM =
-    new G4SubtractionSolid("GEMSubSolid",solidOuterGEM,solidCoreGEMSub,0,G4ThreeVector( 0,0,-(GEMCoreSize_zSub/2)+0.095*(GEMCoreSize_zSub/2) )); //Translation inserted by hand due to some bug in G4SubtractionSolid
-  
-  G4LogicalVolume*
-    logicGEM = new G4LogicalVolume(solidGEM,
-				   Copper,
-				   "logicGEM");
-
-  logicGEM->SetVisAttributes(GEMVisAttributes);
-  
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-
-    //GEMs on positive side of z axis
-
-    for(G4int j=0;j<3;j++){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicGEMsPlus = new G4PVPlacement(0,
-					    G4ThreeVector(module.center.x(),module.center.y(),CathodeSize_z/2+GEMDistanceFromCathode+j*GEMGap+GEMOuterSize_z/2),
-					    logicGEM,
-					    "GEM_"+std::to_string((i+13)*100+j*10+k+1),
-					    logicWorld,
-					    false,
-					    (i+13)*100+j*10+k+1
-					    );
-	
-	fListGEMsOuter.push_back("GEM_"+std::to_string((i+13)*100+j*10+k+1));
-	MassMap["GEMsOuter"]+=logicGEM->GetMass(); 
-
-
-      }
-
-    }
-
-    //GEMs on negative side of z axis
-    
-    for(G4int j=0;j>-3;j--){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicGEMsMinus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x(),module.center.y(),-1*(CathodeSize_z/2+GEMDistanceFromCathode)+j*GEMGap-GEMOuterSize_z/2),
-					     logicGEM,
-					     "GEM_"+std::to_string((i+13)*100+j*10+k+4 ),
-					     logicWorld,
-					     false,
-					     (i+13)*100+j*10+k+4
-					     );
-	
-	fListGEMsOuter.push_back("GEM_"+std::to_string((i+13)*100+j*10+k+4 ));
-	MassMap["GEMsOuter"]+=logicGEM->GetMass();  
-
-      }
-
-    }
-
-  }
-
-  //
-  //GEMs core
-  //
-
-  G4Colour PMMAColor(1,1,1,0.0);
-  G4VisAttributes* PMMAVisAttributes = new G4VisAttributes(PMMAColor);
-  PMMAVisAttributes->SetForceSolid(true);
-  
-  G4double GEMCoreSize_x = 50.0*cm;
-  G4double GEMCoreSize_y = 80.0*cm;
-  G4double GEMCoreSize_z = 0.029*mm;
-
-  fGEMCoreWidth=GEMCoreSize_z/2;
-  
-  G4Box*
-    solidCoreGEM = new G4Box("GEMInnner",
-				GEMCoreSize_x/2,GEMCoreSize_y/2,GEMCoreSize_z/2);
-
-  G4LogicalVolume*
-    logicCoreGEM = new G4LogicalVolume(solidCoreGEM,
-				   PMMA,
-				   "GEMInnerLogical");
-  
-  logicCoreGEM->SetVisAttributes(PMMAVisAttributes);
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-
-    //GEMs on positive side of z axis
-
-    for(G4int j=0;j<3;j++){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicGEMsCorePlus = new G4PVPlacement(0,
-					    G4ThreeVector(module.center.x(),module.center.y(),CathodeSize_z/2+GEMDistanceFromCathode+j*GEMGap+GEMOuterSize_z/2),
-					    logicCoreGEM,
-					    "GEMCore_"+std::to_string((i+13)*100+j*10+k+1),
-					    logicWorld,
-					    false,
-					    (i+13)*100+j*10+k+1
-					    );
-	
-	fListGEMsCore.push_back("GEMCore_"+std::to_string((i+13)*100+j*10+k+1));
-	MassMap["GEMsCore"]+=logicCoreGEM->GetMass(); 
-
-	
-      }
-      
-    }
-
-    //GEMs on negative side of z axis
-    
-    for(G4int j=0;j>-3;j--){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicGEMsCoreMinus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x(),module.center.y(),-1*(CathodeSize_z/2+GEMDistanceFromCathode)+j*GEMGap-GEMOuterSize_z/2),
-					     logicCoreGEM,
-					     "GEMCore_"+std::to_string((i+13)*100+j*10+k+4 ),
-					     logicWorld,
-					     false,
-					     (i+13)*100+j*10+k+4
-					     );
-	
-	fListGEMsCore.push_back("GEMCore_"+std::to_string((i+13)*100+j*10+k+4 ));
-	MassMap["GEMsCore"]+=logicGEM->GetMass();  
-
-	
-	}
-
-    }
-
-  }
-
-  //
-  //RingSupport
-  //
-
-  G4Colour SupportRingColor(1.0,1.0,0.0,0.4);
-  G4VisAttributes* SupportRingsVisAttributes = new G4VisAttributes(SupportRingColor);
-  SupportRingsVisAttributes->SetForceSolid(true);
-  
-  G4double RingSupportWidth = 0.075*mm;
-  G4double RingStripWidth = 0.035*mm;
-
-  fRingSupportWidth=RingSupportWidth;
-  
-  G4Box*
-    outerRingSupport = new G4Box("outerRingSupport",
-				 (GEMOuterSize_x/2+RingSupportWidth+RingStripWidth),(GEMOuterSize_y/2+RingSupportWidth+RingStripWidth),GEMDistanceFromCathode/2);
-
-  G4Box*
-    innerRingSupport = new G4Box("innerRingSupport",
-				 (GEMOuterSize_x/2+RingStripWidth),(GEMOuterSize_y/2+RingStripWidth),GEMDistanceFromCathode/2+0.5*cm);
-
-  G4VSolid* solidRingSupport =
-    new G4SubtractionSolid("solidRingSupport",outerRingSupport,innerRingSupport );
-  
-  G4LogicalVolume*
-    logicRingSupport = new G4LogicalVolume(solidRingSupport,
-					   PMMA,
-					   "RingSupport");
-  
-  logicRingSupport->SetVisAttributes(SupportRingsVisAttributes);
-  
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      fPhysicRingsSupportPlus = new G4PVPlacement(0,
-						  G4ThreeVector(module.center.x()-RingStripWidth,module.center.y()-RingStripWidth/2,CathodeSize_z/2+GEMDistanceFromCathode/2),
-						  logicRingSupport,
-						  "RingSupport_"+std::to_string((j+2)*100+(i+12)),
-						  logicWorld,
-						  false,
-						  (j+2)*100+(i+12)
-						  );
-      
-      fListSupportRings.push_back("RingSupport_"+std::to_string((j+2)*100+(i+12)));
-      MassMap["SupportRings"]+=logicRingSupport->GetMass();
-            
-    }
-  }
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      fPhysicRingsSupportMinus = new G4PVPlacement(0,
-						   G4ThreeVector(module.center.x()-RingStripWidth,module.center.y()-RingStripWidth/2,-1*(CathodeSize_z/2+GEMDistanceFromCathode/2)),
-						  logicRingSupport,
-						  "RingSupport_"+std::to_string((j+6)*100+(i+12)),
-						  logicWorld,
-						  false,
-						  (j+6)*100+(i+12)
-						  );
-      
-      fListSupportRings.push_back("RingSupport_"+std::to_string((j+6)*100+(i+12)));
-      MassMap["SupportRings"]+=logicRingSupport->GetMass();
-            
-    }
-  }
-
-  //
-  //RingStrip
-  //
-
-  G4Colour StripRingColor(0.5,0.5,0.5,0.4);
-  G4VisAttributes* StripRingsVisAttributes = new G4VisAttributes(StripRingColor);
-  StripRingsVisAttributes->SetForceSolid(true);
-
-  G4double Ring_z = 5.5*cm; //depth of the ring in Z
-  G4int NRings = 4;
-  
-  G4double RingSpacing = (GEMDistanceFromCathode-NRings*Ring_z)/(NRings+1);
-
-  fRingStripWidth=RingStripWidth;
-  
-  G4Box*
-    outerRingStrip = new G4Box("outerRingStrip",
-				 (GEMOuterSize_x/2+RingStripWidth),(GEMOuterSize_y/2+RingStripWidth),Ring_z/2);
-
-  G4Box*
-    innerRingStrip = new G4Box("innerRingStrip",
-				 (GEMOuterSize_x)/2,(GEMOuterSize_y)/2,Ring_z/2+0.5*cm);
-
-
-  G4VSolid* solidRingStrip =
-    new G4SubtractionSolid("solidRingStrip",outerRingStrip,innerRingStrip,0,G4ThreeVector(-RingStripWidth/2,-RingStripWidth/2,0) );
-  
-  G4LogicalVolume*
-    logicRingStrip = new G4LogicalVolume(solidRingStrip,
-					   Copper,
-					   "RingStrip");
-  
-  logicRingStrip->SetVisAttributes(StripRingsVisAttributes);
-  
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    
-    for(G4int j=0;j<NRings;j++){
-      
-      //Rings on positive side of z axis
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicRingStripsPlus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x()-0.26*RingStripWidth,module.center.y(),(j+1)*RingSpacing+0.5*Ring_z+j*Ring_z),
-					     logicRingStrip,
-					     "RingStrip_"+std::to_string((i+13)*1000+(j+10)*10+k+1),
-					     logicWorld,
-					     false,
-					     (i+13)*1000+(j+10)*10+k+1
-					     );
-	
-	fListRingStrips.push_back("RingStrip_"+std::to_string( (i+13)*1000+(j+10)*10+k+1) );
-	MassMap["RingStrips"]+=logicRingStrip->GetMass();  
-	
-	
-      }
-    }
-
-    for(G4int j=0;j<NRings;j++){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-
-	fPhysicRingStripsMinus = new G4PVPlacement(0,
-					      G4ThreeVector(module.center.x()-0.26*RingStripWidth,module.center.y(),-1*((j+1)*RingSpacing+0.5*Ring_z+j*Ring_z)),
-					      logicRingStrip,
-					      "RingStrip_"+std::to_string((i+13)*1000+(j+10)*10+k+4),
-					      logicWorld,
-					      false,
-					      (i+13)*1000+(j+10)*10+k+4
-					      );
-      
-	fListRingStrips.push_back("RingStrip_"+std::to_string( (i+13)*1000+(j+10)*10+k+4) );
-	MassMap["RingStrips"]+=logicRingStrip->GetMass(); 
-
-
-      }
-    }
-
-
-  }
-
-  //
-  //SMD Resistors
-  //
-  
-  G4double ResistorSize_x = 1.6*mm;
-  G4double ResistorSize_y = 0.55*mm;
-  G4double ResistorSize_z = 3.2*mm;
-
-  fResistorWidth=ResistorSize_y;
-  
-  G4Colour ResistorColor(0.0,0.0,0.0,0.3);
-  G4VisAttributes* ResistorVisAttributes = new G4VisAttributes(ResistorColor);
-  ResistorVisAttributes->SetForceSolid(true);
-  
-  G4Box*
-    solidResistor = new G4Box("resistorShape",
-			      ResistorSize_x/2,ResistorSize_y/2,ResistorSize_z/2);
-
-  G4LogicalVolume*
-    logicResistor = new G4LogicalVolume(solidResistor,
-					 al2o3,
-					 "Resistor");
-  
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    
-    for(G4int j=0;j<NRings+1;j++){
-      
-      //Rings on positive side of z axis
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-	
-	fPhysicResistorsPlus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x(),module.center.y()+CathodeSize_y/2+RingSupportWidth+RingStripWidth+ResistorSize_y/2,(j)*RingSpacing+0.5*Ring_z+j*Ring_z),
-					     logicResistor,
-					     "Resistor_"+std::to_string((i+13)*1000+(j+10)*10+k+1),
-					     logicWorld,
-					     false,
-					     (i+13)*1000+(j+10)*10+k+1
-					     );
-	
-	fListResistors.push_back("Resistor_"+std::to_string( (i+13)*1000+(j+10)*10+k+1) );
-	MassMap["Resistors"]+=logicResistor->GetMass();  
-	
-	
-      }
-    }
-
-    for(G4int j=0;j<NRings+1;j++){
-      
-      for (const auto& module : column) {
-        const G4int k = module.yIndex;
-
-	fPhysicResistorsMinus = new G4PVPlacement(0,
-					      G4ThreeVector(module.center.x(),module.center.y()+CathodeSize_y/2+RingSupportWidth+RingStripWidth+ResistorSize_y/2,-1*((j)*RingSpacing+0.5*Ring_z+j*Ring_z)),
-					      logicResistor,
-					      "Resistor_"+std::to_string((i+13)*1000+(j+10)*10+k+4),
-					      logicWorld,
-					      false,
-					      (i+13)*1000+(j+10)*10+k+4
-					      );
-      
-	fListResistors.push_back("Resistor_"+std::to_string( (i+13)*1000+(j+10)*10+k+4) );
-	MassMap["Resistors"]+=logicRingStrip->GetMass(); 
-
-
-      }
-    }
-
-
-  }
-
-  //
-  //Vessel (copper in the active geometry, despite the historical PMMA label)
-  //
-
-  G4double Vesselwidth = 0.5*cm;
-
-  G4double VesselSize_x_outer = (CathodeSize_x/2 + kLastModuleX*(+CathodeSize_x + detectorSpace) + 2*Vesselwidth);
-  G4double VesselSize_y_outer = (CathodeSize_y/2 + (+CathodeSize_y + detectorSpace) + 2*Vesselwidth);
-  G4double VesselSize_z_outer = (CathodeSize_z/2+GEMDistanceFromCathode+2*GEMGap+3*GEMOuterSize_z+ 2*Vesselwidth);
-
-  
-  G4double VesselSize_x_inner = VesselSize_x_outer-Vesselwidth;
-  G4double VesselSize_y_inner = VesselSize_y_outer-Vesselwidth;
-  G4double VesselSize_z_inner = VesselSize_z_outer-Vesselwidth;
-
-  fVesselWidth=Vesselwidth;
-
-  G4Box*
-    outerShapeVessel = new G4Box("VesselOuterShape",
-				 VesselSize_x_outer,VesselSize_y_outer,VesselSize_z_outer);
-
-  G4Box*
-    innerShapeVessel = new G4Box("VesselOuterShape",
-				 VesselSize_x_inner,VesselSize_y_inner,VesselSize_z_inner);
-  
-  G4VSolid* solidVessel =
-    new G4SubtractionSolid("Vessel",outerShapeVessel,innerShapeVessel);
-
-  G4LogicalVolume*
-    logicVessel = new G4LogicalVolume(solidVessel,
-				      Copper,
-				      "Vessel");
-  
-  logicVessel->SetVisAttributes(PMMAVisAttributes);
-  
-  
-  fPhysicVessel = new G4PVPlacement(0,
-				    G4ThreeVector(0,0,0),
-				    logicVessel,
-				    "Vessel",
-				    logicWorld,
-				    true,
-				    0
-				    );
-
-  MassMap["Vessel"]+=logicVessel->GetMass();
-  
-  //
-  //Camera lenses
-  //
-
-  G4double LensDiameter = 1*cm;
-  G4double LensThickness = 2*mm;
-  G4double LensDistanceFromGEMs = 57.6*cm;
-  G4double VerticalLensSpacing = 38*cm;
-
-  fLensWidth=LensThickness;
-  
-  // G4Tubs takes an outer RADIUS; LensDiameter is a historical misnomer.
-  G4Tubs* solidLens = new G4Tubs("Lens", 0*mm, LensDiameter, LensThickness/2, 0, 360*deg);
-  
-  G4LogicalVolume*
-    logicLens = new G4LogicalVolume(solidLens,
-				    Glass,
-				    "Lens"
-				    );
-
-  
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-
-      for(G4float k=-0.5;k<1;k++){
-
-	fPhysicLensPlus = new G4PVPlacement(0,
-					    G4ThreeVector(module.center.x(),module.center.y()+k*VerticalLensSpacing/2, GEMDistanceFromCathode+2*GEMGap+3*GEMOuterSize_z + LensDistanceFromGEMs ),
-					    logicLens,
-					    "Lens_"+std::to_string((i+13)*1000+(j+1)*10+(k+0.5)),
-					    logicWorld,
-					    false,
-					    (i+13)*1000+(j+1)*10+(k+0.5)
-					    );
-
-	fListLens.push_back("Lens_"+std::to_string((i+13)*1000+(j+1)*10+(k+0.5)));
-	MassMap["Lens"]+=logicLens->GetMass(); 
-      }
-      
-    }
-    
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      for(G4float k=-0.5;k<1;k++){
-	
-	fPhysicLensMinus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x(),module.center.y()+k*VerticalLensSpacing/2, -1*(GEMDistanceFromCathode+2*GEMGap+3*GEMOuterSize_z + LensDistanceFromGEMs) ),
-					    logicLens,
-					    "Lens_"+std::to_string((i+13)*1000+(j+1+4)*10+(k+0.5)),
-					    logicWorld,
-					    false,
-					    (i+13)*1000+(j+1)*10+(k+0.5)
-					    );
-
-	fListLens.push_back("Lens_"+std::to_string((i+13)*1000+(j+1+4)*10+(k+0.5)));
-	MassMap["Lens"]+=logicLens->GetMass(); 
-      }
-      
-    }
-
-    
-  }
-
-  
-  //
-  //Camera sensors
-  //
-
-  G4double SensorSize_x = 10.6*mm;
-  G4double SensorSize_y = 18.8*mm;
-  G4double SensorSize_z = 1*mm;
-  G4double SensorDistanceFromLens = 6 * cm; 
-
-  fSensorWidth=SensorSize_z;
-  
-  G4Box*
-    solidSensor = new G4Box("Sensor",
-			       SensorSize_x/2,SensorSize_y/2,SensorSize_z/2);
-
-  G4LogicalVolume*
-    logicSensor = new G4LogicalVolume(solidSensor,
-				    Silicon,
-				    "Sensor"
-				    );
-
-
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      for(G4float k=-0.5;k<1;k++){
-	
-	fPhysicSensorsPlus = new G4PVPlacement(0,
-					    G4ThreeVector(module.center.x(),module.center.y()+k*VerticalLensSpacing/2, GEMDistanceFromCathode+2*GEMGap+3*GEMOuterSize_z + LensDistanceFromGEMs + SensorDistanceFromLens ),
-					    logicSensor,
-					    "Sensor_"+std::to_string((i+13)*1000+(j+1)*10+(k+0.5)),
-					    logicWorld,
-					    false,
-					    (i+13)*1000+(j+1)*10+(k+0.5)
-					    );
-
-	fListSensors.push_back("Sensor_"+std::to_string((i+13)*1000+(j+1)*10+(k+0.5)));
-	MassMap["Sensors"]+=logicSensor->GetMass(); 
-      }
-      
-    }
-    
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      for(G4float k=-0.5;k<1;k++){
-	
-	fPhysicSensorsMinus = new G4PVPlacement(0,
-					     G4ThreeVector(module.center.x(),module.center.y()+k*VerticalLensSpacing/2, -1*(GEMDistanceFromCathode+2*GEMGap+3*GEMOuterSize_z + LensDistanceFromGEMs + SensorDistanceFromLens) ),
-					    logicSensor,
-					    "Sensor_"+std::to_string((i+13)*1000+(j+1+4)*10+(k+0.5)),
-					    logicWorld,
-					    false,
-					    (i+13)*1000+(j+1)*10+(k+0.5)
-					    );
-
-	fListSensors.push_back("Sensor_"+std::to_string((i+13)*1000+(j+1+4)*10+(k+0.5)));
-	MassMap["Sensors"]+=logicSensor->GetMass();
-      }
-      
-    }
-
-    
-  }
-
-
-  //
-  //Sensitive drift volumes (the He/CF4 mixture defined above)
-  //
-
-
-  G4Colour GasColor(0.0,0.0,1.0,0.2);
-  G4VisAttributes* GasVisAttributes = new G4VisAttributes(GasColor);
-  GasVisAttributes->SetForceSolid(true);
-  
-  G4Box* solidGasVolume = new G4Box("GasVolume",CathodeSize_x/2,CathodeSize_y/2,(GEMDistanceFromCathode)/2);
-
-  fLogicalGasVolume = new G4LogicalVolume(solidGasVolume,
-					  CYGNO_gas,
-					  "GasVolume"
-					  );
-
-  fLogicalGasVolume->SetVisAttributes(GasVisAttributes);
-
-  // IDs 0..74 are +Z; 75..149 are -Z, with X outermost and Y innermost.
-  // SensitiveDetector writes these unchanged to the VolumeNumber branch.
-  G4int counter = 0;
-  
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      G4VPhysicalVolume* GasVolumePlus = new G4PVPlacement(0,
-							   G4ThreeVector(module.center.x(),module.center.y(),CathodeSize_z/2+GEMDistanceFromCathode/2),
-							   fLogicalGasVolume,
-							   "GasVolume_"+std::to_string(counter),
-							   logicWorld,
-							   false,
-							   counter
-							   );
-
-      fListDetector.push_back("GasVolume_"+std::to_string(counter));
-
-      G4cout  << "detN " << counter << "\t coord " << module.center.x()  << " " <<module.center.y() << " " << CathodeSize_z/2+GEMDistanceFromCathode/2<< "\n";
-
-      counter++;
-
-      
-    }
-  }
-  
-  for (const auto& column : modulePositions) {
-    const G4int i = column.front().xIndex;
-    for (const auto& module : column) {
-      const G4int j = module.yIndex;
-      
-      G4VPhysicalVolume* GasVolumeMinus = new G4PVPlacement(0,
-							    G4ThreeVector(module.center.x(),module.center.y(),-(CathodeSize_z/2+GEMDistanceFromCathode/2)),
-							   fLogicalGasVolume,
-							   "GasVolume_"+std::to_string(counter),
-							   logicWorld,
-							   false,
-							   counter
-							   );
-      
-      fListDetector.push_back("GasVolume_"+std::to_string(counter));
-
-      G4cout  << "detN " << counter << "\t coord " << module.center.x()  << " " <<module.center.y() << " " << -(CathodeSize_z/2+GEMDistanceFromCathode/2)<< "\n";
-      
-      counter++;
-
-    }
-  }
-  
-  //
-  //Creating the physicalvolumestore
-  //
-  
-  fPhysVolStore = G4PhysicalVolumeStore::GetInstance();
-  
-  for (auto& el: MassMap) {
-    std::cout << "Mass of: " << el.first << " = " << G4BestUnit(el.second,"Mass") << "\n";
-  }
-  //
-  //always return the physical World
-  //  
-  
-  return physiWorld;
+  return {Air, Copper, Glass, PMMA, al2o3, Silicon, CYGNO_gas};
 }
 
+G4VPhysicalVolume* DetectorConstruction::BuildWorld()
+{
+  // A solid defines shape; the logical volume combines it with material.
+  // Physical placements locate logical volumes inside a mother logical volume.
+  auto* solid = new G4Box("World", fWorldSize_x/2, fWorldSize_y/2, fWorldSize_z/2);
+  fWorldLogical = new G4LogicalVolume(solid, fMaterials.air, "World");
+  return new G4PVPlacement(nullptr, G4ThreeVector(), fWorldLogical, "World", nullptr, false, 0);
+}
+
+G4VPhysicalVolume* DetectorConstruction::PlaceInModule(
+    const geo::ModulePlacement& module, G4LogicalVolume* logical,
+    const G4ThreeVector& localOffset, const G4String& namePrefix,
+    G4int localCopy, std::vector<G4String>& sourceNames)
+{
+  // All module components remain direct World daughters, with no rotations or
+  // extra mother material. This one translation rule applies even to the optics.
+  const G4int copy = localCopy*geo::moduleCount + module.id;
+  const G4String name = namePrefix + "_" + std::to_string(copy);
+  auto* physical = new G4PVPlacement(nullptr, InGeant4Units(module.center)+localOffset,
+                                    logical, name, fWorldLogical, false, copy);
+  sourceNames.push_back(name);
+  return physical;
+}
+
+void DetectorConstruction::BuildCathodes()
+{
+  // G4Box takes half lengths. Keep the historical Z half-length and sampling
+  // depth; do not "correct" it to match neighboring offsets during this refactor.
+  fCathodeWidth = d.cathodeHalfZ*mm;
+  auto* solid = new G4Box("Cathode", d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodeHalfZ*mm);
+  auto* logical = new G4LogicalVolume(solid, fMaterials.copper, "Cathode");
+  logical->SetVisAttributes(SolidColour(G4Colour(0.6,0.4,0.2,0.0)));
+  for (const auto& module : fModuleLayout) {
+    fPhysicalCathodes = PlaceInModule(module, logical, {}, "Cathode", 0, fListCathodes);
+    fMassMap["Cathodes"] += logical->GetMass();
+  }
+}
+
+void DetectorConstruction::BuildGEMs()
+{
+  fGEMOuterWidth = (d.gemThickness-d.gemCavityThickness)*mm/2;
+  fGEMCoreWidth = d.gemCoreThickness*mm/2;
+  auto* outer = new G4Box("GEMOuter", d.gemX*mm/2, d.gemY*mm/2, d.gemThickness*mm/2);
+  auto* cavity = new G4Box("GEMCore", d.gemCavityX*mm/2, d.gemCavityY*mm/2, d.gemCavityThickness*mm/2);
+  // Preserve the hand-set Boolean translation and the different core/cavity
+  // thicknesses. Their existing overlap is documented in KNOWN_ISSUES.md.
+  auto* copperSolid = new G4SubtractionSolid("GEMSubSolid", outer, cavity, nullptr,
+      G4ThreeVector(0,0,-d.gemCavityThickness*mm/2+d.gemCavityShiftFraction*(d.gemCavityThickness*mm/2)));
+  auto* copperLogical = new G4LogicalVolume(copperSolid, fMaterials.copper, "logicGEM");
+  copperLogical->SetVisAttributes(SolidColour(G4Colour(0.45,0.25,0.0,0.0)));
+  auto* coreSolid = new G4Box("GEMInnner", d.gemCoreX*mm/2, d.gemCoreY*mm/2, d.gemCoreThickness*mm/2);
+  auto* coreLogical = new G4LogicalVolume(coreSolid, fMaterials.pmma, "GEMInnerLogical");
+  coreLogical->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
+  for (const auto& module : fModuleLayout) {
+    for (G4int side=0; side<2; ++side) {
+      const G4double sign = side == 0 ? 1 : -1;
+      for (G4int layer=0; layer<d.gemLayers; ++layer) {
+        const G4ThreeVector offset(0,0,sign*(d.cathodeHalfZ/2+d.driftLength
+                                                 +layer*d.gemGap+d.gemThickness/2)*mm);
+        const G4int localCopy = side*d.gemLayers+layer;
+        auto* copper = PlaceInModule(module, copperLogical, offset, "GEM", localCopy, fListGEMsOuter);
+        auto* core = PlaceInModule(module, coreLogical, offset, "GEMCore", localCopy, fListGEMsCore);
+        if (side == 0) { fPhysicGEMsPlus=copper; fPhysicGEMsCorePlus=core; }
+        else { fPhysicGEMsMinus=copper; fPhysicGEMsCoreMinus=core; }
+        fMassMap["GEMsOuter"] += copperLogical->GetMass();
+        // Preserve the historical reporting error; it does not assign material.
+        fMassMap["GEMsCore"] += (side == 0 ? coreLogical : copperLogical)->GetMass();
+      }
+    }
+  }
+}
+
+void DetectorConstruction::BuildFieldCage()
+{
+  fRingSupportWidth=d.supportThickness*mm;
+  fRingStripWidth=d.stripThickness*mm;
+  fResistorWidth=d.resistorY*mm;
+  auto* outerSupport = new G4Box("outerRingSupport",
+      (d.gemX/2+d.supportThickness+d.stripThickness)*mm,
+      (d.gemY/2+d.supportThickness+d.stripThickness)*mm, d.driftLength*mm/2);
+  auto* innerSupport = new G4Box("innerRingSupport",
+      (d.gemX/2+d.stripThickness)*mm, (d.gemY/2+d.stripThickness)*mm,
+      (d.driftLength/2+d.booleanCutExtension)*mm);
+  auto* supportSolid = new G4SubtractionSolid("solidRingSupport",outerSupport,innerSupport);
+  auto* supportLogical = new G4LogicalVolume(supportSolid,fMaterials.pmma,"RingSupport");
+  supportLogical->SetVisAttributes(SolidColour(G4Colour(1,1,0,0.4)));
+
+  auto* outerStrip = new G4Box("outerRingStrip",(d.gemX/2+d.stripThickness)*mm,
+                             (d.gemY/2+d.stripThickness)*mm,d.stripLengthZ*mm/2);
+  auto* innerStrip = new G4Box("innerRingStrip",d.gemX*mm/2,d.gemY*mm/2,
+                             (d.stripLengthZ/2+d.booleanCutExtension)*mm);
+  auto* stripSolid = new G4SubtractionSolid("solidRingStrip",outerStrip,innerStrip,nullptr,
+                                         G4ThreeVector(-d.stripThickness*mm/2,-d.stripThickness*mm/2,0));
+  auto* stripLogical = new G4LogicalVolume(stripSolid,fMaterials.copper,"RingStrip");
+  stripLogical->SetVisAttributes(SolidColour(G4Colour(0.5,0.5,0.5,0.4)));
+  auto* resistorSolid = new G4Box("resistorShape",d.resistorX*mm/2,d.resistorY*mm/2,d.resistorZ*mm/2);
+  auto* resistorLogical = new G4LogicalVolume(resistorSolid,fMaterials.alumina,"Resistor");
+
+  for (const auto& module : fModuleLayout) {
+    for (G4int side=0; side<2; ++side) {
+      const G4double sign = side == 0 ? 1 : -1;
+      auto* support = PlaceInModule(module,supportLogical,
+          G4ThreeVector(-d.stripThickness*mm,-d.stripThickness*mm/2,sign*geo::GasOffsetZ()*mm),
+          "RingSupport",side,fListSupportRings);
+      if (side == 0) fPhysicRingsSupportPlus=support; else fPhysicRingsSupportMinus=support;
+      fMassMap["SupportRings"] += supportLogical->GetMass();
+      for (G4int ring=0; ring<d.stripCount; ++ring) {
+        const G4double z=(ring+1)*geo::StripSpacing()+0.5*d.stripLengthZ+ring*d.stripLengthZ;
+        auto* strip = PlaceInModule(module,stripLogical,
+            G4ThreeVector(-d.stripShiftFractionX*d.stripThickness*mm,0,sign*z*mm),
+            "RingStrip",side*d.stripCount+ring,fListRingStrips);
+        if (side == 0) fPhysicRingStripsPlus=strip; else fPhysicRingStripsMinus=strip;
+        fMassMap["RingStrips"] += stripLogical->GetMass();
+      }
+      for (G4int resistor=0; resistor<d.stripCount+1; ++resistor) {
+        const G4double z=resistor*geo::StripSpacing()+0.5*d.stripLengthZ+resistor*d.stripLengthZ;
+        const G4double y=d.cathodeY/2+d.supportThickness+d.stripThickness+d.resistorY/2;
+        auto* physical = PlaceInModule(module,resistorLogical,G4ThreeVector(0,y*mm,sign*z*mm),
+            "Resistor",side*(d.stripCount+1)+resistor,fListResistors);
+        if (side == 0) fPhysicResistorsPlus=physical; else fPhysicResistorsMinus=physical;
+        // Preserve the legacy negative-side mass-reporting error and map key.
+        fMassMap["Resistors"] += (side == 0 ? resistorLogical : stripLogical)->GetMass();
+      }
+    }
+  }
+}
+
+void DetectorConstruction::BuildVessel()
+{
+  fVesselWidth=geo::vesselWall*mm;
+  const auto half=InGeant4Units(geo::vesselOuterHalfSize);
+  auto* outer = new G4Box("VesselOuterShape",half.x(),half.y(),half.z());
+  auto* inner = new G4Box("VesselOuterShape",half.x()-fVesselWidth,
+                         half.y()-fVesselWidth,half.z()-fVesselWidth);
+  auto* solid = new G4SubtractionSolid("Vessel",outer,inner);
+  // The old label said PMMA; the actual material has always been copper.
+  auto* logical = new G4LogicalVolume(solid,fMaterials.copper,"Vessel");
+  logical->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
+  fPhysicVessel = new G4PVPlacement(nullptr,{},logical,"Vessel",fWorldLogical,true,0);
+  fMassMap["Vessel"] += logical->GetMass();
+}
+
+void DetectorConstruction::BuildOptics()
+{
+  fLensWidth=d.lensThickness*mm;
+  fSensorWidth=d.sensorZ*mm;
+  auto* lensSolid = new G4Tubs("Lens",0,d.lensRadius*mm,d.lensThickness*mm/2,0,360*deg);
+  auto* lensLogical = new G4LogicalVolume(lensSolid,fMaterials.glass,"Lens");
+  auto* sensorSolid = new G4Box("Sensor",d.sensorX*mm/2,d.sensorY*mm/2,d.sensorZ*mm/2);
+  auto* sensorLogical = new G4LogicalVolume(sensorSolid,fMaterials.silicon,"Sensor");
+  for (const auto& module : fModuleLayout) {
+    for (G4int side=0; side<2; ++side) {
+      const G4double sign = side == 0 ? 1 : -1;
+      for (G4int camera=0; camera<2; ++camera) {
+        const G4double y=(camera-0.5)*d.verticalLensSpacing/2;
+        auto* lens = PlaceInModule(module,lensLogical,G4ThreeVector(0,y*mm,sign*geo::LensOffsetZ()*mm),
+                                  "Lens",side*2+camera,fListLens);
+        auto* sensor = PlaceInModule(module,sensorLogical,G4ThreeVector(0,y*mm,sign*geo::SensorOffsetZ()*mm),
+                                    "Sensor",side*2+camera,fListSensors);
+        if (side == 0) { fPhysicLensPlus=lens; fPhysicSensorsPlus=sensor; }
+        else { fPhysicLensMinus=lens; fPhysicSensorsMinus=sensor; }
+        fMassMap["Lens"] += lensLogical->GetMass();
+        fMassMap["Sensors"] += sensorLogical->GetMass();
+      }
+    }
+  }
+}
+
+void DetectorConstruction::BuildSensitiveGasVolumes()
+{
+  auto* solid = new G4Box("GasVolume",d.cathodeX*mm/2,d.cathodeY*mm/2,d.driftLength*mm/2);
+  fLogicalGasVolume = new G4LogicalVolume(solid,fMaterials.gas,"GasVolume");
+  fLogicalGasVolume->SetVisAttributes(SolidColour(G4Colour(0,0,1,0.2)));
+  // Gas copy = side*75 + module ID. The side is local to each module's cathode.
+  for (G4int side=0; side<2; ++side) {
+    for (const auto& module : fModuleLayout) {
+      const G4double sign = side == 0 ? 1 : -1;
+      auto* gas = PlaceInModule(module,fLogicalGasVolume,G4ThreeVector(0,0,sign*geo::GasOffsetZ()*mm),
+                               "GasVolume",side,fListDetector);
+      const auto& center=gas->GetTranslation();
+      G4cout << "detN " << gas->GetCopyNo() << "\t coord " << center.x()
+             << " " << center.y() << " " << center.z() << G4endl;
+    }
+  }
+}
 
 void DetectorConstruction::ConstructSDandField()
 {
-
-  // Sensitivity belongs to the logical volume: all 150 placements invoke
-  // ProcessHits for their steps. No electric/magnetic field is installed here.
-  fSensitiveDetector = new SensitiveDetector("SensitiveDetector");  
-  fLogicalGasVolume->SetSensitiveDetector(fSensitiveDetector);
-  
-  
+  // Called on each worker. Geant4 keeps this logical volume's SD attachment
+  // worker-local; do not store the SD in a shared DetectorConstruction pointer.
+  auto* detector = new SensitiveDetector("SensitiveDetector");
+  G4SDManager::GetSDMpointer()->AddNewDetector(detector);
+  fLogicalGasVolume->SetSensitiveDetector(detector);
 }
 
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+SensitiveDetector* DetectorConstruction::GetSensitiveDetector()
+{
+  return static_cast<SensitiveDetector*>(fLogicalGasVolume->GetSensitiveDetector());
+}

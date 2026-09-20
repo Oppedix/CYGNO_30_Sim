@@ -1001,12 +1001,7 @@ CMakeFiles/rdecay01.dir/src/DetectorConstruction.cc.o: \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UIparameter.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UImessenger.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UIdirectory.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistManager.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4ICRU90StoppingData.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistElementBuilder.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistMaterialBuilder.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Pow.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Exp.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include/../common/DetectorGeometry.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Box.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4GeomTypes.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4GeomConfig.hh \
@@ -1023,22 +1018,28 @@ CMakeFiles/rdecay01.dir/src/DetectorConstruction.cc.o: \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Visible.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Visible.icc \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Box.icc \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4PVPlacement.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SystemOfUnits.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4PVReplica.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VPVParameterisation.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VVolumeMaterialScanner.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Colour.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VisAttributes.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/graphics_reps_defs.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Color.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VisAttributes.icc \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistManager.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4ICRU90StoppingData.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistElementBuilder.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4NistMaterialBuilder.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Pow.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Exp.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4PVPlacement.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SDManager.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4HCtable.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SDStructure.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SubtractionSolid.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4BooleanSolid.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4DisplacedSolid.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VBooleanProcessor.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4BooleanSolid.icc \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4SystemOfUnits.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Tubs.hh \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Tubs.icc \
   /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UnitsTable.hh \
-  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UnitsTable.icc
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4UnitsTable.icc \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VisAttributes.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/graphics_reps_defs.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4Color.hh \
+  /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4/G4VisAttributes.icc

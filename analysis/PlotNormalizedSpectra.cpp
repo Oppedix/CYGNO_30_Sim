@@ -1,3 +1,4 @@
+#include "DetectorGeometry.hh"
 // ROOT post-processing: normalize elabHits spectra using hard-coded masses,
 // activities and generated-event counts, then apply the existing fiducial cuts.
 // These inputs and the reconstructed geometry require review before a new study.
@@ -51,7 +52,6 @@ std::map<std::string, std::map<std::string, double >> NEvents = {
 };  // call Contaminant["Cat"]["U238"]
 */
 
-void BuildDetectorMap(std::map<Int_t,TVector3>& aMap);
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum);
 TVector3* RelativePos(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum);
 
@@ -212,53 +212,11 @@ int main(){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-void BuildDetectorMap(std::map<Int_t,TVector3>& aMap){
-
-  Double_t VolumeSize_x=500;
-  Double_t VolumeSize_y=800;
-  Double_t VolumeSize_z = 500;
-
-  // Legacy 3 mm gap differs from simulation 4 mm; Z also omits 0.25 mm.
-  // Preserved to avoid silently changing fiducial selections. See docs/KNOWN_ISSUES.md.
-  Double_t DetectorSpace=3;
-  
-  int counter=0;
-  
-  for(int i=-12;i<13;i++){
-    for(int j=-1;j<2;j++){
-      aMap[counter] = TVector3( i*(VolumeSize_x+DetectorSpace) , j*(VolumeSize_y+DetectorSpace) , VolumeSize_z/2  );
-      counter++;
-    }
-  }
-  
-  
-  for(int i=-12;i<13;i++){
-    for(int j=-1;j<2;j++){
-      aMap[counter] = TVector3( i*(VolumeSize_x+DetectorSpace) , j*(VolumeSize_y+DetectorSpace) , -VolumeSize_z/2  );
-      counter++;
-    }
-  }
-
-}
-
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum){
 
-  Double_t VolumeSize_x=500;
-  Double_t VolumeSize_y=800;
-  Double_t VolumeSize_z = 500;
+  const Double_t VolumeSize_x=cygno::geometry::module.cathodeX;
+  const Double_t VolumeSize_y=cygno::geometry::module.cathodeY;
+  const Double_t VolumeSize_z=cygno::geometry::module.driftLength;
 
   Double_t FiducialCut_xy = 20;
   Double_t FiducialCut_z = 20;
@@ -273,7 +231,6 @@ bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double
 
   return cond;
 }
-
 
 
 TVector3* RelativePos(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum){

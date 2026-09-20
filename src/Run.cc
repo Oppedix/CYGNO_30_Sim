@@ -161,6 +161,7 @@ void Run::EvisEvent(G4double Evis)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Geant4 calls this on the master to accumulate the workers' custom run data.
 void Run::Merge(const G4Run* run)
 {
   const Run* localRun = static_cast<const Run*>(run);

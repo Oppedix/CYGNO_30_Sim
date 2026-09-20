@@ -1,0 +1,72 @@
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found EXPAT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libexpat.tbd (found suitable version "2.7.4", minimum required is "2.7.4")
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test HAVE_STDATOMIC
+-- Performing Test HAVE_STDATOMIC - Success
+-- Found WrapAtomic: TRUE
+-- Found OpenGL: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework
+-- Found WrapOpenGL: TRUE
+-- Found WrapVulkanHeaders: /opt/homebrew/include
+-- Found Geant4: /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/lib/cmake/Geant4/Geant4Config.cmake (found version "11.4.2")
+-- Configuring done (2.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/tools-before
+[ 20%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/DetectorConstruction.cc.o
+[ 20%] Building CXX object CMakeFiles/geometry_audit.dir/geometry_audit.cc.o
+[ 50%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/SensitiveDetector.cc.o
+[ 50%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/SensitiveDetector.cc.o
+[ 50%] Building CXX object CMakeFiles/geometry_snapshot.dir/geometry_snapshot.cc.o
+[ 60%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/PrimaryGeneratorAction.cc.o
+[ 80%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/PrimaryGeneratorAction.cc.o
+[ 80%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/DetectorConstruction.cc.o
+/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/SensitiveDetector.cc:92:1: warning: non-void function does not return a value [-Wreturn-type]
+   92 | }
+      | /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/before/source/src/SensitiveDetector.cc:92^:1: warning: non-void function does not return a value [-Wreturn-type]
+   92 | }
+      | ^
+
+1 warning generated.
+1 warning generated.
+[ 90%] Linking CXX executable geometry_snapshot
+[100%] Linking CXX executable geometry_audit
+[100%] Built target geometry_snapshot
+[100%] Built target geometry_audit
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found EXPAT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libexpat.tbd (found suitable version "2.7.4", minimum required is "2.7.4")
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test HAVE_STDATOMIC
+-- Performing Test HAVE_STDATOMIC - Success
+-- Found WrapAtomic: TRUE
+-- Found OpenGL: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework
+-- Found WrapOpenGL: TRUE
+-- Found WrapVulkanHeaders: /opt/homebrew/include
+-- Found Geant4: /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/lib/cmake/Geant4/Geant4Config.cmake (found version "11.4.2")
+-- Configuring done (1.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/build/layout-validation/tools-after
+[ 10%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/DetectorConstruction.cc.o
+[ 30%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/SensitiveDetector.cc.o
+[ 60%] Building CXX object CMakeFiles/geometry_audit.dir/geometry_audit.cc.o
+[ 60%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/DetectorConstruction.cc.o
+[ 60%] Building CXX object CMakeFiles/geometry_snapshot.dir/geometry_snapshot.cc.o
+[ 70%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/PrimaryGeneratorAction.cc.o
+[ 70%] Building CXX object CMakeFiles/geometry_audit.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/PrimaryGeneratorAction.cc.o
+[ 80%] Building CXX object CMakeFiles/geometry_snapshot.dir/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/src/SensitiveDetector.cc.o
+[ 90%] Linking CXX executable geometry_snapshot
+[100%] Linking CXX executable geometry_audit
+[100%] Built target geometry_snapshot
+[100%] Built target geometry_audit

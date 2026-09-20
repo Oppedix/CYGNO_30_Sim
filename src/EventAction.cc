@@ -64,6 +64,7 @@ EventAction::~EventAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called after primary generation and before this event's tracks are transported.
 void EventAction::BeginOfEventAction(const G4Event*)
 {
  fDecayChain = " ";
@@ -79,6 +80,7 @@ void EventAction::BeginOfEventAction(const G4Event*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Called after all tracks in the event have finished. Hits were already written per step.
 void EventAction::EndOfEventAction(const G4Event* evt)
 {
  G4int evtNb = evt->GetEventID(); 

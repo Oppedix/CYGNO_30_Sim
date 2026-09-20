@@ -1,5 +1,13 @@
 # Reading the simulation
 
+## Run, event, track and step
+
+A **run** is one `beamOn` request: a set of primary events with the initialized
+geometry/physics. An **event** starts with primary vertices and includes all their
+secondary tracks. A **track** is one transported particle, including a daughter
+ion or decay product. A **step** is a finite transport interval of that track;
+one track can produce many rows in `Hits`.
+
 ## Follow one event through the application
 
 1. `rdecay01.cc` creates the random engine and run manager, registers geometry,
@@ -53,13 +61,17 @@ Lengths in `G4Box` are half lengths; the outer size in `G4Tubs` is a radius.
 Names such as `CathodeSize_z` and `LensDiameter` are historically misleading;
 read the constructor arguments and the known-issues document before editing.
 
-`BuildModulePositions` in `DetectorConstruction.cc` constructs a 25-by-3 array
-of module centers. X indices are -12..12 and Y indices -1..1. The pitches are
-504 mm and 804 mm: 500/800 mm cathode widths plus a 4 mm gap. Columns are kept
-separate because GEM, strip and resistor loops insert layers between X and Y.
-Flattening or reordering those loops would change source-list order and possibly
-which component a fixed random draw selects. Local offsets remain at the call
-sites; the shared positions describe only module XY centers.
+`common/DetectorGeometry.hh` is the dependency-free source of dimensions, pitches,
+module centers and gas IDs, all expressed in millimetres. `BuildModuleLayout()`
+returns the 75 placements of the 5 × 5 × 3 grid. `DetectorConstruction::Construct`
+reads it once and calls `DefineMaterials`, `BuildWorld`, `BuildCathodes`, `BuildGEMs`,
+`BuildFieldCage`, `BuildVessel`, `BuildOptics`, and `BuildSensitiveGasVolumes`.
+Each builder still visibly constructs solids and logical volumes.
+`PlaceInModule` adds `module.center + localOffset`, assigns a copy/name and fills
+the corresponding source list. The module is a placement convention, not a new
+material-filled mother volume. No rotations or hidden extra materials are added.
+
+See [LAYOUT.md](LAYOUT.md) for the complete envelope, chosen spacing and vessel.
 
 | Component | Placements | Material |
 | --- | ---: | --- |
@@ -75,12 +87,17 @@ The gas mixture uses the existing 60/40 partial-density construction, converted
 to mass fractions for `AddMaterial`. Material definitions are not recalibrated
 by this cleanup. Total physical placements, including World, are 3,227.
 
-For sensitive copy number `v`, `v < 75` means +Z, otherwise -Z. Let `n = v % 75`:
-X index is `n / 3 - 12` (integer division), Y index is `n % 3 - 1`. Gas centers
-are `(504*i, 804*j, +/-250.25)` mm. Gas box dimensions are 500 x 800 x 500 mm.
-Other components use historical numbering formulas which are not globally unique.
-The singular physical-volume getters in `DetectorConstruction.hh` return the
-last placed member of a component group; the name lists contain the full group.
+For sensitive copy number `v`, `side = v / 75` and `moduleId = v % 75`.
+Side 0 is **local** +Z and side 1 is **local** -Z, relative to that module's cathode;
+it no longer indicates the sign of the world Z coordinate.
+`moduleId = (ix*5 + iy)*3 + iz`, with zero-based indices and Z fastest.
+Gas centers are module centers plus `(0,0,+/-250.25)` mm. Gas box dimensions
+remain 500 × 800 × 500 mm. Component names are unique and copy numbers are
+unique within each component family (not globally across different families).
+The singular physical-volume getters in `DetectorConstruction.hh` still return
+the last placed member of a component group; name lists contain the full group.
+`GetSensitiveDetector()` retrieves the worker's own logical-volume attachment so
+tracking labels and step output refer to the same detector in multithreaded runs.
 
 ## Macro commands and source selection
 
@@ -101,6 +118,7 @@ messengers. The same commands can be entered in the GUI or stored in a `.mac` fi
 Exact supported source names are `Cathodes`, `GEMsOuter`, `GEMsCore`,
 `RingSupports`, `RingStrips`, `Resistors`, `Vessel`, `Lens`, `Sensors`.
 Legacy names `GEMs` and `Rings` in some macros are not accepted by the sampler.
+Unknown/empty names now produce an explicit fatal diagnostic instead of invalid indexing.
 The sampler chooses a volume uniformly from its list, a surface point via
 `GetPointOnSurface`, and an inward displacement along the normal with a random
 depth. This does not guarantee uniform bulk sampling or containment, especially
@@ -145,7 +163,37 @@ contaminations and generated-event counts, reconstructs module centers, and make
 spectra with and without fiducial cuts. These are analysis assumptions, not values
 automatically obtained from the geometry or output file.
 
-The existing analysis selections are untouched. Branch compatibility, geometry
-constants and grouping issues must be reviewed before treating these scripts as a
-validated analysis pipeline; see `KNOWN_ISSUES.md`. Root-level `ProcessEvents*.C`
+`analysis/DetectorGeometry.hh` adapts the common geometry to ROOT `TVector3`.
+All three `PlotNormalizedSpectra*.cpp` files and `PlotSpectrum.C` use it. This
+replaces the obsolete 25 × 3 / 3 mm-gap reconstruction with the actual 5 × 5 × 3
+centers, including the 0.25 mm cathode offset. The fiducial inset remains 20 mm;
+cut widths, energy selections, histogram definitions and normalization inputs are
+unchanged. The geometry correction necessarily changes which world coordinates
+pass those same cuts. Existing analysis executables must be recompiled.
+
+Branch compatibility, normalization and grouping issues must be reviewed before
+treating these scripts as a validated analysis pipeline; see `KNOWN_ISSUES.md`. Root-level `ProcessEvents*.C`
 and `SimpleProcessEvents.C` are older variants, not additional simulation actions.
+
+## Where to read next
+
+| Files | Responsibility |
+| --- | --- |
+| `rdecay01.cc`, `CMakeLists.txt` | Application setup, active physics, batch/Qt startup, Geant4-only build |
+| `include/`, `src/ActionInitialization.*` | Register per-worker actions and master run bookkeeping |
+| `DetectorConstruction.*`, `common/DetectorGeometry.hh` | Material/solid/logical/physical geometry, shared layout, gas sensitivity |
+| `PrimaryGeneratorAction.*`, `EventAction.*` | Ion gun and source selection; event bookkeeping and chain text |
+| `TrackingAction.*`, `TrackingMessenger.*` | Ion/decay policies, full-chain flag, activity time window |
+| `SensitiveDetector.*` | Step-to-ntuple conversion and last-ion label |
+| `RunAction.*`, `Run.*` | Output lifecycle, particle/decay statistics, worker merging |
+| `PhysicsList.*`, `PhysicsListMessenger.*` | Retained custom-list alternative; not instantiated by main |
+| `HistoManager.*` | Retained histogram scaffolding with booking disabled |
+| `mymacros/`, `mymacros_single/`, root `.mac` files | Source/run configurations and inherited example capabilities |
+| `analysis/` | Independent ROOT post-processing and spectra |
+| `validation/` | Geometry/material/source checks, small runs and ROOT invariants |
+
+The custom physics-list messenger only exists if its owner is instantiated;
+compilation alone does not activate that alternative or its UI commands.
+`G4GenericMessenger` properties for isotope, source component and output name
+remain in their owning actions. `TrackingMessenger` handles `fullChain` and the
+multi-unit time-window command. No existing command path has been renamed.

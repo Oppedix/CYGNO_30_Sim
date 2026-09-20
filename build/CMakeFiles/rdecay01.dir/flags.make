@@ -6,7 +6,5 @@ CXX_DEFINES = -DG4LIB_BUILD_DLL -DG4UI_USE_QT -DG4VIS_USE_OPENGLQT -DG4VIS_USE_R
 
 CXX_INCLUDES = -I/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/projects/CYGNO_30_Sim/include -isystem /Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep/software/geant4-11.4.2/include/Geant4 -isystem /opt/homebrew/lib/QtCore.framework/Headers -iframework /opt/homebrew/lib -isystem /opt/homebrew/share/qt/mkspecs/macx-clang -isystem /opt/homebrew/include -isystem /opt/homebrew/lib/QtGui.framework/Headers -isystem /opt/homebrew/lib/QtWidgets.framework/Headers
 
-CXX_FLAGSarm64 = -O3 -DNDEBUG -std=gnu++17 -arch arm64
-
-CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -arch arm64
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17
 
