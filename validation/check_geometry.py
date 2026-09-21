@@ -28,7 +28,7 @@ def local_signature(row, center):
             *(round(row[axis]-center[i], 9) for i,axis in enumerate('xyz')))
 
 
-def check(before_path, after_path):
+def check(before_path, after_path, same_layout=False):
     before, after = read(before_path), read(after_path)
     assert len(before) == len(after) == 3227
     assert len({r['name'] for r in after}) == len(after), 'Duplicate physical names'
@@ -40,7 +40,8 @@ def check(before_path, after_path):
     old_patterns=collections.defaultdict(collections.Counter)
     for row in before:
         if row['logical'] in ('World','Vessel'): continue
-        cathode=min(old_modules,key=lambda m:(row['x']-m['x'])**2+(row['y']-m['y'])**2)
+        cathode=(next(m for m in old_modules if m['copy']==row['copy']%75) if same_layout
+                 else min(old_modules,key=lambda m:(row['x']-m['x'])**2+(row['y']-m['y'])**2))
         center=tuple(cathode[a] for a in 'xyz')
         old_patterns[center][local_signature(row,center)]+=1
     reference=next(iter(old_patterns.values()))
@@ -97,5 +98,5 @@ def check(before_path, after_path):
 
 
 if __name__=='__main__':
-    if len(sys.argv)!=3: sys.exit('Usage: check_geometry.py BEFORE.tsv AFTER.tsv')
-    check(*sys.argv[1:])
+    if len(sys.argv) not in (3,4): sys.exit('Usage: check_geometry.py BEFORE.tsv AFTER.tsv [--same-layout]')
+    check(*sys.argv[1:3], same_layout=len(sys.argv)==4 and sys.argv[3]=='--same-layout')

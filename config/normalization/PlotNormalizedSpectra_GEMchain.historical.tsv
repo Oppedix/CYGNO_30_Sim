@@ -1,0 +1,4 @@
+# historical-unverified: copied from 05a2b92; NOT a production configuration.
+# Mass/assay/generated-count provenance incomplete. Old vessel mass is invalid for automatic reuse.
+# component isotope mass_kg activity_Bq_per_kg generated_events input_file
+GEMs U235 18.75 0.00545 100000 elab_GEMs_U235_t0.root

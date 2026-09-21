@@ -1,0 +1,37 @@
+# Out-of-source builds and local simulation/analysis products
+/build*/
+/_build*/
+/outfiles*/
+/results/
+/validation-results/
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+Testing/
+*.o
+*.o.d
+*.a
+*.so
+*.dylib
+*.root
+*.root.part
+*.pcm
+*.rootmap
+*.app/
+# Editors and Python
+.DS_Store
+*~
+*.swp
+__pycache__/
+*.py[cod]
+# Historical reference .out/.data text files are intentionally NOT ignored.
+
+# Executables from historical manual compilation
+/analysis/SimpleProcessEvents
+/analysis/PlotNormalizedSpectra
+/analysis/PlotNormalizedSpectra_single
+/analysis/PlotNormalizedSpectra_GEMchain
+/rdecay01
+*.log
+core
+core.*

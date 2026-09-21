@@ -1,8 +1,8 @@
 // Export machine-readable placement/solid bounds and exercise every source list.
 // Optional second argument "overlaps" runs Geant4 checks on the central module
 // and common vessel. Existing INTERNAL overlaps are expected, not suppressed.
-#include "DetectorConstruction.hh"
-#include "PrimaryGeneratorAction.hh"
+#include "cygno/geometry/DetectorConstruction.hh"
+#include "cygno/source/PrimaryGeneratorAction.hh"
 #include "G4Geantino.hh"
 #include "G4RunManager.hh"
 #include "G4PhysListFactory.hh"

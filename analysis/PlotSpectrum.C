@@ -6,6 +6,8 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <filesystem>
+#include <stdexcept>
 
 
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum){
@@ -37,7 +39,9 @@ void PlotSpectra(std::string filename){
   
   TFile* f = TFile::Open(filename.c_str());
   
+  if (!f || f->IsZombie()) throw std::runtime_error("Cannot open input file");
   TTree* tree = (TTree*)f->Get("elabHits");
+  if (!tree) throw std::runtime_error("Missing elabHits");
   
   Int_t evNumber;
   std::string* PartName = nullptr;
@@ -113,7 +117,9 @@ void PlotSpectra(std::string filename){
   new TCanvas();
   betaplot_cut->Draw();
 
-  TFile* f_out = new TFile(Form("histo_%s",filename.c_str()),"recreate");
+  const std::filesystem::path input(filename);
+  const auto output=input.parent_path()/("histo_"+input.filename().string());
+  TFile* f_out = new TFile(output.string().c_str(),"recreate");
   f_out->cd();
   alphaplot->Write();
   alphaplot_cut->Write();

@@ -1,5 +1,9 @@
 # The 5 × 5 × 3 detector layout
 
+This layout was already present at baseline `05a2b92`. References below to the
+old layout describe the earlier 25 × 3 → 5 × 5 × 3 migration, not this recovery.
+The current refactor preserves all geometry numerically.
+
 ## Definition and assumptions
 
 `common/DetectorGeometry.hh` contains the shared dimensions, layout and copy-number
@@ -100,7 +104,8 @@ World retains its previous minimum half sizes and grows where needed to leave
 at least 500 mm around the array or vessel. All components remain World daughters,
 so empty space retains the same air material; no new gas mother volume is inserted.
 
-Analysis normalization constants were deliberately not replaced. In particular,
+Historical normalization constants were preserved as unverified reference tables;
+active plotters now require explicit study configurations. In particular,
 a historical vessel mass cannot be assumed valid for this resized shell. Review
 vessel normalization before a new production background comparison; use the
 same normalization formula with an explicitly approved mass for that study.

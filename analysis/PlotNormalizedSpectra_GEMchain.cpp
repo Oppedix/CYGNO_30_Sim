@@ -1,5 +1,6 @@
 #include "DetectorGeometry.hh"
-// ROOT post-processing: normalize elabHits spectra using hard-coded masses,
+#include "Normalization.hh"
+// ROOT post-processing: normalize elabHits spectra using explicitly configured masses,
 // activities and generated-event counts, then apply the existing fiducial cuts.
 // These inputs and the reconstructed geometry require review before a new study.
 #include <iostream>
@@ -12,42 +13,15 @@
 #include "THStack.h"
 #include "TVector3.h"
 
-//These are the real maps
-
-std::map<std::string,double> ElementMass ={ {"GEMs",18.75}  }; // in kilograms
-
-std::map<std::string, std::map<std::string, double >> Contaminant = {  
-  {"GEMs",          {  {"U235",5.45e-3}  } },
-  
-};  // call Contaminant["Cat"]["U238"]
-
-std::map<std::string, std::map<std::string, double >> NEvents = {  
-  {"GEMs",      {  {"U235",1e5} } },
-  
-};  // call Contaminant["Cat"]["U238"]
-
-
-//creating now fake testing maps
-/*
-std::map<std::string,double> ElementMass ={ {"GEMs",193.536}, {"Rings",1114.74},  };
-
-
-std::map<std::string, std::map<std::string, double >> Contaminant = {  
-  {"GEMs",          { {"Co60",2.34e-3},  {"Cs137",1.56e-3}   } },
-  {"Rings",         { {"Th232",4.1e-6}                       } }  
-};  // call Contaminant["Cat"]["U238"]
-
-
-std::map<std::string, std::map<std::string, double >> NEvents = {  
-  {"GEMs",          { {"Co60",1e7},  {"Cs137",1e7}   } },
-  {"Rings",         { {"Th232",1e6}                  } }
-};  // call Contaminant["Cat"]["U238"]
-*/
-
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum);
 TVector3* RelativePos(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum);
 
-int main(){
+int main(int argc, char** argv) try {
+  if (argc != 2) { std::cerr << "Usage: " << argv[0] << " study.tsv\n"; return 1; }
+  const auto settings = ReadNormalization(argv[1]);
+  auto ElementMass = settings.masses;
+  auto Contaminant = settings.activities;
+  auto NEvents = settings.events;
 
   //Build centroid detector map for fiducialization
   std::map<Int_t,TVector3> VolumeMap;
@@ -72,8 +46,8 @@ int main(){
   std::vector<TH1D*> Histo;
   std::vector<TH1D*> HistoCut;
 
-  std::map<double_t,TH1D*> IntegralMap;
-  std::map<double_t,TH1D*> IntegralMap_cut;
+  std::multimap<double_t,TH1D*> IntegralMap;
+  std::multimap<double_t,TH1D*> IntegralMap_cut;
   
   Double_t totEdep=0;
 
@@ -101,10 +75,12 @@ int main(){
       std::cout << "Mass of " << component.first << " is " << component.second << " Kg with contamination of \t" << val.first
 		<<" equal to \t" << val.second <<" Bq/Kg nEvents: \t" << NEvents[component.first][val.first] <<"\n";
       
-      f= TFile::Open(Form("elab_%s_%s_t0.root",(component.first).c_str(),(val.first).c_str()),"r");
+      f= TFile::Open(settings.files.at(component.first).at(val.first).c_str(),"r");
+      if (!f || f->IsZombie()) throw std::runtime_error("Cannot open configured input file");
       std::cout << "file " << Form("elab_%s_%s_t0.root", (component.first).c_str(), (val.first).c_str()) << "\n";
 
       tree = (TTree*)f->Get("elabHits");
+      if (!tree) throw std::runtime_error("Missing elabHits tree");
 
       tree->SetBranchAddress("evNumber",&evNumber);
       tree->SetBranchAddress("PartName",&PartName);
@@ -139,6 +115,7 @@ int main(){
 	    
 	    hposXY->Fill(a->X(),a->Y());
 	    hposYZ->Fill(a->Y(),a->Z());
+            delete a;
 
 	  }
 	  
@@ -181,16 +158,16 @@ int main(){
   
   counter=0;
   
-  for( std::map<double_t,TH1D*>::iterator i = IntegralMap.begin(); i != IntegralMap.end(); i++ ){
-    Histo[counter]->Write();
+  for( std::multimap<double_t,TH1D*>::iterator i = IntegralMap.begin(); i != IntegralMap.end(); i++ ){
+    i->second->Write();
     Hstack->Add(i->second);
     counter++;
   }
 
   counter=0;
   
-  for( std::map<double_t,TH1D*>::iterator i = IntegralMap_cut.begin(); i != IntegralMap_cut.end(); i++ ){
-    HistoCut[counter]->Write();    
+  for( std::multimap<double_t,TH1D*>::iterator i = IntegralMap_cut.begin(); i != IntegralMap_cut.end(); i++ ){
+    i->second->Write();
     Hstack_cut->Add(i->second);
     counter++;
   }
@@ -200,8 +177,8 @@ int main(){
   
   outDef->Save();
   outDef->Close();
-  
-}
+  return 0;
+} catch (const std::exception& e) { std::cerr << e.what() << "\n"; return 1; }
 
 
 bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double_t y,const Double_t z,const Int_t Volnum){

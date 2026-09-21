@@ -1,0 +1,144 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+/// \file rdecay01.cc
+/// \brief Application entry point: select UI/batch mode, geometry, active physics and actions.
+//
+//
+//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+#include "G4Types.hh"
+
+#include "G4RunManagerFactory.hh"
+#include "G4UImanager.hh"
+#include "G4SteppingVerbose.hh"
+#include "Randomize.hh"
+#include "G4EmStandardPhysics.hh"
+#include "G4RadioactiveDecayPhysics.hh"
+
+#include "cygno/geometry/DetectorConstruction.hh"
+#include "cygno/actions/ActionInitialization.hh"
+
+#include "G4UIExecutive.hh"
+#include "G4VisExecutive.hh"
+#include "G4PhysListFactory.hh"
+
+int main(int argc,char** argv) {
+  //argc is the number of command line arguments,
+  //argv is an array of character strings representing the arguments
+
+  //For instance ./rdecay01 has argc=1 and argv[0]="./rdecay01", 
+  // while ./rdecay01 vis.mac has argc=2 and argv[1]="vis.mac"  
+
+  //if no macro was provided, the application will run in interactive mode and a G4UIExecutive will be created.
+  G4UIExecutive* ui = 0;
+  if (argc == 1) ui = new G4UIExecutive(argc,argv);
+  
+
+  // Macro /random/setSeeds can override this wall-clock seed for regression runs.
+  //choose the Random engine
+  CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
+  //seed the random number generator with the current time
+  CLHEP::HepRandom::setTheSeed(time(0));
+  
+  //use G4SteppingVerboseWithUnits
+  G4int precision = 1;
+  G4SteppingVerbose::UseBestUnit(precision);
+
+  //construct the run manager
+  auto runManager = G4RunManagerFactory::CreateRunManager();  
+
+  runManager->SetNumberOfThreads(1);
+  //runManager->SetVerboseLevel(0);
+  
+  // Optional batch argument selects the worker count; one worker is the default.
+  if (argc==3) {
+    G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
+    if (nThreads < 1) {
+      G4cerr << "The number of worker threads must be positive." << G4endl;
+      delete runManager;
+      return 1;
+    }
+    runManager->SetNumberOfThreads(nThreads);
+  }
+  
+  //
+  //set mandatory initialization classes
+  //
+
+  DetectorConstruction* theDetector = new DetectorConstruction();
+  
+  runManager->SetUserInitialization(theDetector);
+  //the above makes sure geant calls the Construct() method of DetectorConstruction to build the geometry.
+
+  G4PhysListFactory factory;
+
+  // This reference list is the active physics configuration. The custom
+  // PhysicsList class in legacy/scaffolding/PhysicsList.cc is not used here.
+  G4VModularPhysicsList* physicsList = factory.GetReferencePhysList("QGSP_BIC_EMZ");
+  //you can modify the above to add or remove physics processes, for example to add radioactive decay:
+  //physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); as done below
+  physicsList->SetVerboseLevel(0);
+  physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); 
+
+  runManager->SetUserInitialization(physicsList);
+
+  runManager->SetUserInitialization(new ActionInitialization(theDetector));
+
+  // Construct geometry/physics before executing the user macro. Commands that
+  // require the PreInit state may therefore be unsuitable in batch macros.
+  //initialize G4 kernel
+  runManager->Initialize();
+
+  //initialize visualization
+  G4VisManager* visManager = nullptr;
+
+  //get the pointer to the User Interface manager
+  G4UImanager* UImanager = G4UImanager::GetUIpointer();
+
+  G4int commandStatus=0;
+  if (ui)  {
+    //interactive mode
+    visManager = new G4VisExecutive;
+    visManager->Initialize();
+    UImanager->ApplyCommand("/control/execute vis.mac");
+    ui->SessionStart();
+    delete ui;
+  }
+  else  {
+    //batch mode
+    G4String command = "/control/execute ";
+    G4String fileName = argv[1];
+    commandStatus=UImanager->ApplyCommand(command+fileName);
+  }
+  
+  //job termination
+  delete visManager;
+  delete runManager;
+  return commandStatus == 0 ? 0 : 1;
+}
+

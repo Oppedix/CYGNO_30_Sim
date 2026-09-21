@@ -1,0 +1,16 @@
+# historical-unverified: copied from 05a2b92; NOT a production configuration.
+# Mass/assay/generated-count provenance incomplete. Old vessel mass is invalid for automatic reuse.
+# component isotope mass_kg activity_Bq_per_kg generated_events input_file
+GEMs U235 18.75 0.00545 100000 elab_GEMs_U235_t0.root
+GEMs Th231 18.75 0.00545 100000 elab_GEMs_Th231_t0.root
+GEMs Pa231 18.75 0.00545 100000 elab_GEMs_Pa231_t0.root
+GEMs Ac227 18.75 0.00545 100000 elab_GEMs_Ac227_t0.root
+GEMs Th227 18.75 0.00545 101399.31048468871 elab_GEMs_Th227_t0.root
+GEMs Ra223 18.75 0.00545 100000 elab_GEMs_Ra223_t0.root
+GEMs Rn219 18.75 0.00545 100000 elab_GEMs_Rn219_t0.root
+GEMs Po215 18.75 0.00545 100000 elab_GEMs_Po215_t0.root
+GEMs Pb211 18.75 0.00545 100000 elab_GEMs_Pb211_t0.root
+GEMs Bi211 18.75 0.00545 100000 elab_GEMs_Bi211_t0.root
+GEMs Tl207 18.75 0.00545 100270.7309736288 elab_GEMs_Tl207_t0.root
+GEMs Fr223 18.75 0.00545 7246376.8115942031 elab_GEMs_Fr223_t0.root
+GEMs Po211 18.75 0.00545 37037037.037037037 elab_GEMs_Po211_t0.root

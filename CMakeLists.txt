@@ -1,60 +1,52 @@
-#----------------------------------------------------------------------------
-# Setup the project
-cmake_minimum_required(VERSION 3.16...3.21)
-project(rdecay01)
+cmake_minimum_required(VERSION 3.16...3.31)
+project(CYGNO_30_Sim VERSION 1.0 LANGUAGES CXX)
 
-#----------------------------------------------------------------------------
-# Find Geant4 package, activating all available UI and Vis drivers by default
-# You can set WITH_GEANT4_UIVIS to OFF via the command line or ccmake/cmake-gui
-# to build a batch mode only executable
-#
-option(WITH_GEANT4_UIVIS "Build example with Geant4 UI and Vis drivers" ON)
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(FATAL_ERROR "Use an out-of-source build directory")
+endif()
+file(SHA256 "${PROJECT_SOURCE_DIR}/common/DetectorGeometry.hh" CYGNO_GEOMETRY_HASH)
+configure_file(common/BuildInfo.hh.in generated/BuildInfo.hh @ONLY)
+
+option(WITH_GEANT4_UIVIS "Enable Geant4 interactive visualization" ON)
+option(CYGNO_BUILD_ANALYSIS "Build the separate CERN ROOT post-processing programs" OFF)
 if(WITH_GEANT4_UIVIS)
-  find_package(Geant4 REQUIRED ui_all vis_all)
+  find_package(Geant4 11 REQUIRED ui_all vis_all)
 else()
-  find_package(Geant4 REQUIRED)
+  find_package(Geant4 11 REQUIRED)
 endif()
 
-#----------------------------------------------------------------------------
-# Setup Geant4 include directories and compile definitions
-#
-include(${Geant4_USE_FILE})
+# A single explicit target owns the active application code. The quarantined
+# alternative physics/histogram classes in legacy/ are not linked into it.
+add_library(cygno_sim
+  src/geometry/DetectorConstruction.cc
+  src/source/PrimaryGeneratorAction.cc
+  src/source/RadioactiveSourceSampler.cc
+  src/actions/ActionInitialization.cc
+  src/actions/EventAction.cc
+  src/actions/TrackingAction.cc
+  src/actions/TrackingMessenger.cc
+  src/actions/Run.cc
+  src/actions/RunAction.cc
+  src/output/SensitiveDetector.cc
+  src/output/HitOutput.cc)
+target_compile_features(cygno_sim PUBLIC cxx_std_17)
+target_include_directories(cygno_sim PUBLIC include "${PROJECT_SOURCE_DIR}")
+target_link_libraries(cygno_sim PUBLIC ${Geant4_LIBRARIES})
+target_compile_definitions(cygno_sim PUBLIC ${Geant4_DEFINITIONS})
+add_executable(rdecay01 app/rdecay01.cc)
+target_link_libraries(rdecay01 PRIVATE cygno_sim)
 
-#----------------------------------------------------------------------------
-# Locate sources and headers for this project
-#
-include_directories(${PROJECT_SOURCE_DIR}/include 
-                    ${Geant4_INCLUDE_DIR})
-file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
+# Preserve `cd build && ./rdecay01` while organizing the source macros in config/.
+configure_file(config/vis.mac vis.mac COPYONLY)
+file(COPY config DESTINATION "${PROJECT_BINARY_DIR}")
+file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/outfiles_V2")
 
-#----------------------------------------------------------------------------
-# Add the executable, and link it to the Geant4 libraries
-#
-add_executable(rdecay01 rdecay01.cc ${sources} ${headers})
-target_link_libraries(rdecay01 ${Geant4_LIBRARIES} )
-
-#----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build rdecay01. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
-#
-set(rdecay01_SCRIPTS
-    alpha.mac Cf238.mac Co60.mac debug.mac Gd158.mac electronicCapture.mac fullChain.mac neutron.mac
-    proton.mac No252.mac Po212.mac Ra228.mac rdecay01.in singleDecay.mac timeWindow.mac
-    timeWindowBiased.mac timeWindowBiased.data atomicDeexcitation.mac vis.mac
-  )
-
-foreach(_script ${rdecay01_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-    )
-endforeach()
-
-#----------------------------------------------------------------------------
-# Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
-#
-install(TARGETS rdecay01 DESTINATION bin)
-
+if(CYGNO_BUILD_ANALYSIS)
+  add_subdirectory(analysis)
+endif()
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(validation)
+endif()
+install(TARGETS rdecay01 RUNTIME DESTINATION bin)
+install(DIRECTORY config DESTINATION share/CYGNO_30_Sim)

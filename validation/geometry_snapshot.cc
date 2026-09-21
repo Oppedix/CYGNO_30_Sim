@@ -1,6 +1,6 @@
 // Dump geometry in construction order for exact before/after comparisons.
 // No events or physics list are needed; output goes to the requested file.
-#include "DetectorConstruction.hh"
+#include "cygno/geometry/DetectorConstruction.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Material.hh"
 #include "G4SolidStore.hh"

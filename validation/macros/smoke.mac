@@ -1,0 +1,10 @@
+# Small regression run; use a fresh process and an isolated working directory.
+# Po-212 decays promptly and exercises radioactive decay and gas-step output.
+/run/verbose 0
+/event/verbose 0
+/random/setSeeds 12345 67890
+/output/OutFile cleanup_smoke
+/detector/RadElement Cathodes
+/isotope/AtomicNumber 84
+/isotope/MassNumber 212
+/run/beamOn 20

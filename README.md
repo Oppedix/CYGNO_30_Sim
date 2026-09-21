@@ -1,89 +1,62 @@
 # CYGNO_30_Sim
 
-Geant4 simulation of the CYGNO module array and radioactive backgrounds, derived
-from the `rdecay01` example. Geant4 transports particles and writes ROOT-format
-step data; CERN ROOT is used separately for post-processing in `analysis/`.
+Geant4 radioactive-background simulation of 75 modules (5 × 5 × 3), with
+150 sensitive gas cells and separate ROOT analysis. Derived from Geant4's
+`rdecay01` example; see [license and provenance](legacy/README.md).
 
-The current array has **5 × 5 × 3 modules**, with two sensitive gas cells per
-module. Start with [the source reading guide](docs/CODE_GUIDE.md) and
-[the layout definition](docs/LAYOUT.md), then review
-[known issues](docs/KNOWN_ISSUES.md) before producing a new background study.
-The inherited `README` describes the original Geant4 example and is not the
-specification of the current CYGNO application.
+## Build
 
-## Build and run locally
+Requires CMake ≥3.16, a C++17 compiler and Geant4 11 with its datasets.
+Qt/visualization is needed for the interactive viewer. CERN ROOT 6 and a Python
+interpreter with PyROOT are needed for analysis and the complete test suite;
+the simulation itself writes ROOT through Geant4 without linking CERN ROOT.
+Source your installation's `geant4.sh` first. From this repository:
 
 ```sh
-export HEP_HOME="/Users/giuseppemariaoppedisano/Desktop/GSSI/PHD/CYGNO/SolarNu/SimSamuele/hep"
-source "$HEP_HOME/software/geant4-11.4.2/bin/geant4.sh"
-cd "$HEP_HOME/projects/CYGNO_30_Sim"
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-mkdir -p build/outfiles_V2
-cd build
-./rdecay01                         # Qt UI, executing vis.mac
-# Or, in a separate process:
-./rdecay01 ../validation/smoke.mac  # 20 fixed-seed Po-212 events
+cmake -S . -B ../../build/cygno-final -DCMAKE_BUILD_TYPE=Release \
+  -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE="$(command -v python3)"
+cmake --build ../../build/cygno-final --parallel
 ```
 
-The tested local setup uses Geant4 11.4.2 with Qt and multithreading, Apple Silicon
-and Apple Clang 21. ROOT 6.40.04 is available for analysis but is not linked into
-the simulation executable. After source edits, repeat just the build command.
-CMake copies its listed macros into `build/`; macros under `mymacros/` and
-`mymacros_single/` need an explicit relative or absolute path.
+Choose a **new** build directory when recovering old work. In-source builds are
+rejected. For simulation only, omit `CYGNO_BUILD_ANALYSIS`; disable tests with
+`-DBUILD_TESTING=OFF` if Python/PyROOT is unavailable. Headless configurations can
+use `-DWITH_GEANT4_UIVIS=OFF`.
 
-The active physics is `QGSP_BIC_EMZ` plus `G4RadioactiveDecayPhysics`, selected in
-`rdecay01.cc`. The custom `PhysicsList` class is compiled but not selected.
-The default is one worker. An optional second argument sets the worker count:
-`./rdecay01 ../validation/chain.mac 2`.
+## Run and output
 
-`/output/OutFile example` writes under `outfiles_V2/example.root` relative to the
-working directory, with worker files such as `example_t0.root` in MT mode.
-Without that command the basename is also `outfiles_V2`. Use distinct output
-basenames or isolated working directories to avoid replacing earlier results.
-
-## Configure a radioactive run without editing C++
-
-Save this as a macro, then pass its path to `rdecay01` from `build/`:
-
-```text
-/random/setSeeds 12345 67890
-/isotope/AtomicNumber 83
-/isotope/MassNumber 211
-/detector/RadElement Cathodes
-/rdecay01/fullChain true
-/rdecay01/timeWindow 0 s 2 h
-/output/OutFile bi211_cathodes
-/run/beamOn 40
+```sh
+# Interactive geometry viewer:
+(cd ../../build/cygno-final && ./rdecay01)
+# A small radioactive run (Po-212 in cathodes, fixed seeds, 20 events):
+(cd ../../build/cygno-final && ./rdecay01 config/cygno/po212-smoke.mac)
 ```
 
-Use a fresh process for each isotope/run. Component choices are `Cathodes`,
-`GEMsOuter`, `GEMsCore`, `RingSupports`, `RingStrips`, `Resistors`, `Vessel`, `Lens`,
-`Sensors`. `/stopChain/ZStopDecay` and `/stopChain/AStopDecay` select a ground-state
-stopping ion; `/rdecay01/fullChain false` disables daughter-ion tracking.
-See the [command and output guide](docs/CODE_GUIDE.md) for exact semantics and
-preserved limitations, including the first-event source-position ordering.
+Files appear in `outfiles_V2/` relative to the process working directory, created
+automatically. The example produces `cleanup_smoke_t0.root`; the optional second
+argument selects workers, e.g. `./rdecay01 config/cygno/po212-smoke.mac 2`.
+Use a separate run directory/basename to retain outputs. Each worker writes its
+own `Hits` tree. Macro configuration and matching source must accompany raw files.
 
-## Change the layout
+## Analysis and tests
 
-Edit the counts and pitches in [common/DetectorGeometry.hh](common/DetectorGeometry.hh).
-Geant4 placement and the four ROOT plotting programs consume that same definition.
-Current pitches are **504, 804, 2285.30 mm**. The Z pitch includes both drift regions,
-GEMs, lenses and sensors, with a 4 mm gap between complete module envelopes.
-Do not change internal dimensions to adjust the grid. Rebuild the simulation and
-ROOT programs together and repeat the [validation checks](validation/README.md).
-The current ROOT geometry map is for new 5 × 5 × 3 files; use historical code for
-old 25 × 3 output. Save the source revision/configuration beside production data.
+```sh
+../../build/cygno-final/analysis/SimpleProcessEvents \
+  ../../build/cygno-final/outfiles_V2/cleanup_smoke_t0.root /tmp/processed.root \
+  --assume-geometry cygno-5x5x3-v1
+ctest --test-dir ../../build/cygno-final --output-on-failure
+# Known failure, deliberately outside the passing suite:
+python3 validation/run_checks.py bi212 ../../build/cygno-final
+```
 
-`DetectorConstruction` now separates materials, world, cathodes, GEMs, field cage,
-vessel, optics and gas construction. Every component uses a common module-center
-translation. Physics, material definitions, module internals, valid source sampling,
-decay policies, hit columns, cuts and normalization constants are retained.
-The single copper vessel and World are resized to the new array; details and
-physical consequences are documented in [LAYOUT.md](docs/LAYOUT.md).
+The geometry assumption is explicit because the unchanged raw schema has no
+geometry marker. Only use it for data whose source establishes this layout.
+Normalized plotters require a study configuration; old masses and assays are
+**not production defaults**. See [analysis and normalization](docs/ANALYSIS.md).
 
-Build, Qt visualization, geometry/material comparisons, source lookup, ROOT geometry
-checks and small radioactive runs passed. Existing internal overlaps and a
-reproducible Bi-212 decay failure remain documented in
-[KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md); the tests are not a validation of the
-underlying scientific model or the complete legacy analysis pipeline.
+Read [architecture and event lifecycle](docs/CODE_GUIDE.md),
+[geometry](docs/LAYOUT.md), [source and decay policy](docs/SOURCES.md),
+[output schema](docs/OUTPUT.md), [validation](validation/README.md),
+[known scientific issues](docs/KNOWN_ISSUES.md) and the
+[recovery report](docs/REFACTOR_REPORT.md). Software checks do not validate the
+scientific detector or contamination model.
