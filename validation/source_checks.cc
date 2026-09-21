@@ -16,11 +16,13 @@
 #include <stdexcept>
 #include <cmath>
 void require(bool ok, const char* message) { if(!ok) throw std::runtime_error(message); }
-int main() {
+int main(int argc, char** argv) {
+  if (argc > 2) return 1;
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
   G4RunManager manager;
-  auto* detector=new DetectorConstruction;
+  auto* detector=new DetectorConstruction(argc == 2 ? cygno::geometry::ParseLayoutId(argv[1])
+                                                    : cygno::geometry::LayoutId::Current5x5x3);
   manager.SetUserInitialization(detector);
   G4PhysListFactory factory;
   auto* physics=factory.GetReferencePhysList("QGSP_BIC_EMZ");

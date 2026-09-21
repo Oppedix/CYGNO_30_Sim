@@ -47,17 +47,51 @@
 #include "G4VisExecutive.hh"
 #include "G4PhysListFactory.hh"
 
+#include <iostream>
+#include <string>
+#include <vector>
+
 int main(int argc,char** argv) {
-  //argc is the number of command line arguments,
-  //argv is an array of character strings representing the arguments
-
-  //For instance ./rdecay01 has argc=1 and argv[0]="./rdecay01", 
-  // while ./rdecay01 vis.mac has argc=2 and argv[1]="vis.mac"  
-
-  //if no macro was provided, the application will run in interactive mode and a G4UIExecutive will be created.
-  G4UIExecutive* ui = 0;
-  if (argc == 1) ui = new G4UIExecutive(argc,argv);
-  
+  // Select the immutable layout before Geant4 initializes (before macro execution).
+  // Existing `rdecay01 macro [workers]` invocations still select the current layout.
+  auto layout = cygno::geometry::LayoutId::Current5x5x3;
+  std::vector<std::string> positional;
+  bool layoutSpecified = false;
+  int workers = 1;
+  try {
+    for (int i=1; i<argc; ++i) {
+      const std::string arg = argv[i];
+      if (arg == "--help") {
+        std::cout << "Usage: rdecay01 [macro [workers]] [--layout legacy-25x3|cygno-5x5x3-v1]\n";
+        return 0;
+      }
+      if (arg == "--layout") {
+        if (layoutSpecified || i+1 == argc)
+          throw std::invalid_argument("Specify --layout exactly once with a profile name");
+        layout = cygno::geometry::ParseLayoutId(argv[++i]);
+        layoutSpecified = true;
+      } else if (arg.rfind("--",0) == 0) {
+        throw std::invalid_argument("Unknown option: " + arg);
+      } else positional.push_back(arg);
+    }
+    if (positional.size() > 2) throw std::invalid_argument("Expected macro and optional worker count");
+    if (positional.size() == 2) {
+      std::size_t end = 0;
+      workers = std::stoi(positional[1],&end);
+      if (end != positional[1].size() || workers < 1)
+        throw std::invalid_argument("The number of worker threads must be a positive integer");
+    }
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << "\nUse --help for usage.\n";
+    return 1;
+  }
+  std::cout << "CYGNO layout=" << cygno::geometry::LayoutName(layout)
+            << " detector_model=code-compatible source_model=historical\n";
+  G4UIExecutive* ui = nullptr;
+  if (positional.empty()) {
+    int uiArgc = 1; // Geometry options belong to this application, not the UI.
+    ui = new G4UIExecutive(uiArgc,argv);
+  }
 
   // Macro /random/setSeeds can override this wall-clock seed for regression runs.
   //choose the Random engine
@@ -72,25 +106,13 @@ int main(int argc,char** argv) {
   //construct the run manager
   auto runManager = G4RunManagerFactory::CreateRunManager();  
 
-  runManager->SetNumberOfThreads(1);
-  //runManager->SetVerboseLevel(0);
-  
-  // Optional batch argument selects the worker count; one worker is the default.
-  if (argc==3) {
-    G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
-    if (nThreads < 1) {
-      G4cerr << "The number of worker threads must be positive." << G4endl;
-      delete runManager;
-      return 1;
-    }
-    runManager->SetNumberOfThreads(nThreads);
-  }
+  runManager->SetNumberOfThreads(workers);
   
   //
   //set mandatory initialization classes
   //
 
-  DetectorConstruction* theDetector = new DetectorConstruction();
+  DetectorConstruction* theDetector = new DetectorConstruction(layout);
   
   runManager->SetUserInitialization(theDetector);
   //the above makes sure geant calls the Construct() method of DetectorConstruction to build the geometry.
@@ -132,7 +154,7 @@ int main(int argc,char** argv) {
   else  {
     //batch mode
     G4String command = "/control/execute ";
-    G4String fileName = argv[1];
+    G4String fileName = positional.front();
     commandStatus=UImanager->ApplyCommand(command+fileName);
   }
   

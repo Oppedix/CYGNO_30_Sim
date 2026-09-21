@@ -26,9 +26,18 @@ std::string SolidSignature(G4VSolid* solid) {
 }
 int main(int argc, char** argv) {
   if (argc < 2) return 1;
+  auto layout = cygno::geometry::LayoutId::Current5x5x3;
+  bool overlaps = false;
+  for (int i=2; i<argc; ++i) {
+    const std::string arg = argv[i];
+    if (arg == "overlaps") overlaps = true;
+    else if (arg == "--layout" && i+1 < argc)
+      layout = cygno::geometry::ParseLayoutId(argv[++i]);
+    else return 1;
+  }
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
-  DetectorConstruction detector;
+  DetectorConstruction detector(layout);
   detector.Construct();
   static_cast<G4VUserDetectorConstruction&>(detector).ConstructSDandField();
   std::ofstream out(argv[1]);
@@ -52,7 +61,7 @@ int main(int argc, char** argv) {
         << min.x()/mm << '\t' << min.y()/mm << '\t' << min.z()/mm << '\t'
         << max.x()/mm << '\t' << max.y()/mm << '\t' << max.z()/mm << '\t'
         << (logical->GetSensitiveDetector() != nullptr) << '\t' << signatures[solid] << '\n';
-    if (argc > 2 && (logical->GetName()=="Vessel" ||
+    if (overlaps && (logical->GetName()=="Vessel" ||
         (std::abs(p.x()) < 1*mm && std::abs(p.y()) < 401*mm && std::abs(p.z()) < 1142*mm))) {
       if (logical->GetName() != "World") volume->CheckOverlaps(2000,0,true,5);
     }

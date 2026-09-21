@@ -13,12 +13,13 @@
 
 int main(int argc, char** argv)
 {
-  if (argc != 2) return 1;
+  if (argc != 2 && argc != 3) return 1;
   std::ofstream out(argv[1]);
   if (!out) return 1;
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
-  DetectorConstruction detector;
+  DetectorConstruction detector(argc == 3 ? cygno::geometry::ParseLayoutId(argv[2])
+                                           : cygno::geometry::LayoutId::Current5x5x3);
   detector.Construct();
   // Invoke the public base interface (the override is private).
   static_cast<G4VUserDetectorConstruction&>(detector).ConstructSDandField();

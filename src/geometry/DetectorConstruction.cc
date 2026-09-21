@@ -52,9 +52,10 @@ G4VisAttributes* SolidColour(const G4Colour& colour) {
 }
 }
 
-DetectorConstruction::DetectorConstruction() : G4VUserDetectorConstruction()
+DetectorConstruction::DetectorConstruction(geo::LayoutId layout)
+  : G4VUserDetectorConstruction(), fLayoutProfile(geo::BuildLayoutProfile(layout))
 {
-  const auto half = geo::WorldHalfSize();
+  const auto half = fLayoutProfile.worldHalfSize;
   fWorldSize_x = 2*half.x*mm;
   fWorldSize_y = 2*half.y*mm;
   fWorldSize_z = 2*half.z*mm;
@@ -70,7 +71,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   fListLens.clear(); fListSensors.clear(); fListDetector.clear();
   fMassMap = {{"Cathodes",0}, {"RingSupports",0}, {"RingStrips",0}, {"Resistors",0},
               {"GEMsOuter",0}, {"GEMsCore",0}, {"Vessel",0}, {"Lens",0}, {"Sensors",0}};
-  fModuleLayout = geo::BuildModuleLayout();
+  fModuleLayout = fLayoutProfile.modules;
   fMaterials = DefineMaterials();
   auto* world = BuildWorld();
   BuildCathodes();
@@ -308,7 +309,7 @@ void DetectorConstruction::BuildFieldCage()
 void DetectorConstruction::BuildVessel()
 {
   fVesselWidth=geo::vesselWall*mm;
-  const auto half=InGeant4Units(geo::vesselOuterHalfSize);
+  const auto half=InGeant4Units(fLayoutProfile.vesselOuterHalfSize);
   auto* outer = new G4Box("VesselOuterShape",half.x(),half.y(),half.z());
   auto* inner = new G4Box("VesselOuterShape",half.x()-fVesselWidth,
                          half.y()-fVesselWidth,half.z()-fVesselWidth);

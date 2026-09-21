@@ -1,18 +1,21 @@
 # Background-study progress
 
-Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 0 COMPLETE**.
-First incomplete phase: **Phase 1**, deliberately not started under the current
-instruction to finish Phase 0 and stop.
+Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 1 COMPLETE**.
+First incomplete phase: **Phase 2**, layout-aware analysis. No Phase 2 changes
+are included in this checkpoint.
 
 ## Recovery contract
 
 - Baseline: `74cc26f` (`code refactoring`). Branch: `study/background-reproduction`.
 - At resume, inspect `git status`, branch, last ten commits, unstaged/staged diffs,
   then read this file and resume the first incomplete phase. Never reset the branch.
-- Complete and validate each phase separately, update this file, and make a small
-  local commit. Record its hash here in a following checkpoint-record commit
-  (a commit cannot contain its own final hash). Never automatically push or merge.
-- Current authorization: finish **only Phase 0**, commit locally, then stop.
+- Complete and validate each phase separately, update this file before committing,
+  and make one logical local commit per completed phase (latest user instruction).
+  A commit cannot contain its own final hash: identify the current phase commit
+  by its exact subject below, and record its resolved hash in the next phase's
+  progress update. Never automatically push or merge.
+- Current authorization supersedes the earlier Phase-0-only stop: continue the
+  first incomplete phase from this record, without repeating completed phases.
 - `local_refs/` is read-only research material: never add, edit, move, commit or
   push it. The originally stated `local_context/` is absent and remains protected.
 - Preserve the completed repository refactor; no broad architectural cleanup.
@@ -100,12 +103,56 @@ Scientific questions explicitly deferred to their requested phases:
 - Phase 9: full Th-232 preflight and Bi-212/Pb-208 failure investigation, including
   effective dataset versions and historical environment/branching provenance.
 
+## Phase 1 completion
+
+- Added `LayoutId`/`LayoutProfile` to the existing shared geometry header, with
+  ordered centers/IDs, expected count, occupied envelope and vessel/World bounds.
+  Both profiles use the same code-compatible module dimensions and builders.
+- `DetectorConstruction` now receives the immutable layout selection. The source
+  sampler, internal solids/materials/offsets, physics and raw Hits schema are
+  unchanged. Default selection remains `cygno-5x5x3-v1`.
+- `rdecay01 [macro [workers]] --layout legacy-25x3|cygno-5x5x3-v1` selects before
+  initialization; invalid/duplicate options are rejected. Startup logs identify
+  layout, code-compatible detector model and historical source policy.
+- Added an independent historical 75-center TSV fixture and three CTest groups:
+  profile contracts, both constructed geometries/CLI/smoke transport, and legacy
+  source/RNG/mass validation. Existing checks are reused and extended. Both have
+  75 modules, 150 gas cells, 3,227 placements, matching 43-component local patterns,
+  disjoint module envelopes, correct gas centers and vessel/World containment.
+- Both retain 48 representative inherited overlap warnings; these are diagnostic,
+  not an overlap-free certification. Source contamination policy remains unchanged.
+  Constructed vessel masses reported by checks: legacy approximately 4116.56 kg,
+  current approximately 4203.49 kg; future normalization must use actual geometry.
+- Release build in `../../build/cygno-study` succeeded. All **8/8 CTest groups
+  passed**, 40.77 seconds, in the Phase 0 environment. Tests include fresh
+  20-primary Po-212 runs for both layouts and explicit/default current equality.
+- Before changes, saved `geometry.txt`, `placements.tsv` and a fresh fixed-seed
+  smoke run in `../../build/cygno-study-phase1-baseline/`. After changes, both
+  geometry files are byte-identical and all 13,509 current-layout Hits rows and
+  branch schema match exactly. Legacy smoke also produced 13,509 rows (local
+  Po-212 smoke is not a layout-sensitive background comparison).
+- Post-change profile artifacts: `../../build/cygno-study/validation-results/`
+  `layouts-94nfze72/`; suite log: `../../build/cygno-study/Testing/Temporary/LastTest.log`.
+  No production matrix was launched; these are geometry/transport checks, not
+  completed Study A/B campaigns.
+- README, layout guide and validation guide describe the new selection and
+  explicitly state that legacy analysis requires Phase 2. No thesis/reference
+  material was touched. Geometry-header fingerprint changes conservatively with
+  header edits; backward metadata compatibility must be addressed in Phase 2.
+
+Phase 1 local commit subject: `feat(study): add validated legacy and current layout profiles`.
+Resolve its hash with:
+
+```sh
+git log -1 --format=%H --fixed-strings --grep='feat(study): add validated legacy and current layout profiles'
+```
+
 ## Phase ledger
 
 | Phase | Status | Local commit |
 |---|---|---|
 | 0 Audit and experiment specification | COMPLETE | `7c02de287c5a1e88f360e00122fd5c0b8069d438` |
-| 1 Multiple layouts | NOT STARTED | - |
+| 1 Multiple layouts | COMPLETE | phase commit identified by exact subject above |
 | 2 Layout-aware analysis | NOT STARTED | - |
 | 3 Published source matrix | NOT STARTED | - |
 | 4 Study runner | NOT STARTED | - |
@@ -118,9 +165,15 @@ Scientific questions explicitly deferred to their requested phases:
 
 ## Continuation
 
-Phase 0 is complete; stop after its local checkpoint. When the user authorizes
-continuation, inspect Git state and this file, then begin Phase 1 only: introduce
-the two layouts using the existing code-compatible internals, with numerical
-regression of the current layout. Do not repeat the audit or restart the refactor.
-Do not push or merge to main. Use the original ten-phase follow-on requirements
-when proceeding beyond Phase 1; this checkpoint does not mark them complete.
+Resume **Phase 2** after inspecting Git state and reading this file. Record the
+Phase 1 commit hash, then make the existing SimpleProcessEvents, shared ROOT
+geometry reconstruction, fiducial cuts and normalized plotters layout-aware.
+Require consistent layout/model identity (prefer separate run metadata) and reject
+mismatched assumptions before processing/plotting. Keep the 12 raw Hits branches
+unchanged and reuse the existing analysis; add positive and mismatch tests for
+both layouts. Do not run legacy output through a current-layout assumption.
+The current constructor's `GetLayoutProfile()` supplies geometry identity/data.
+
+Do not repeat Phase 0 or Phase 1 or restart the refactor. Complete and validate
+Phase 2 before Phase 3. The remaining phase ledger and BACKGROUND_EXPERIMENT.md
+retain the original follow-on study requirements. Do not push or merge to main.

@@ -33,6 +33,37 @@ if mode=='geometry':
     check(out/'placements.tsv',out/'placements.tsv',same_layout=True)
     assert len(re.findall(r'SOURCE_OK ',audit))==9
     print('Internal overlap warnings (diagnostic):',audit.count('GeomVol1002'))
+elif mode=='layouts':
+    from check_geometry import check
+    from check_hits import check as check_hits
+    from compare_hits import read_hits
+    out=Path(tempfile.mkdtemp(prefix='layouts-',dir=root))
+    profiles=('cygno-5x5x3-v1','legacy-25x3')
+    for profile in profiles:
+        directory=out/profile; directory.mkdir()
+        run([build/'validation/geometry_snapshot',directory/'geometry.txt',profile],directory,'snapshot.log')
+        audit=run([build/'validation/geometry_audit',directory/'placements.tsv','overlaps','--layout',profile],directory,'audit.log')
+        assert len(re.findall(r'SOURCE_OK ',audit))==9
+        check(out/profiles[0]/'placements.tsv',directory/'placements.tsv',same_layout=True,profile=profile)
+        print(profile, 'inherited overlap warnings (diagnostic):',audit.count('GeomVol1002'))
+        log=run([build/'rdecay01',repo/'validation/macros/smoke.mac','1','--layout',profile],directory,'smoke.log')
+        assert f'CYGNO layout={profile} detector_model=code-compatible source_model=historical' in log
+        assert 'The run was 20 Po212' in log and 'FatalException' not in log
+        files=list((directory/'outfiles_V2').glob('*.root'))
+        assert len(files)==1
+        check_hits(str(directory/'placements.tsv'),20,[str(files[0])])
+    # Compare an explicit current-profile run with the backward-compatible default.
+    directory=out/'default'; directory.mkdir()
+    run([build/'rdecay01',repo/'validation/macros/smoke.mac'],directory,'smoke.log')
+    raw='outfiles_V2/cleanup_smoke_t0.root'
+    assert read_hits(directory/raw)==read_hits(out/profiles[0]/raw)
+    # Misspellings/malformed options must never launch a different layout/job.
+    for args in [ ['--layout','25x3'], ['--layout'], ['--unknown'],
+                  ['--layout',profiles[0],'--layout',profiles[1]],
+                  ['missing.mac','0'], ['missing.mac','2junk'], ['a','b','c'] ]:
+        result=subprocess.run([str(build/'rdecay01'),*args],cwd=directory,capture_output=True,text=True)
+        assert result.returncode!=0 and 'Use --help' in result.stderr, args
+    print('PASS: both geometry profiles, local internals, source lists, CLI and smoke transport;',out)
 elif mode=='transport':
     from check_hits import check
     out=Path(tempfile.mkdtemp(prefix='transport-',dir=root))

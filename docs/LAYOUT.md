@@ -1,4 +1,54 @@
-# The 5 × 5 × 3 detector layout
+# Detector layout profiles
+
+Two runtime profiles use the same **code-compatible** module internals and
+historical source sampler. Select a profile before geometry construction:
+
+```sh
+/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout legacy-25x3
+/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout cygno-5x5x3-v1
+```
+
+The option also works before the macro. Omitting it retains `cygno-5x5x3-v1`;
+unknown or duplicate layout options fail before initialization. `--help` prints
+usage. With no macro the viewer uses the selected layout. Use separate working
+directories for runs and retain the command and log: the application prints
+layout, detector model and source policy at startup. The raw Hits schema is
+unchanged. **Phase 2 is still required to process legacy output with the supported
+analysis**; do not label it as current geometry to bypass the processor's guard.
+
+`common/DetectorGeometry.hh` provides `LayoutId`, `ParseLayoutId`,
+`BuildModuleLayout(id)` and `BuildLayoutProfile(id)`. The profile supplies the
+ordered placements and IDs, expected count, complete occupied bounds and derived
+vessel/World half-sizes. `GasCenter` and `GasCopyNumber` reconstruct its sensitive
+volumes. `DetectorConstruction` takes an immutable layout ID and uses the existing
+component builders; there is no duplicate construction class or source policy.
+The unqualified constants and no-argument helpers retain the current profile.
+
+## Historical 25 × 3 profile
+
+`legacy-25x3` reproduces the center ordering in Samuele's `26ddbdb` gas/cathode
+loops: outer `i=-12..12`, inner `j=-1..1`, center `(i*504,j*804,0)` mm and module
+ID `3*(i+12)+(j+1)`. Thus all 75 cathodes share Z=0; each module contains its
+own positive/negative drift regions. Gas copy `side*75+moduleId` reproduces the
+historical gas counter exactly. Both profiles retain the current unique component
+copy/name scheme. Samuele's repeated cathode copy `i+37` is not reused; see the
+[exact mapping](BACKGROUND_EXPERIMENT.md#axis-1-module-layout) and independent
+[75-center fixture](../validation/references/legacy-25x3-centers.tsv).
+
+The legacy occupied bounds are (-6298.145,-1204.1275,-1140.65) to
+(6298.075,1204.660,1140.65) mm. Its one common vessel has full outer dimensions
+12616 × 2428 × 1028.8 mm, with the same 5 mm copper wall. World is
+14000 × 3428 × 3281.3 mm, enlarged from Samuele's 14000 × 3000 × 3000 mm by the
+current 500 mm margin rule. The drift/GEM/cage components fit inside the cavity;
+the optics sit outside, with no wall crossings. Vessel mass changes with layout
+and must be read from the constructed geometry for normalization.
+
+Module IDs preserve ordering/side semantics, not world coordinates, across
+layouts. Both have module 37 at the origin. No sampler RNG draws or internal
+dimensions changed. This does not promise trajectory equality to Samuele's
+historical executable.
+
+## Current 5 × 5 × 3 profile (unchanged numerical baseline)
 
 This layout was already present at baseline `05a2b92`. References below to the
 old layout describe the earlier 25 × 3 → 5 × 5 × 3 migration, not this recovery.
@@ -117,11 +167,10 @@ ROOT vectors. All four plotting sources use that adapter, including the exact
 0.25 mm cathode offset. There is no separate 3 mm detector-gap parameter anymore.
 The original 20 mm fiducial inset and all other cuts are unchanged.
 
-To change the layout, edit `modulesX/Y/Z` and the named gap/pitch definitions in
-`common/DetectorGeometry.hh`, then rebuild both simulation and analysis. The
-component builders do not need their placement loops rewritten. The current
-scheme handles translations only; adding rotations requires transforming both
-local component coordinates and source sampling consistently.
+Select the two supported layouts with `--layout`; do not edit module counts to
+switch studies. New profiles would need their own explicit ID and validation.
+The scheme handles translations only; adding rotations requires transforming
+both local component coordinates and source sampling consistently.
 
 The envelope formulas describe the current internals. If internals are explicitly
 changed in a later study, recompute the envelope and update its checks too. Compile-

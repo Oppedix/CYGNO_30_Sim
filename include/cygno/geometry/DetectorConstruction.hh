@@ -52,7 +52,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 {
   public:
   
-    DetectorConstruction();
+    explicit DetectorConstruction(cygno::geometry::LayoutId layout =
+        cygno::geometry::LayoutId::Current5x5x3);
    ~DetectorConstruction();
 
     // Geant4 calls this during kernel initialization to build the full World.
@@ -99,6 +100,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   // G4LogicalVolume stores its sensitive detector separately for each worker.
   SensitiveDetector* GetSensitiveDetector();
   const std::map<G4String, G4double>& GetComponentMasses() const { return fMassMap; }
+  const cygno::geometry::LayoutProfile& GetLayoutProfile() const { return fLayoutProfile; }
   
   private:
   struct Materials {
@@ -118,6 +120,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
       std::vector<G4String>& sourceNames);
 
   Materials fMaterials{};
+  const cygno::geometry::LayoutProfile fLayoutProfile;
   std::vector<cygno::geometry::ModulePlacement> fModuleLayout;
   G4LogicalVolume* fWorldLogical = nullptr;
   std::map<G4String, G4double> fMassMap;
@@ -177,4 +180,3 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
-

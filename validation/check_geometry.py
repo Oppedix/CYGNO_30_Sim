@@ -28,7 +28,8 @@ def local_signature(row, center):
             *(round(row[axis]-center[i], 9) for i,axis in enumerate('xyz')))
 
 
-def check(before_path, after_path, same_layout=False):
+def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
+    assert profile in ('cygno-5x5x3-v1', 'legacy-25x3'), profile
     before, after = read(before_path), read(after_path)
     assert len(before) == len(after) == 3227
     assert len({r['name'] for r in after}) == len(after), 'Duplicate physical names'
@@ -52,9 +53,25 @@ def check(before_path, after_path, same_layout=False):
     envelopes={}
     world=next(r for r in after if r['logical']=='World')
     vessel=next(r for r in after if r['logical']=='Vessel')
+    assert set(new_modules) == set(range(75))
+    if profile == 'legacy-25x3':
+        # Reference transcribed from Samuele 26ddbdb's placement loops, independent
+        # of the C++ profile factory. All legacy cathodes share one Z plane.
+        with (Path(__file__).parent/'references/legacy-25x3-centers.tsv').open() as f:
+            reference_centers = list(csv.DictReader(f, delimiter='\t'))
+        assert len(reference_centers) == 75
+        expected_centers = {int(r['module_id']): tuple(float(r[a]) for a in 'xyz') for r in reference_centers}
+        expected_vessel, expected_world = (6308,1214,514.4), (7000,1714,1640.65)
+    else:
+        expected_centers = {m: ((m//15-2)*504, ((m//3)%5-2)*804, (m%3-1)*2285.3) for m in range(75)}
+        expected_vessel, expected_world = (1268,2018,2799.7), (7000,2518,3925.95)
+    for i,axis in enumerate('xyz'):
+        assert math.isclose(vessel[axis+'max'], expected_vessel[i], abs_tol=1e-9)
+        assert math.isclose(vessel[axis+'min'], -expected_vessel[i], abs_tol=1e-9)
+        assert math.isclose(world[axis+'max'], expected_world[i], abs_tol=1e-9)
+        assert math.isclose(world[axis+'min'], -expected_world[i], abs_tol=1e-9)
     for module_id,cathode in new_modules.items():
-        ix,iy,iz=module_id//15,(module_id//3)%5,module_id%3
-        expected=((ix-2)*504,(iy-2)*804,(iz-1)*2285.3)
+        expected=expected_centers[module_id]
         assert all(math.isclose(cathode[a],expected[i],abs_tol=1e-9) for i,a in enumerate('xyz'))
         envelopes[module_id]=[[math.inf]*3,[-math.inf]*3]
     for row in after:
@@ -74,9 +91,12 @@ def check(before_path, after_path, same_layout=False):
         inside=all(lo[i] > vessel[a+'min']+5 and hi[i] < vessel[a+'max']-5 for i,a in enumerate('xyz'))
         outside=any(hi[i] < vessel[a+'min'] or lo[i] > vessel[a+'max'] for i,a in enumerate('xyz'))
         assert inside or outside, ('Vessel intersection',row['name'])
+        if row['logical'] not in ('Lens','Sensor'):
+            assert inside, ('Drift/GEM/cage component outside vessel', row['name'])
         if row['sensitive']=='1':
             assert row['logical']=='GasVolume'
             gas.add(row['copy'])
+            assert all(math.isclose(row[a],center[i],abs_tol=1e-9) for i,a in enumerate('xy'))
             side=row['copy']//75
             assert math.isclose(row['z']-center[2],250.25 if side==0 else -250.25,abs_tol=1e-9)
     assert gas == set(range(150))

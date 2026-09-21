@@ -1,6 +1,7 @@
 # CYGNO_30_Sim
 
-Geant4 radioactive-background simulation of 75 modules (5 × 5 × 3), with
+Geant4 radioactive-background simulation of 75 modules (5 × 5 × 3 or historical
+25 × 3), with
 150 sensitive gas cells and separate ROOT analysis. Derived from Geant4's
 `rdecay01` example; see [license and provenance](legacy/README.md).
 
@@ -37,6 +38,19 @@ automatically. The example produces `cleanup_smoke_t0.root`; the optional second
 argument selects workers, e.g. `./rdecay01 config/cygno/po212-smoke.mac 2`.
 Use a separate run directory/basename to retain outputs. Each worker writes its
 own `Hits` tree. Macro configuration and matching source must accompany raw files.
+
+Select layout without rebuilding:
+
+```sh
+/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout legacy-25x3
+/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout cygno-5x5x3-v1
+```
+
+The default remains `cygno-5x5x3-v1`. Both use the unchanged code-compatible
+internals and historical sampler. At this Phase 1 checkpoint, legacy geometry
+and smoke transport are validated, but layout-aware analysis is still Phase 2:
+do not process legacy files under a current-layout assumption. See
+[study progress](docs/STUDY_PROGRESS.md) and [layout details](docs/LAYOUT.md).
 
 ## Analysis and tests
 
