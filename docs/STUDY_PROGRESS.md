@@ -80,9 +80,11 @@ axes, exact historical coordinates/order and copy mapping, current numerical
 layout, vessel/world rules, thesis discrepancies, and analysis/validation gates.
 It also records the Table 7.1 assay transcription target, broken-chain boundaries,
 published rates and initial historical-table discrepancies. No simulation,
-analysis, configuration or validation code was changed. No Phase 0 research or
-implementation tasks remain; only the local commit/hash recording closes this
-checkpoint.
+analysis, configuration or validation code was changed. Phase 0 was committed
+locally as `7c02de287c5a1e88f360e00122fd5c0b8069d438` with message
+`docs(study): complete phase 0 background experiment audit`. This subsequent
+documentation-only checkpoint records that immutable hash; it is not another
+study phase. No Phase 0 tasks remain.
 
 Scientific questions explicitly deferred to their requested phases:
 
@@ -102,7 +104,7 @@ Scientific questions explicitly deferred to their requested phases:
 
 | Phase | Status | Local commit |
 |---|---|---|
-| 0 Audit and experiment specification | COMPLETE | pending local commit |
+| 0 Audit and experiment specification | COMPLETE | `7c02de287c5a1e88f360e00122fd5c0b8069d438` |
 | 1 Multiple layouts | NOT STARTED | - |
 | 2 Layout-aware analysis | NOT STARTED | - |
 | 3 Published source matrix | NOT STARTED | - |
