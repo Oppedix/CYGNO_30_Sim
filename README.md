@@ -64,6 +64,8 @@ python3 validation/run_checks.py bi212 ../../build/cygno-final
 New raw files carry a separate `RunMetadata` tree. Unversioned files require both
 `--assume-layout PROFILE --assume-model code-compatible`, after verifying their
 source revision. Assumptions cannot override conflicting file metadata.
+The published [26-contribution source matrix](docs/STUDY_SOURCES.md) now supports
+explicit kg/piece normalization and categories from separately scaled materials.
 Normalized plotters require a study configuration; old masses and assays are
 **not production defaults**. See [analysis and normalization](docs/ANALYSIS.md).
 

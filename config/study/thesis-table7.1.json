@@ -1,0 +1,534 @@
+{
+  "schema_version": 1,
+  "matrix_id": "thesis-table7.1-v1",
+  "provenance": {
+    "reference": "local_refs/context_solarnuwithcygno.pdf",
+    "sha256": "33d8b3c099c88bec4c7b1acaf0944305b0a85229ab4264e8f76445092c0d8825",
+    "table": "7.1",
+    "printed_pages": [
+      186,
+      187,
+      188
+    ],
+    "figure_7_5_input_revision": "unresolved",
+    "notes": [
+      "Acrylic upper limits are used as stated values, following the thesis.",
+      "Entries marked x are omitted, not represented as zero-activity jobs.",
+      "Assay material labels do not assert that code-compatible geometry matches the thesis materials or dimensions.",
+      "No generated-primary counts or geometry quantities are inferred from the thesis production statement."
+    ]
+  },
+  "seconds_per_year": 31536000,
+  "thesis_rounded_seconds_per_year": 31500000,
+  "quantity_policy": "constructed-component-mass-kg-or-placement-count",
+  "contributions": [
+    {
+      "id": "GEMsCore_U238",
+      "component": "GEMsCore",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 0.000296,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "GEMsCore_Th232",
+      "component": "GEMsCore",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 5.69e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "GEMsCore_K40",
+      "component": "GEMsCore",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 7.12e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "GEMsOuter_U238",
+      "component": "GEMsOuter",
+      "category": "GEMs",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "GEMsOuter_Th232",
+      "component": "GEMsOuter",
+      "category": "GEMs",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "RingSupports_U238",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "Acrylic",
+      "activity": 0.000296,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "RingSupports_Th232",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "Acrylic",
+      "activity": 5.69e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "RingSupports_K40",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "Acrylic",
+      "activity": 7.12e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "RingStrips_U238",
+      "component": "RingStrips",
+      "category": "Field Cage",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "RingStrips_Th232",
+      "component": "RingStrips",
+      "category": "Field Cage",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Cathodes_U238",
+      "component": "Cathodes",
+      "category": "Cathodes",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Cathodes_Th232",
+      "component": "Cathodes",
+      "category": "Cathodes",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Vessel_U238",
+      "component": "Vessel",
+      "category": "Vessel",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Vessel_Th232",
+      "component": "Vessel",
+      "category": "Vessel",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Sensors_U238",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.002,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Sensors_Th232",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.0028,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Sensors_K40",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.009,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Lens_U238",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 0.000123,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Lens_Th232",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 4.07e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Lens_K40",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 0.0003,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_U238",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 1e-06,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": {
+        "name": "Ra226",
+        "Z": 88,
+        "A": 226
+      },
+      "full_chain": true,
+      "chain_policy": "upper-segment",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_Th232",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 1.4e-07,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": {
+        "name": "Th228",
+        "Z": 90,
+        "A": 228
+      },
+      "full_chain": true,
+      "chain_policy": "upper-segment",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_K40",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 1.2e-06,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_U235",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 4e-08,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U235",
+        "Z": 92,
+        "A": 235
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_Ra226",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 1.8e-07,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Ra226",
+        "Z": 88,
+        "A": 226
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "lower-segment",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_Th228",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "Al2O3",
+      "activity": 1.3e-07,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th228",
+        "Z": 90,
+        "A": 228
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "lower-segment",
+      "equilibrium_daughters": []
+    }
+  ]
+}

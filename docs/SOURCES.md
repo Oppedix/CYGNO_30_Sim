@@ -61,3 +61,13 @@ The installed physics prints a one-year very-long-decay-time threshold. A U-238
 macro alone does not demonstrate effective transport of all long-lived decays.
 Review effective settings for each production study. Bi-212/Pb-208 `PART122`
 remains a separate expected failure; see [known issues](KNOWN_ISSUES.md).
+
+## Published source matrix
+
+[STUDY_SOURCES.md](STUDY_SOURCES.md) records the Table 7.1 transcription,
+26 declared contributions, split resistor chains, historical input investigation
+and constructed-quantity provenance. `study/source_matrix.py` validates that
+specification and provides the existing source/isotope/chain commands. It does
+not launch a run or bypass the unresolved lifetime/data preflight. Both A/B use
+the same assays and chain policies; the detector-internal thesis model remains
+separate from these source inputs.

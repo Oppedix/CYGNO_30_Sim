@@ -68,9 +68,11 @@ selection; per-volume plots apply the inherited per-volume predicate. No cuts,
 energy selections, bin counts or formulas were changed. YZ position histograms
 still use world Z and the old visible range; outer layers can overflow.
 
-Masses, contaminations, branching factors and generated-event tables have
-incomplete provenance. Original constants remain labeled historical, with exact
-transcription tests; no replacement values were invented. The former vessel mass
+The original masses, contaminations, branching factors and generated-event tables
+have incomplete provenance and remain labeled historical, with exact transcription
+tests. Phase 3 separately transcribes the thesis assays and exports constructed
+quantities; see [source provenance](STUDY_SOURCES.md). Figure 7.5's exact production
+inputs/revision and actual generated counts remain unresolved. The former vessel mass
 1102.24 kg cannot automatically describe the current approximately 4203.49 kg
 construction (legacy layout approximately 4116.56 kg). New raw worker files carry
 separate layout/model/source metadata, checked by processing and all plotters.

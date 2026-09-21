@@ -1,7 +1,7 @@
 # Background-study progress
 
-Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 2 COMPLETE**.
-First incomplete phase: **Phase 3**, published source matrix. No Phase 3 changes
+Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 3 COMPLETE**.
+First incomplete phase: **Phase 4**, study runner. No Phase 4 changes
 are included in this checkpoint.
 
 ## Recovery contract
@@ -205,11 +205,87 @@ subject `feat(study): add validated legacy and current layout profiles`.
   README and analysis/layout/output/validation guides reflect the new contract.
   No thesis/reference files were touched; no production matrix, push or merge.
 
-Phase 2 local commit subject: `feat(study): validate layout identity throughout analysis`.
+Phase 2 local commit: `298cd1e7db2ac4fa2daa703cc231ccf49b3ea550`,
+subject `feat(study): validate layout identity throughout analysis`.
+
+## Phase 3 completion
+
+- Added `config/study/thesis-table7.1.json`: 26 explicit component/chain-start
+  contributions, 20 in Bq/kg and six resistor contributions in Bq/piece. Each
+  records assay material, plot category, activity, upper-limit interpretation,
+  Z/A start, stop-before nucleus, equilibrium daughters and full-chain policy.
+  Table 7.1 was visually verified; its surrounding chain/normalization discussion
+  was read. The reference SHA-256 remains unchanged. No reference files were edited.
+- `study/source_matrix.py` validates component/unit/chain structure and provides
+  source/isotope/decay controls. It enforces the 26-job partition, excludes separate
+  equilibrium Ra-226/Th-228 jobs, stops resistor upper segments before their
+  respective boundary ground-state decay, and resets both stop controls for lower
+  segments. It launches no jobs and supplies no assumed generated-primary counts.
+- `geometry_quantities` reuses the existing detector construction and source lists
+  to export all nine component masses, placement counts and actual material names,
+  with layout/model/source/hash provenance. Totals agree with the construction
+  mass map. Python consumers require matching identity and select kg or pieces
+  by the activity unit. Both code-compatible profiles have 750 resistors;
+  their 0.00838464 kg mass is never substituted for piece count.
+- The two quantity exports agree for every non-vessel component. Vessel masses
+  are 4116.556273833247 kg (legacy) and 4203.489372573545 kg (current). These are
+  actual Geant4 construction totals, including its Boolean-volume estimation.
+  Investigation of installed Geant4 11.4.2 source explains small differences from
+  exact box subtraction: legacy -0.009965%, current +0.002142%. No geometry or mass
+  correction was made. Export method, values and interpretation are documented in
+  `docs/STUDY_SOURCES.md`; re-export for any new build/environment/model.
+- Extended the existing three normalized plotters with `quantity-v2`: explicit
+  quantity/activity units, generated-primary count and plot category. The legacy
+  six-column kg format remains supported. Inconsistent units/quantities, fractional
+  piece/primary counts and invalid scales are rejected before output creation.
+  The existing 365-day scaling arithmetic, binning, cuts and individual spectra
+  remain unchanged. New `Categories/` spectra/stacks sum already normalized
+  materials/chains into the seven published categories and combine statistical
+  bin errors. Outputs retain the exact normalization configuration and convention.
+  Histograms remain counts/bin/year; density and threshold integration are runner
+  concerns. Assay/geometric uncertainties are not included in bin errors.
+- Historical-input investigation read `331f4e6`, `0b0d1db`, `67239bd`, `48b5b6a`,
+  `f2ad08e` and public `26ddbdb` plotter sources/diffs. Early active inputs are
+  explicitly test maps; later main maps omit resistors and use assays/masses that
+  differ from Table 7.1. The main source is byte-identical at the final three
+  inspected revisions. Chain variants do not resolve publication provenance.
+  `docs/STUDY_SOURCES.md` records exact revisions and evidence. Figure 7.5's exact
+  production inputs/revision remain **unresolved**, rather than asserted absent
+  from all possible sources. Historical tables remain untouched/quarantined.
+- Preserved Table 7.2's no-cut inconsistency (10–400 keV 3.3e5/year exceeds
+  >10 keV 3.2e5/year), Eq. 7.14's rounded-year distinction, and all A/B model/source
+  controls. No fitted scale factors, omitted isotopes, branching substitutions,
+  lifetime-threshold edits or nuclear-data changes were introduced. The future
+  thesis detector remains separately identified and unimplemented.
+- Release build succeeded. **Five affected/new CTest groups pass**:
+  `chain_boundaries`, `source_matrix`, `analysis`, `layout_analysis`, `root_geometry`.
+  The initial targeted suite took 40.51 s, with four passing and `source_matrix`
+  revealing an invalid test expectation of exact analytic Boolean volume. After
+  confirming the installed estimator, the test was corrected to use an analytic
+  diagnostic bound (5%) while preserving exact construction mass-map checks.
+  `source_matrix` then passed in 10.02 s. No production code changed after the
+  other four groups passed. Unaffected simulation/transport phases were not rerun.
+- New tests independently check all published numerical activities, omission of
+  x/equilibrium duplicate jobs, stop/reset commands, placement counts, both quantity
+  sets, invalid units and quantities, all 26 normalized contributions and seven
+  category sums/statistical errors in all three plotters for both layouts.
+  The direct tracking test verifies Ra-226/Th-228 primary/daughter stop behavior,
+  excited-state retention and lower-segment reset without any decay transport.
+  **It does not certify full-chain transport**: the long-lived threshold and
+  Bi-212/Pb-208 failure remain for subsequent smoke/preflight investigation.
+- Phase 3 artifacts: `../../build/cygno-study/validation-results/`
+  `source-matrix-2mfu02gj/` contains both full-precision quantities, hand-selected
+  synthetic ROOT inputs, unit/category normalization files and spectra/logs.
+  `phase3-reference/` contains read-only-reference derivatives outside the repo;
+  `Testing/Temporary/LastTest.log` records the successful matrix rerun. Existing
+  analysis/layout test artifacts also remain under `validation-results/`.
+  No production Monte Carlo, Study A/B campaign, push or merge was performed.
+
+Phase 3 local commit subject: `feat(study): encode published source matrix and quantity normalization`.
 Resolve its hash at the next phase with:
 
 ```sh
-git log -1 --format=%H --fixed-strings --grep='feat(study): validate layout identity throughout analysis'
+git log -1 --format=%H --fixed-strings --grep='feat(study): encode published source matrix and quantity normalization'
 ```
 
 ## Phase ledger
@@ -218,8 +294,8 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): validate layout iden
 |---|---|---|
 | 0 Audit and experiment specification | COMPLETE | `7c02de287c5a1e88f360e00122fd5c0b8069d438` |
 | 1 Multiple layouts | COMPLETE | `8589f3c99bebc632647ac7629137eb0003a40aac` |
-| 2 Layout-aware analysis | COMPLETE | phase commit identified by exact subject above |
-| 3 Published source matrix | NOT STARTED | - |
+| 2 Layout-aware analysis | COMPLETE | `298cd1e7db2ac4fa2daa703cc231ccf49b3ea550` |
+| 3 Published source matrix | COMPLETE | phase commit identified by exact subject above |
 | 4 Study runner | NOT STARTED | - |
 | 5 Smoke A | NOT STARTED | - |
 | 6 Smoke B and A/B comparison | NOT STARTED | - |
@@ -230,19 +306,26 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): validate layout iden
 
 ## Continuation
 
-Resume **Phase 3**, published source matrix, after inspecting Git state and
-reading this file. Record the Phase 2 commit hash, then inspect the normalization
-provenance and source-matrix requirements in `BACKGROUND_EXPERIMENT.md` against
-the read-only Sec. 7.3/Table 7.1 reference. Inspect the already identified public
-plotter revisions (`0b0d1db`, `67239bd`, `48b5b6a`, `f2ad08e`) to investigate the
-Figure 7.5 input/revision; record unresolved provenance rather than inventing it.
-Create the explicit 26 component/chain-start contribution matrix with Bq/kg and
-Bq/piece units, equilibrium treatment and resistor stop/restart boundaries. Keep
-historical unverified normalization tables separate; do not substitute them for
-Table 7.1 or disguise resistor counts as kilograms. Preserve Table 7.2's stated
-inconsistency. Validate Phase 3 with small fixtures before its local phase commit.
+Resume **Phase 4**, study runner, after inspecting Git state and reading this file.
+Record the Phase 3 commit hash, then implement a small resumable runner around the
+existing `rdecay01`, `SimpleProcessEvents`, normalized plotters, source-matrix helper
+and constructed-quantity exporter. Follow `BACKGROUND_EXPERIMENT.md` and
+`STUDY_SOURCES.md`; do not build a new simulation/analysis architecture.
 
-Do not repeat Phases 0-2 or restart the refactor. No Phase 3 changes have begun.
-The remaining ledger and `BACKGROUND_EXPERIMENT.md` retain the follow-on study
-requirements. Keep A/B layout-only and the future thesis model separate. Do not
-launch a production matrix, push, or merge to main.
+The runner must use fresh isolated single-worker processes and recorded seeds,
+explicit layout/model/source identity, the 26-contribution matrix and tiny
+configurable smoke counts. Save raw data and manifests with source revision,
+geometry/matrix/config identity, commands/seeds, effective physics/data environment,
+requested and actually generated counts, constructed quantities and normalization
+inputs. Resume only validated matching completed jobs; preserve those if another
+job fails. A ROOT file or hit count is not proof of a complete run/decay chain.
+Keep failures and unresolved long-lived/Bi-212 behavior visible; do not silently
+change thresholds, omit isotopes or substitute single-daughter branch weights.
+Define exact energy-window and overflow accounting, including >10 keV, without
+approximating it with a histogram bin that straddles the threshold.
+
+Validate runner success/failure/resume behavior with small fixtures before its
+local phase commit. Do not start Study A (Phase 5) before Phase 4 is complete.
+Do not repeat Phases 0–3. No Phase 4 changes have begun. Keep A/B layout-only and
+thesis internals a separate future configuration. Do not launch a production
+matrix, push, or merge to main.

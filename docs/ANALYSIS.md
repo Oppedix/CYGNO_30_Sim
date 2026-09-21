@@ -86,13 +86,43 @@ and energy selection. The main normalized program uses 900 bins in 0–2000 keV;
 `_single` and `_GEMchain` use 1200. All write `NormalizedHisto.root` in the current
 directory. Equal integrals now remain separate in a multimap: every histogram,
 including empty ones, survives in both stacks and individual output keys.
+Additional `Categories/` histograms and stacks sum contributions after individual
+normalization. `NormalizationConfiguration` preserves the full configuration text,
+and `NormalizationConvention` records the scale and counts/bin/year convention.
+No division by bin width is performed.
 
 The old YZ histogram still retains world Z and its old ±550 mm range. Outer layers
 can enter overflow. No axes/cuts were silently redefined.
 
 ## Study configuration
 
-Whitespace-separated text, with optional quoted input paths:
+Phase 3 adds explicit quantities/units and category grouping. Use this format for
+new source-matrix studies (the format header must precede all data rows):
+
+```text
+# normalization-format: quantity-v2
+# layout: legacy-25x3
+# detector-model: code-compatible
+# source-policy: historical
+# provenance: Table 7.1 plus matching geometry_quantities export and validated generated-primary counts
+# component isotope quantity quantity_unit activity activity_unit generated_events category input_file
+```
+
+Each data row has nine whitespace-separated fields. Quote categories and paths
+containing spaces. `kg` pairs with `Bq/kg`; `piece` pairs with `Bq/piece`. Piece
+counts and generated-primary counts must be positive integers; quantities must
+be finite/positive and activities finite/nonnegative. Repeated components must
+have the same quantity, units and category. Unrecognized or mismatched units,
+duplicates and nonfinite scales fail before creating output. There is no implicit
+micro-/milli-Bq conversion: the matrix already supplies Bq values.
+
+Use the 26 contributions in `config/study/thesis-table7.1.json` and the actual
+constructed mass/piece export; see [source provenance](STUDY_SOURCES.md). The
+assay matrix has no layout or detector-model default and launches no simulations.
+The forthcoming runner must attach actual completed generated-primary counts.
+
+The existing six-column mass-only format remains supported when the format header
+is absent, with its original meaning (kg and Bq/kg) and category equal to component:
 
 ```text
 # layout: legacy-25x3
@@ -112,7 +142,8 @@ Add one row per component/isotope with your study's values. Input paths resolve
 relative to the process working directory, so absolute paths are useful. Repeated
 component rows must use a consistent mass; duplicates, nonfinite values, negative
 activity and nonpositive mass/event counts are errors. Histograms use the unchanged
-formula `activity_Bq_per_kg * mass_kg * 60*60*24*365 / generated_events`.
+formula `activity * quantity * 60*60*24*365 / generated_events`, where the legacy
+six-column format always means Bq/kg and kg.
 The program requires an explicit configuration argument and provenance record.
 This records a researcher's stated basis; software cannot verify the assay.
 

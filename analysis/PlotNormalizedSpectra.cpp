@@ -20,7 +20,8 @@ int main(int argc, char** argv) try {
   if (argc != 2) { std::cerr << "Usage: " << argv[0] << " study.tsv\n"; return 1; }
   const auto settings = ReadNormalization(argv[1]);
   ValidateNormalizationInputs(settings);
-  auto ElementMass = settings.masses;
+  auto ElementQuantity = settings.quantities;
+  NormalizedCategories categories;
   auto Contaminant = settings.activities;
   auto NEvents = settings.events;
 
@@ -70,11 +71,11 @@ int main(int argc, char** argv) try {
   TH2D* hposXY = new TH2D("XYPos","XYPos",1300,-260,260,2300,-410,410);
   TH2D* hposYZ = new TH2D("YZPos","YZPos",2300,-410,410,1300,-550,550);
   
-  for(auto& component: ElementMass){ //for components in the map Element Mass
+  for(auto& component: ElementQuantity){ //for components in the map Element Mass
     for(auto& val : Contaminant[component.first]){// for val (that ia map) that get for each detector component the map with <nuclide,contamination>  
 
-      std::cout << "Mass of " << component.first << " is " << component.second << " Kg with contamination of \t" << val.first
-		<<" equal to \t" << val.second <<" Bq/Kg nEvents: \t" << NEvents[component.first][val.first] <<"\n";
+      std::cout << "Quantity of " << component.first << " is " << component.second << " " << settings.quantityUnits.at(component.first) << " with contamination of \t" << val.first
+		<<" equal to \t" << val.second << " " << settings.activityUnits.at(component.first) << " nEvents: \t" << NEvents[component.first][val.first] <<"\n";
       
       f= TFile::Open(settings.files.at(component.first).at(val.first).c_str(),"r");
       if (!f || f->IsZombie()) throw std::runtime_error("Cannot open configured input file");
@@ -130,9 +131,10 @@ int main(int argc, char** argv) try {
       temp_histo->Sumw2();
       temp_histocut->Sumw2();
       
-      temp_histo->Scale( val.second*component.second*60*60*24*365/NEvents[component.first][val.first] );
-      temp_histocut->Scale( val.second*component.second*60*60*24*365/NEvents[component.first][val.first] );
+      temp_histo->Scale( settings.Scale(component.first,val.first) );
+      temp_histocut->Scale( settings.Scale(component.first,val.first) );
 
+      categories.Add(settings.categories.at(component.first),*temp_histo,*temp_histocut);
       Histo.push_back(temp_histo);
       HistoCut.push_back(temp_histocut);
 
@@ -176,6 +178,7 @@ int main(int argc, char** argv) try {
   Hstack->Write();
   Hstack_cut->Write();
   
+  categories.Write(*outDef, settings);
   cygno::analysis::WriteIdentity(*outDef, settings.identity);
   outDef->Save();
   outDef->Close();
