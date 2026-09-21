@@ -25,6 +25,17 @@ def transport(case, directory, workers=1, macro=None):
     assert 'COMMAND NOT FOUND' not in log and '***** Illegal' not in log and 'FatalException' not in log, directory
     return log
 
+def check_identity(path,layout):
+    import hashlib
+    import ROOT
+    f=ROOT.TFile.Open(str(path));metadata=f.Get('RunMetadata')
+    assert metadata and metadata.GetEntries()==1,path
+    metadata.GetEntry(0)
+    for field,value in dict(Layout=layout,DetectorModel='code-compatible',SourcePolicy='historical',
+                            GeometryHash=hashlib.sha256((repo/'common/DetectorGeometry.hh').read_bytes()).hexdigest()).items():
+        assert metadata.GetLeaf(field).GetValueString()==value,(path,field)
+    f.Close()
+
 if mode=='geometry':
     out=root/'geometry'; out.mkdir(exist_ok=True)
     run([build/'validation/geometry_snapshot',out/'geometry.txt'],out,'snapshot.log')
@@ -52,6 +63,16 @@ elif mode=='layouts':
         files=list((directory/'outfiles_V2').glob('*.root'))
         assert len(files)==1
         check_hits(str(directory/'placements.tsv'),20,[str(files[0])])
+        check_identity(files[0],profile)
+        if (build/'analysis/SimpleProcessEvents').exists():
+            processed=directory/'processed.root'
+            run([build/'analysis/SimpleProcessEvents',files[0],processed],directory,'process.log')
+            import ROOT
+            f=ROOT.TFile.Open(str(processed))
+            assert f.Get('CygnoLayout').GetTitle()==profile
+            assert f.Get('CygnoDetectorModel').GetTitle()=='code-compatible'
+            assert f.Get('RunMetadata').GetEntries()==1
+            f.Close()
     # Compare an explicit current-profile run with the backward-compatible default.
     directory=out/'default'; directory.mkdir()
     run([build/'rdecay01',repo/'validation/macros/smoke.mac'],directory,'smoke.log')
@@ -79,6 +100,7 @@ elif mode=='transport':
         files=sorted((directory/'outfiles_V2').glob('*.root'))
         assert len(files)==workers,(case,files)
         check(str(out/'placements.tsv'),events,[str(p) for p in files])
+        for path in files: check_identity(path,'cygno-5x5x3-v1')
         from compare_hits import read_hits
         results[case]={p.name:len(read_hits(p)[1]) for p in files}
     # Same seeds and separate filenames in two runs: no extra ntuples, stale rows,
@@ -91,7 +113,8 @@ elif mode=='transport':
     import ROOT
     for name in ('first','second'):
         f=ROOT.TFile.Open(str(multi/'outfiles_V2'/f'{name}_t0.root'))
-        assert [k.GetName() for k in f.GetListOfKeys()]==['Hits']
+        assert [k.GetName() for k in f.GetListOfKeys()]==['Hits','RunMetadata']
+        check_identity(multi/'outfiles_V2'/f'{name}_t0.root','cygno-5x5x3-v1')
         f.Close()
         check(str(out/"placements.tsv"),20 if name=="first" else 10,[str(multi/"outfiles_V2"/f"{name}_t0.root")])
         if name=="first": assert read_hits(multi/"outfiles_V2"/f"{name}_t0.root")==read_hits(out/"smoke/outfiles_V2/cleanup_smoke_t0.root")

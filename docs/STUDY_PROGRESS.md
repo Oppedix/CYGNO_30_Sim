@@ -1,7 +1,7 @@
 # Background-study progress
 
-Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 1 COMPLETE**.
-First incomplete phase: **Phase 2**, layout-aware analysis. No Phase 2 changes
+Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 2 COMPLETE**.
+First incomplete phase: **Phase 3**, published source matrix. No Phase 3 changes
 are included in this checkpoint.
 
 ## Recovery contract
@@ -140,11 +140,76 @@ Scientific questions explicitly deferred to their requested phases:
   material was touched. Geometry-header fingerprint changes conservatively with
   header edits; backward metadata compatibility must be addressed in Phase 2.
 
-Phase 1 local commit subject: `feat(study): add validated legacy and current layout profiles`.
-Resolve its hash with:
+Phase 1 local commit: `8589f3c99bebc632647ac7629137eb0003a40aac`,
+subject `feat(study): add validated legacy and current layout profiles`.
+
+## Phase 2 completion
+
+- Added a separate one-row `RunMetadata` ntuple to each raw worker file, with
+  `GeometryHash`, `Layout`, `DetectorModel` and `SourcePolicy` strings. Identity
+  comes from the constructed runtime profile; the 12 raw Hits branches, ordering,
+  values and random-number consumption are unchanged. No ROOT dependency was
+  added to simulation. Master-only metadata files are avoided; repeated runs
+  reset metadata along with Hits. This is identity, not completion/event accounting.
+- `SimpleProcessEvents` resolves both supported layouts from metadata, retains
+  the existing grouping/EOF behavior and copies run metadata into processed data.
+  Unversioned inputs require both `--assume-layout PROFILE` and
+  `--assume-model code-compatible`; the old `--assume-geometry` name is an alias.
+  Assumptions cannot override mismatches or malformed/partial metadata.
+- Shared `analysis/FileIdentity.hh` validates every available raw/processed
+  identity record, including agreement between them. Processed and histogram
+  outputs record layout, detector model, source policy, hash and provenance.
+  The future thesis model remains unsupported and explicitly rejected rather
+  than reconstructed with code-compatible dimensions.
+- Backward compatibility accepts known pre-Phase-2 current-layout processed
+  markers, preserving the original geometry hash and recording the interpretation.
+  The verified baseline header hash at `74cc26f` is accepted only for current
+  layout/code-compatible; it never establishes legacy layout. Unknown hashes and
+  hash-only raw metadata cannot bypass the guard. See `docs/ANALYSIS.md` for the
+  exact compatibility contract and the limits of researcher assumptions.
+- The existing ROOT geometry adapter now requires an explicit profile. All three
+  normalized plotters and `PlotSpectrum.C` use the checked profile. Normalization
+  files require `# layout:`, `# detector-model:` and `# source-policy:` headers;
+  every configured input is checked before creating/replacing output. Mixed-layout
+  studies and conflicting model/policy settings fail. Assay/mass values are still
+  explicit researcher inputs; resolving them remains Phase 3 and later work.
+- Preserved A/B internals, historical sampler/decay settings, existing 20 mm
+  fiducial predicates, first-position/group-energy conventions, binning,
+  normalization formula and world-Z position plots. The known YZ overflow and
+  scientific normalization/ancestry limitations remain documented.
+- Release build succeeded in `../../build/cygno-study`. All **9 CTest groups now
+  pass**: the first suite run passed 8/9 (60.12 s), with only the historical-table
+  constants probe needing an explicit layout binding after the adapter API change.
+  That test-only binding was corrected without editing quarantined references;
+  targeted `ctest -R '^analysis$' --output-on-failure` passed (10.72 s). No production
+  implementation changed after the other eight groups passed. CTest's old
+  `LastTestsFailed.log` can retain the initial probe failure; the latest
+  `LastTest.log` records its successful rerun.
+- New synthetic checks use module 0 (different world coordinates in the two
+  profiles): all four plotters give exactly 3 uncut / 2 fiducial entries for each.
+  All 150 ROOT gas centers and original fiducial boundaries match constructed
+  Geant4 cells for both layouts in every plotting source. Mismatch fixtures cover
+  unknown layouts/models/policies/hashes, zero/multiple/partial metadata records,
+  conflicting raw/processed markers, explicit assumptions, old fingerprints,
+  mixed normalization inputs, and preservation of existing outputs on rejection.
+- Fresh 20-primary Po-212 files for both layouts process without assumptions.
+  Both profiles' full 12-branch schema and all **13,509 Hits rows** compare exactly
+  against the saved Phase 1 `layouts-94nfze72` files. Multi-run and two-worker smoke
+  checks verify metadata lifecycle. These are software smoke checks, not completed
+  Study A/B campaigns or scientific rate agreement.
+- Artifacts beneath `../../build/cygno-study/validation-results/`:
+  `layouts-v64g10ci/` (both transport/automatic-processing paths),
+  `transport-qmxdzrqq/` (worker/repeated-run checks),
+  `layout-analysis-8kfs2hwq/` (identity/cut fixtures), `root-geometry/` (both maps),
+  `analysis-__otg0ih/` (successful existing analysis/transcription rerun).
+  README and analysis/layout/output/validation guides reflect the new contract.
+  No thesis/reference files were touched; no production matrix, push or merge.
+
+Phase 2 local commit subject: `feat(study): validate layout identity throughout analysis`.
+Resolve its hash at the next phase with:
 
 ```sh
-git log -1 --format=%H --fixed-strings --grep='feat(study): add validated legacy and current layout profiles'
+git log -1 --format=%H --fixed-strings --grep='feat(study): validate layout identity throughout analysis'
 ```
 
 ## Phase ledger
@@ -152,8 +217,8 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): add validated legacy
 | Phase | Status | Local commit |
 |---|---|---|
 | 0 Audit and experiment specification | COMPLETE | `7c02de287c5a1e88f360e00122fd5c0b8069d438` |
-| 1 Multiple layouts | COMPLETE | phase commit identified by exact subject above |
-| 2 Layout-aware analysis | NOT STARTED | - |
+| 1 Multiple layouts | COMPLETE | `8589f3c99bebc632647ac7629137eb0003a40aac` |
+| 2 Layout-aware analysis | COMPLETE | phase commit identified by exact subject above |
 | 3 Published source matrix | NOT STARTED | - |
 | 4 Study runner | NOT STARTED | - |
 | 5 Smoke A | NOT STARTED | - |
@@ -165,15 +230,19 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): add validated legacy
 
 ## Continuation
 
-Resume **Phase 2** after inspecting Git state and reading this file. Record the
-Phase 1 commit hash, then make the existing SimpleProcessEvents, shared ROOT
-geometry reconstruction, fiducial cuts and normalized plotters layout-aware.
-Require consistent layout/model identity (prefer separate run metadata) and reject
-mismatched assumptions before processing/plotting. Keep the 12 raw Hits branches
-unchanged and reuse the existing analysis; add positive and mismatch tests for
-both layouts. Do not run legacy output through a current-layout assumption.
-The current constructor's `GetLayoutProfile()` supplies geometry identity/data.
+Resume **Phase 3**, published source matrix, after inspecting Git state and
+reading this file. Record the Phase 2 commit hash, then inspect the normalization
+provenance and source-matrix requirements in `BACKGROUND_EXPERIMENT.md` against
+the read-only Sec. 7.3/Table 7.1 reference. Inspect the already identified public
+plotter revisions (`0b0d1db`, `67239bd`, `48b5b6a`, `f2ad08e`) to investigate the
+Figure 7.5 input/revision; record unresolved provenance rather than inventing it.
+Create the explicit 26 component/chain-start contribution matrix with Bq/kg and
+Bq/piece units, equilibrium treatment and resistor stop/restart boundaries. Keep
+historical unverified normalization tables separate; do not substitute them for
+Table 7.1 or disguise resistor counts as kilograms. Preserve Table 7.2's stated
+inconsistency. Validate Phase 3 with small fixtures before its local phase commit.
 
-Do not repeat Phase 0 or Phase 1 or restart the refactor. Complete and validate
-Phase 2 before Phase 3. The remaining phase ledger and BACKGROUND_EXPERIMENT.md
-retain the original follow-on study requirements. Do not push or merge to main.
+Do not repeat Phases 0-2 or restart the refactor. No Phase 3 changes have begun.
+The remaining ledger and `BACKGROUND_EXPERIMENT.md` retain the follow-on study
+requirements. Keep A/B layout-only and the future thesis model separate. Do not
+launch a production matrix, push, or merge to main.

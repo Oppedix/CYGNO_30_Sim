@@ -19,13 +19,14 @@ TVector3* RelativePos(const std::map<Int_t,TVector3>& aMap,const Double_t x,cons
 int main(int argc, char** argv) try {
   if (argc != 2) { std::cerr << "Usage: " << argv[0] << " study.tsv\n"; return 1; }
   const auto settings = ReadNormalization(argv[1]);
+  ValidateNormalizationInputs(settings);
   auto ElementMass = settings.masses;
   auto Contaminant = settings.activities;
   auto NEvents = settings.events;
 
   //Build centroid detector map for fiducialization
   std::map<Int_t,TVector3> VolumeMap;
-  BuildDetectorMap(VolumeMap);
+  BuildDetectorMap(VolumeMap, cygno::geometry::ParseLayoutId(settings.identity.layout));
 
   //declare tree variables
   Int_t evNumber;
@@ -175,6 +176,7 @@ int main(int argc, char** argv) try {
   Hstack->Write();
   Hstack_cut->Write();
   
+  cygno::analysis::WriteIdentity(*outDef, settings.identity);
   outDef->Save();
   outDef->Close();
   return 0;

@@ -1,4 +1,5 @@
 #include "DetectorGeometry.hh"
+#include "FileIdentity.hh"
 #include "TFile.h"
 #include "TTree.h"
 #include "TH1D.h"
@@ -31,15 +32,17 @@ bool isWithin(const std::map<Int_t,TVector3>& aMap,const Double_t x,const Double
 }
 
 
-void PlotSpectra(std::string filename){
+void PlotSpectra(std::string filename, std::string expectedLayout="", std::string expectedModel=""){
 
   std::map<Int_t,TVector3> VolCentroidMap;
   
-  BuildDetectorMap(VolCentroidMap);
   
   TFile* f = TFile::Open(filename.c_str());
   
   if (!f || f->IsZombie()) throw std::runtime_error("Cannot open input file");
+  const auto identity=cygno::analysis::RequireGeometry(*f);
+  cygno::analysis::RequireExpected(identity, expectedLayout, expectedModel);
+  BuildDetectorMap(VolCentroidMap, cygno::geometry::ParseLayoutId(identity.layout));
   TTree* tree = (TTree*)f->Get("elabHits");
   if (!tree) throw std::runtime_error("Missing elabHits");
   
@@ -125,6 +128,7 @@ void PlotSpectra(std::string filename){
   alphaplot_cut->Write();
   betaplot->Write();
   betaplot_cut->Write();
+  cygno::analysis::WriteIdentity(*f_out, identity);
   f_out->Save();
   f_out->Close();
   

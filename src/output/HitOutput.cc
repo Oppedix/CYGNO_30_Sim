@@ -45,7 +45,7 @@ void WriteStep(const G4Step* aStep, const G4String& lastIon) {
   G4int particleID = track->GetTrackID();
   G4double EdepStep = aStep->GetTotalEnergyDeposit();
   // Gas copy number: 0..74 on local +Z, 75..149 on local -Z.
-  // Module ID = (ix*5+iy)*3+iz; see common/DetectorGeometry.hh.
+  // Module order follows RunMetadata.Layout; see common/DetectorGeometry.hh.
   G4int VolumeCopyNumber = track->GetVolume()->GetCopyNo();
   G4int particleParentID = track->GetParentID();
 

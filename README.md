@@ -47,24 +47,23 @@ Select layout without rebuilding:
 ```
 
 The default remains `cygno-5x5x3-v1`. Both use the unchanged code-compatible
-internals and historical sampler. At this Phase 1 checkpoint, legacy geometry
-and smoke transport are validated, but layout-aware analysis is still Phase 2:
-do not process legacy files under a current-layout assumption. See
+internals and historical sampler. Both layouts support processing and plotting
+with validated layout/model identity recorded separately from Hits. See
 [study progress](docs/STUDY_PROGRESS.md) and [layout details](docs/LAYOUT.md).
 
 ## Analysis and tests
 
 ```sh
 ../../build/cygno-final/analysis/SimpleProcessEvents \
-  ../../build/cygno-final/outfiles_V2/cleanup_smoke_t0.root /tmp/processed.root \
-  --assume-geometry cygno-5x5x3-v1
+  ../../build/cygno-final/outfiles_V2/cleanup_smoke_t0.root /tmp/processed.root
 ctest --test-dir ../../build/cygno-final --output-on-failure
 # Known failure, deliberately outside the passing suite:
 python3 validation/run_checks.py bi212 ../../build/cygno-final
 ```
 
-The geometry assumption is explicit because the unchanged raw schema has no
-geometry marker. Only use it for data whose source establishes this layout.
+New raw files carry a separate `RunMetadata` tree. Unversioned files require both
+`--assume-layout PROFILE --assume-model code-compatible`, after verifying their
+source revision. Assumptions cannot override conflicting file metadata.
 Normalized plotters require a study configuration; old masses and assays are
 **not production defaults**. See [analysis and normalization](docs/ANALYSIS.md).
 

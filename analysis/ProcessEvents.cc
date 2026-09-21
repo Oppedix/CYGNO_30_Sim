@@ -16,32 +16,6 @@
 #include <vector>
 
 namespace cygno::analysis {
-void RequireGeometry(TFile& file, const std::string& assumedGeometry) {
-  if (auto* marker = dynamic_cast<TNamed*>(file.Get("CygnoGeometry"))) {
-    if (std::string(marker->GetTitle()) != build::geometryHash)
-      throw std::runtime_error("Processed file geometry does not match this build");
-    return;
-  }
-  if (auto* metadata = dynamic_cast<TTree*>(file.Get("RunMetadata"))) {
-    if (metadata->GetEntries()!=1 || !dynamic_cast<TLeafC*>(metadata->GetLeaf("GeometryHash")))
-      throw std::runtime_error("Invalid RunMetadata geometry record");
-    metadata->GetEntry(0);
-    if (std::string(static_cast<TLeafC*>(metadata->GetLeaf("GeometryHash"))->GetValueString()) != build::geometryHash)
-      throw std::runtime_error("Raw file geometry does not match this build");
-    return;
-  }
-  if (assumedGeometry != build::geometryId)
-    throw std::runtime_error("Unversioned file: identify its source revision first; use --assume-geometry cygno-5x5x3-v1 only for confirmed 5x5x3 data");
-}
-void CopyMetadata(TFile& input, TFile& output) {
-  output.cd();
-  TNamed("CygnoGeometry", build::geometryHash).Write();
-  TNamed("CygnoLayout", build::geometryId).Write();
-  if (auto* metadata = dynamic_cast<TTree*>(input.Get("RunMetadata")))
-    metadata->CloneTree()->Write();
-  else
-    TNamed("GeometryProvenance", "Researcher explicitly identified unversioned data as current geometry").Write();
-}
 namespace {
 struct Group {
   int event = -1;
@@ -60,10 +34,10 @@ struct Group {
 };
 }
 void ProcessEvents(const std::string& input, const std::string& output,
-                   const std::string& assumedGeometry) {
+                   const std::string& assumedLayout, const std::string& assumedModel) {
   std::unique_ptr<TFile> source(TFile::Open(input.c_str()));
   if (!source || source->IsZombie()) throw std::runtime_error("Cannot open input " + input);
-  RequireGeometry(*source, assumedGeometry);
+  const auto identity = RequireGeometry(*source, assumedLayout, assumedModel);
   auto* tree=dynamic_cast<TTree*>(source->Get("Hits"));
   if (!tree) throw std::runtime_error("Missing Hits tree");
   // Read variable-length /C leaves using ROOT's managed buffers, avoiding the
@@ -115,7 +89,7 @@ void ProcessEvents(const std::string& input, const std::string& output,
     group.Add(volume,number("EnergyDeposit"),number("x_hits"),number("y_hits"),number("z_hits"));
   }
   flush();
-  destination.cd(); result.Write(); CopyMetadata(*source,destination);
+  destination.cd(); result.Write(); CopyMetadata(*source,destination,identity);
   TNamed("ProcessingVersion","event-boundaries-and-eof-v2").Write();
   // The stack-allocated tree is destroyed before the file; do not close early.
 }

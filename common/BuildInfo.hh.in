@@ -3,7 +3,6 @@
 // Generated in the build tree. The geometry fingerprint includes the complete
 // dependency-light configuration; a comment-only edit can conservatively change it.
 namespace cygno::build {
-inline constexpr char geometryId[] = "cygno-5x5x3-v1";
 inline constexpr char geometryHash[] = "@CYGNO_GEOMETRY_HASH@";
 }
 #endif

@@ -29,7 +29,7 @@ def fixture(name, rows):
 
 def process(name,rows,expected):
     raw=fixture(name,rows); processed=out/('elab_'+name+'.root')
-    subprocess.run([str(build/'analysis/SimpleProcessEvents'),str(raw),str(processed),'--assume-geometry','cygno-5x5x3-v1'],check=True)
+    subprocess.run([str(build/'analysis/SimpleProcessEvents'),str(raw),str(processed),'--assume-layout','cygno-5x5x3-v1','--assume-model','code-compatible'],check=True)
     f=ROOT.TFile.Open(str(processed));t=f.Get('elabHits'); got=[]
     for e in t: got.append((int(e.evNumber),list(e.VolNnum_Out),list(e.EDep_Out)))
     assert len(got)==len(expected),(name,got,expected)
@@ -51,7 +51,7 @@ process('long_label',[dict(Nucleus='Pb208[2614.522000000000000000000]')],[(0,[37
 # including their individual keys and cut stack entries. Keep original bins/cuts.
 nonempty=process('spectrum',[dict(EnergyDeposit=.02)],[(0,[37.],[.02])])
 empty=out/'elab_empty.root'
-configuration=out/'study.tsv';configuration.write_text('# provenance: synthetic regression, unit scale; no scientific normalization claim\n'+''.join(f'{c} X 1 1 31536000 "{path}"\n' for c,path in [('A',nonempty),('B',nonempty),('C',empty),('D',empty)]))
+configuration=out/'study.tsv';configuration.write_text('# layout: cygno-5x5x3-v1\n# detector-model: code-compatible\n# source-policy: historical\n# provenance: synthetic regression, unit scale; no scientific normalization claim\n'+''.join(f'{c} X 1 1 31536000 "{path}"\n' for c,path in [('A',nonempty),('B',nonempty),('C',empty),('D',empty)]))
 for name,bins in [('PlotNormalizedSpectra',900),('PlotNormalizedSpectra_single',1200),('PlotNormalizedSpectra_GEMchain',1200)]:
     directory=out/name;directory.mkdir()
     subprocess.run([str(build/'analysis'/name),str(configuration)],cwd=directory,check=True,stdout=subprocess.DEVNULL)
@@ -76,7 +76,9 @@ flags=shlex.split(subprocess.check_output(['root-config','--cflags','--libs'],te
 repo=Path(__file__).resolve().parents[1]
 for name in ('PlotNormalizedSpectra','PlotNormalizedSpectra_single','PlotNormalizedSpectra_GEMchain'):
     probe=out/(name+'_constants.cc');exe=out/(name+'_constants')
-    probe.write_text('#include <iomanip>\n#define main historical_main\n#include "'+str(repo/'legacy/analysis/05a2b92'/f'{name}.cpp')+'"\n#undef main\nint main(){std::cout<<std::setprecision(17);for(const auto& c:ElementMass)for(const auto& a:Contaminant[c.first])std::cout<<c.first<<" "<<a.first<<" "<<c.second<<" "<<a.second<<" "<<NEvents[c.first][a.first]<<"\\n";}\n')
+    # The quarantined main is not executed; explicitly bind its old no-argument
+    # geometry call in this constants-only probe, without editing the reference.
+    probe.write_text('#include <iomanip>\n#include "DetectorGeometry.hh"\nvoid BuildDetectorMap(std::map<Int_t,TVector3>& centers){BuildDetectorMap(centers,cygno::geometry::LayoutId::Current5x5x3);}\n#define main historical_main\n#include "'+str(repo/'legacy/analysis/05a2b92'/f'{name}.cpp')+'"\n#undef main\nint main(){std::cout<<std::setprecision(17);for(const auto& c:ElementMass)for(const auto& a:Contaminant[c.first])std::cout<<c.first<<" "<<a.first<<" "<<c.second<<" "<<a.second<<" "<<NEvents[c.first][a.first]<<"\\n";}\n')
     subprocess.run(['c++','-std=c++17','-I'+str(repo/'analysis'),str(probe),'-o',str(exe),*flags],check=True,stderr=subprocess.DEVNULL)
     expected={tuple(x[:2]):tuple(map(float,x[2:])) for line in subprocess.check_output([str(exe)],text=True).splitlines() if (x:=line.split())}
     actual={tuple(x[:2]):tuple(map(float,x[2:5])) for line in (repo/'config/normalization'/f'{name}.historical.tsv').read_text().splitlines() if not line.startswith('#') and (x:=line.split())}

@@ -72,8 +72,10 @@ Masses, contaminations, branching factors and generated-event tables have
 incomplete provenance. Original constants remain labeled historical, with exact
 transcription tests; no replacement values were invented. The former vessel mass
 1102.24 kg cannot automatically describe the current approximately 4203.49 kg
-construction. Raw files have no geometry metadata: archive matching source and
-configuration, and explicitly identify unversioned data before processing.
+construction (legacy layout approximately 4116.56 kg). New raw worker files carry
+separate layout/model/source metadata, checked by processing and all plotters.
+Archive matching source and configuration, and explicitly identify both layout
+and model for unversioned data before processing; see [analysis](ANALYSIS.md).
 
 ## Expected Bi-212 failure
 

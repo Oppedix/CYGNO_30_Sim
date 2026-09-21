@@ -13,8 +13,8 @@ unknown or duplicate layout options fail before initialization. `--help` prints
 usage. With no macro the viewer uses the selected layout. Use separate working
 directories for runs and retain the command and log: the application prints
 layout, detector model and source policy at startup. The raw Hits schema is
-unchanged. **Phase 2 is still required to process legacy output with the supported
-analysis**; do not label it as current geometry to bypass the processor's guard.
+unchanged. Processing and all plotters reconstruct either profile from validated
+layout/model metadata; conflicting assumptions are rejected.
 
 `common/DetectorGeometry.hh` provides `LayoutId`, `ParseLayoutId`,
 `BuildModuleLayout(id)` and `BuildLayoutProfile(id)`. The profile supplies the
@@ -162,7 +162,7 @@ same normalization formula with an explicitly approved mass for that study.
 
 ## Shared analysis geometry and future changes
 
-`analysis/DetectorGeometry.hh` converts `BuildModuleLayout()` / `GasCenter()` to
+`analysis/DetectorGeometry.hh` converts `BuildModuleLayout(layout)` / `GasCenter()` to
 ROOT vectors. All four plotting sources use that adapter, including the exact
 0.25 mm cathode offset. There is no separate 3 mm detector-gap parameter anymore.
 The original 20 mm fiducial inset and all other cuts are unchanged.
@@ -178,8 +178,10 @@ time assertions reject pitches smaller than these bounds. Validation expectation
 currently assert the requested 75 modules and 150 gas cells; update those only
 when intentionally changing the study configuration.
 
-Do not apply this new center map to old 25 × 3 output. `VolumeNumber` has no layout
-version encoded, and no metadata branch was added. Preserve the matching source
+`VolumeNumber` has no layout version encoded. A separate `RunMetadata` tree now
+identifies layout, model and source policy without changing any Hits branches.
+Unversioned 25 × 3 files require verified source provenance and explicit layout
+and model assumptions; see [analysis](ANALYSIS.md). Preserve the matching source
 revision/configuration with every simulation and analysis dataset. Legacy YZ
 position histograms still use world Z and their old range; outer-layer entries
 can fall in overflow. Their interpretation has not been silently changed to

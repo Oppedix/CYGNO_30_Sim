@@ -46,7 +46,9 @@ no separate `G4VHit` collection or energy filter.
 
 `analysis/` is a separate CERN ROOT target group. `ProcessEvents.cc` implements
 grouping, and the short `SimpleProcessEvents.cpp` handles paths/options. Plotters
-share `analysis/DetectorGeometry.hh`, an adapter over the same numerical layout.
+share `analysis/DetectorGeometry.hh`, an adapter over the selected numerical layout,
+and `analysis/FileIdentity.hh`, the raw/processed layout and model guard. RunAction
+records a separate one-row identity ntuple per worker file without altering Hits.
 `validation/` links the actual simulation library, builds diagnostic tools and
 runs synthetic ROOT fixtures. Test output stays in the build tree.
 

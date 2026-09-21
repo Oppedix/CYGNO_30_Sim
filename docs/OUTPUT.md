@@ -26,15 +26,20 @@ Every sensitive gas step is written, including zero-deposit steps. An event with
 no gas steps contributes no rows. `Nucleus` is **not guaranteed ancestry** and is
 not reset at event boundaries; assigning a different meaning requires a separate
 scientific decision. `ProcessType` is not the process responsible for the step.
-The raw tree intentionally has no added geometry/run metadata columns. Archive
+The raw Hits tree has no added columns. A separate `RunMetadata` tree contains one
+row per worker/run output with four string leaves: `GeometryHash`, `Layout`,
+`DetectorModel` and `SourcePolicy`. It is filled without sampling randomness and
+is reset between runs. The MT master does not write a metadata-only file. This
+record establishes geometry identity, not run completeness or generated counts.
+Archive
 source, macro, seeds, build/library/data versions, requested/generated event
 counts and worker count alongside raw output.
 
 Bookkeeping corrections use the matching GEM-core and resistor logical masses,
 and `RingSupports`/`Resistors` keys consistently. These change printed masses,
 not solids, materials or hit energy. Masses are construction totals, not automatic
-assay/contamination normalization. The resized vessel construction mass is about
-4203.49 kg; adopting it for a study still requires matching the contamination model.
+assay/contamination normalization. The current-layout vessel construction mass is about
+4203.49 kg (legacy layout about 4116.56 kg); adopting it for a study still requires matching the contamination model.
 
 Run summaries use the actual primary, omit unsupported visible-energy summary
 values, and label terminal-ion global times without interpreting the mean as a

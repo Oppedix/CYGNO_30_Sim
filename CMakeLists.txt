@@ -4,6 +4,7 @@ project(CYGNO_30_Sim VERSION 1.0 LANGUAGES CXX)
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(FATAL_ERROR "Use an out-of-source build directory")
 endif()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS common/DetectorGeometry.hh)
 file(SHA256 "${PROJECT_SOURCE_DIR}/common/DetectorGeometry.hh" CYGNO_GEOMETRY_HASH)
 configure_file(common/BuildInfo.hh.in generated/BuildInfo.hh @ONLY)
 
@@ -30,7 +31,7 @@ add_library(cygno_sim
   src/output/SensitiveDetector.cc
   src/output/HitOutput.cc)
 target_compile_features(cygno_sim PUBLIC cxx_std_17)
-target_include_directories(cygno_sim PUBLIC include "${PROJECT_SOURCE_DIR}")
+target_include_directories(cygno_sim PUBLIC include "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}/generated")
 target_link_libraries(cygno_sim PUBLIC ${Geant4_LIBRARIES})
 target_compile_definitions(cygno_sim PUBLIC ${Geant4_DEFINITIONS})
 add_executable(rdecay01 app/rdecay01.cc)

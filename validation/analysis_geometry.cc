@@ -7,9 +7,10 @@
 #define main CygnoAnalysisMain
 #include CYGNO_ANALYSIS_SOURCE
 #undef main
-int main() {
+int main(int argc, char** argv) {
+  if (argc!=2) return 1;
   std::map<Int_t,TVector3> centers;
-  BuildDetectorMap(centers);
+  BuildDetectorMap(centers, cygno::geometry::ParseLayoutId(argv[1]));
   assert(centers.size()==150);
   std::cout << std::setprecision(17);
   for (const auto& entry : centers) {

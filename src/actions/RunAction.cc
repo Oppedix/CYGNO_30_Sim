@@ -35,6 +35,9 @@
 #include "cygno/source/PrimaryGeneratorAction.hh"
 #include "G4AnalysisManager.hh"
 #include "G4Run.hh"
+#include "G4RunManager.hh"
+#include "cygno/geometry/DetectorConstruction.hh"
+#include "BuildInfo.hh"
 #include "cygno/output/HitOutput.hh"
 #include "G4Exception.hh"
 #include <filesystem>
@@ -57,6 +60,16 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
   // directory is created relative to the process working directory.
   fOutFileName="outfiles_V2";
   cygno::hits::Book(); // once per analysis manager; CloseFile resets rows, not booking
+  // Keep Hits unchanged. Each worker file carries one independent identity row.
+  // The MT master has no events/output; do not create a metadata-only master file.
+  if (fPrimary) {
+    auto* manager=G4AnalysisManager::Instance();
+    const auto id=manager->CreateNtuple("RunMetadata","Run geometry identity");
+    if (id!=1) G4Exception("RunAction", "CYGNO_METADATA", FatalException, "Unexpected metadata ntuple ID");
+    for (const auto* name : {"GeometryHash", "Layout", "DetectorModel", "SourcePolicy"})
+      manager->CreateNtupleSColumn(id,name);
+    manager->FinishNtuple(id);
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -91,6 +104,16 @@ void RunAction::BeginOfRunAction(const G4Run*)
   if (!analysisManager->OpenFile("outfiles_V2/"+fOutFileName+".root"))
     G4Exception("RunAction::BeginOfRunAction", "CYGNO_OUTPUT", FatalException, "Cannot open output file");
     //}
+  if (fPrimary) {
+    const auto* detector=dynamic_cast<const DetectorConstruction*>(
+      G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+    if (!detector) G4Exception("RunAction", "CYGNO_METADATA", FatalException, "Missing detector identity");
+    analysisManager->FillNtupleSColumn(1,0,cygno::build::geometryHash);
+    analysisManager->FillNtupleSColumn(1,1,detector->GetLayoutProfile().name);
+    analysisManager->FillNtupleSColumn(1,2,"code-compatible");
+    analysisManager->FillNtupleSColumn(1,3,"historical");
+    analysisManager->AddNtupleRow(1);
+  }
 
 
 }
