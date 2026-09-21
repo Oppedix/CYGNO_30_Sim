@@ -49,6 +49,8 @@ class Run : public G4Run
    ~Run();
 
   public:
+    void RecordEvent(const G4Event*) override;
+    G4int GetAbortedEvents() const { return fAbortedEvents; }
     void ParticleCount(G4String, G4double, G4double);
     void Balance(G4double,G4double);
     void EventTiming(G4double);
@@ -79,6 +81,7 @@ class Run : public G4Run
     };
      
   private: 
+    G4int fAbortedEvents = 0;
     G4ParticleDefinition*  fParticle;
     G4double  fEkin;
              

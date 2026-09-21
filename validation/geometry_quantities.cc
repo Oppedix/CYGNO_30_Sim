@@ -30,6 +30,7 @@ int main(int argc, char** argv) try {
   out << std::setprecision(17)
       << "# layout: " << detector.GetLayoutProfile().name << '\n'
       << "# detector-model: code-compatible\n# source-policy: historical\n"
+      << "# compiled-source-hash: " << cygno::build::sourceHash << '\n'
       << "# geometry-hash: " << cygno::build::geometryHash << '\n'
       << "# provenance: actual source placements; sum of logical GetMass()/kg and list size\n"
       << "component\tmass_kg\tpieces\tgeometry_material\n";

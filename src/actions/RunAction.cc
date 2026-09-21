@@ -69,6 +69,11 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
     for (const auto* name : {"GeometryHash", "Layout", "DetectorModel", "SourcePolicy"})
       manager->CreateNtupleSColumn(id,name);
     manager->FinishNtuple(id);
+    const auto accounting=manager->CreateNtuple("RunAccounting", "Event accounting, not chain certification");
+    if (accounting!=2) G4Exception("RunAction", "CYGNO_ACCOUNTING", FatalException, "Unexpected accounting ntuple ID");
+    for (const auto* name : {"RunID", "RequestedEvents", "GeneratedPrimaries", "ProcessedEvents", "AbortedEvents"})
+      manager->CreateNtupleIColumn(accounting,name);
+    manager->FinishNtuple(accounting);
   }
 }
 
@@ -90,6 +95,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 { 
   // keep run condition
   if (fPrimary) { 
+    fPrimary->ResetGeneratedCount();
     G4ParticleDefinition* particle 
       = fPrimary->GetParticleGun()->GetParticleDefinition();
     G4double energy = fPrimary->GetParticleGun()->GetParticleEnergy();
@@ -121,7 +127,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 // Called after event processing; the master receives merged Run statistics.
-void RunAction::EndOfRunAction(const G4Run*)
+void RunAction::EndOfRunAction(const G4Run* run)
 {
   if (isMaster) fRun->EndOfRun();
             
@@ -129,8 +135,16 @@ void RunAction::EndOfRunAction(const G4Run*)
  //
  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
  //if ( analysisManager->IsActive() ) {
- analysisManager->Write();
- analysisManager->CloseFile();
+ if (fPrimary) {
+   analysisManager->FillNtupleIColumn(2,0,run->GetRunID());
+   analysisManager->FillNtupleIColumn(2,1,run->GetNumberOfEventToBeProcessed());
+   analysisManager->FillNtupleIColumn(2,2,fPrimary->GetGeneratedCount());
+   analysisManager->FillNtupleIColumn(2,3,run->GetNumberOfEvent());
+   analysisManager->FillNtupleIColumn(2,4,fRun->GetAbortedEvents());
+   analysisManager->AddNtupleRow(2);
+ }
+ if (!analysisManager->Write() || !analysisManager->CloseFile())
+   G4Exception("RunAction::EndOfRunAction", "CYGNO_OUTPUT", FatalException, "Cannot finish output file");
   //} 
 }
 

@@ -36,6 +36,18 @@ def check_identity(path,layout):
         assert metadata.GetLeaf(field).GetValueString()==value,(path,field)
     f.Close()
 
+def accounting(path, requested, run_id=0):
+    import ROOT
+    f=ROOT.TFile.Open(str(path));tree=f.Get('RunAccounting')
+    assert tree and tree.GetEntries()==1,path
+    tree.GetEntry(0)
+    fields=('RunID','RequestedEvents','GeneratedPrimaries','ProcessedEvents','AbortedEvents')
+    assert all(tree.GetLeaf(name).GetTypeName()=='Int_t' for name in fields)
+    values={name:int(tree.GetLeaf(name).GetValue()) for name in fields}
+    assert values['RunID']==run_id and values['RequestedEvents']==requested,values
+    assert values['AbortedEvents']==0 and values['GeneratedPrimaries']==values['ProcessedEvents'],values
+    f.Close();return values['GeneratedPrimaries']
+
 if mode=='geometry':
     out=root/'geometry'; out.mkdir(exist_ok=True)
     run([build/'validation/geometry_snapshot',out/'geometry.txt'],out,'snapshot.log')
@@ -101,6 +113,7 @@ elif mode=='transport':
         assert len(files)==workers,(case,files)
         check(str(out/'placements.tsv'),events,[str(p) for p in files])
         for path in files: check_identity(path,'cygno-5x5x3-v1')
+        assert sum(accounting(path,events) for path in files)==events
         from compare_hits import read_hits
         results[case]={p.name:len(read_hits(p)[1]) for p in files}
     # Same seeds and separate filenames in two runs: no extra ntuples, stale rows,
@@ -113,9 +126,10 @@ elif mode=='transport':
     import ROOT
     for name in ('first','second'):
         f=ROOT.TFile.Open(str(multi/'outfiles_V2'/f'{name}_t0.root'))
-        assert [k.GetName() for k in f.GetListOfKeys()]==['Hits','RunMetadata']
+        assert [k.GetName() for k in f.GetListOfKeys()]==['Hits','RunMetadata','RunAccounting']
         check_identity(multi/'outfiles_V2'/f'{name}_t0.root','cygno-5x5x3-v1')
         f.Close()
+        assert accounting(multi/'outfiles_V2'/f'{name}_t0.root',20 if name=='first' else 10,0 if name=='first' else 1)==(20 if name=='first' else 10)
         check(str(out/"placements.tsv"),20 if name=="first" else 10,[str(multi/"outfiles_V2"/f"{name}_t0.root")])
         if name=="first": assert read_hits(multi/"outfiles_V2"/f"{name}_t0.root")==read_hits(out/"smoke/outfiles_V2/cleanup_smoke_t0.root")
     results['multiple_runs']='first run exactly matches fresh process; both have one valid Hits tree with reset event IDs; solid RNG continues across runs'

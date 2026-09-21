@@ -101,6 +101,7 @@ inline FileIdentity RequireGeometry(TFile& file, const std::string& assumedLayou
 inline void WriteIdentity(TFile& output, const FileIdentity& identity) {
   output.cd();
   TNamed("CygnoGeometry", identity.geometryHash.c_str()).Write();
+  TNamed("CygnoBuildSource", build::sourceHash).Write();
   TNamed("CygnoLayout", identity.layout.c_str()).Write();
   TNamed("CygnoDetectorModel", identity.model.c_str()).Write();
   TNamed("CygnoSourcePolicy", identity.sourcePolicy.c_str()).Write();

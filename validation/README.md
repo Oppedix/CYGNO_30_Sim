@@ -78,3 +78,15 @@ estimated: an exact analytic vessel formula is only a diagnostic (5% bound),
 while sums must match the construction mass map to 1e-12 relative precision.
 No generated-primary counts, assay uncertainties or lifetime completeness are
 inferred by this test; see [source provenance](../docs/STUDY_SOURCES.md).
+
+## Study runner checks (Phase 4)
+
+`ctest -R '^study_runner$'` constructs a no-event environment probe and real
+quantities, then uses synthetic ROOT files with the real processor/main plotter.
+It tests successful zero-hit runs, failures despite ROOT output, incomplete/aborted
+accounting, retained failures, explicit retry, artifact corruption, stale source
+and config/matrix mismatches, timeouts, locks, default 26-contribution scheduling,
+per-piece inputs, exact energy endpoints/flows and density exports in both layouts.
+Synthetic manifest/data values are labeled and are not Study A/B campaigns.
+The existing transport group additionally checks generated/processed counters,
+worker totals and repeated-run resets with tiny Po-212/Bi-211 fixtures.

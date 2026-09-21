@@ -47,6 +47,15 @@
 #include "G4VisExecutive.hh"
 #include "G4PhysListFactory.hh"
 
+#include "BuildInfo.hh"
+#include "G4Version.hh"
+#include "G4EnvironmentUtils.hh"
+#include "G4VRadioactiveDecay.hh"
+#include "G4ProcessTable.hh"
+#include "G4GenericIon.hh"
+#include "G4HadronicProcessType.hh"
+#include "G4SystemOfUnits.hh"
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -135,6 +144,24 @@ int main(int argc,char** argv) {
   // require the PreInit state may therefore be unsuitable in batch macros.
   //initialize G4 kernel
   runManager->Initialize();
+
+  // Machine-readable effective environment, resolved by this linked Geant4.
+  // These observations do not alter physics, data selection or random state.
+  const auto* decay=dynamic_cast<G4VRadioactiveDecay*>(
+      G4ProcessTable::GetProcessTable()->FindProcess(fRadioactiveDecay, G4GenericIon::GenericIon()));
+  if (!decay) G4Exception("rdecay01", "CYGNO_ENVIRONMENT", FatalException, "Cannot inspect radioactive decay process");
+  std::cout << "CYGNO_ENV source_hash " << cygno::build::sourceHash << "\n"
+            << "CYGNO_ENV geometry_hash " << cygno::build::geometryHash << "\n"
+            << "CYGNO_ENV geant4 " << G4Version << "\n"
+            << "CYGNO_ENV physics QGSP_BIC_EMZ+G4RadioactiveDecayPhysics\n"
+            << "CYGNO_ENV radioactive_decay_time_threshold_s " << std::setprecision(17)
+            << decay->GetThresholdForVeryLongDecayTime()/second << "\n";
+  for (const auto* key : {"G4NEUTRONHPDATA", "G4LEDATA", "G4LEVELGAMMADATA",
+       "G4RADIOACTIVEDATA", "G4PARTICLEXSDATA", "G4PIIDATA", "G4REALSURFACEDATA",
+       "G4SAIDXSDATA", "G4ABLADATA", "G4INCLDATA", "G4ENSDFSTATEDATA", "G4CHANNELINGDATA"}) {
+    const char* path=G4FindDataDir(key);
+    std::cout << "CYGNO_ENV " << key << " " << (path ? path : "UNRESOLVED") << "\n";
+  }
 
   //initialize visualization
   G4VisManager* visManager = nullptr;

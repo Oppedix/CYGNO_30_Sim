@@ -60,11 +60,14 @@ public:
   G4ParticleGun* GetParticleGun() { return fParticleGun;};
   G4ThreeVector GetPointOnDetectorElement(G4String);
   
+  void ResetGeneratedCount() { fGeneratedPrimaries=0; }
+  G4int GetGeneratedCount() const { return fGeneratedPrimaries; }
   void SetAtomicNumber(G4int value) { fZIsotope=value; fIonNeedsUpdate=true; }
   void SetMassNumber(G4int value) { fAIsotope=value; fIonNeedsUpdate=true; }
 private:
   G4ParticleGun*  fParticleGun;
   RadioactiveSourceSampler fSourceSampler;
+  G4int fGeneratedPrimaries = 0;
   bool fIonNeedsUpdate = false;
   G4int fZIsotope;
   G4int fAIsotope;   

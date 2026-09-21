@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "mode": "smoke",
+  "layout": "legacy-25x3",
+  "model": "code-compatible",
+  "source_policy": "historical",
+  "primaries_per_job": 2,
+  "seed": 12345,
+  "timeout_seconds": 120
+}

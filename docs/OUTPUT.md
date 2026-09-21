@@ -31,6 +31,16 @@ row per worker/run output with four string leaves: `GeometryHash`, `Layout`,
 `DetectorModel` and `SourcePolicy`. It is filled without sampling randomness and
 is reset between runs. The MT master does not write a metadata-only file. This
 record establishes geometry identity, not run completeness or generated counts.
+
+New outputs also contain one `RunAccounting` row, filled at end of run with five
+integer fields: `RunID`, `RequestedEvents`, `GeneratedPrimaries`, `ProcessedEvents`
+and `AbortedEvents`. Generated primaries count particles actually created by the
+gun; processed/aborted events come from event bookkeeping. Counters reset for each
+run. Worker counts can be summed for multiworker diagnostics; the study runner
+requires one worker and one run. A crash can leave no usable accounting record.
+The record and successful file closure establish software accounting only, never
+full radioactive-chain transport. The Hits schema and random draws are unchanged.
+
 Archive
 source, macro, seeds, build/library/data versions, requested/generated event
 counts and worker count alongside raw output.

@@ -1,8 +1,8 @@
 # Background-study progress
 
-Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 3 COMPLETE**.
-First incomplete phase: **Phase 4**, study runner. No Phase 4 changes
-are included in this checkpoint.
+Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 4 COMPLETE**.
+First incomplete phase: **Phase 5**, Smoke A. No Study A/B campaign has been
+launched; Phase 4 runner fixtures are synthetic software validation only.
 
 ## Recovery contract
 
@@ -281,11 +281,92 @@ subject `feat(study): validate layout identity throughout analysis`.
   analysis/layout test artifacts also remain under `validation-results/`.
   No production Monte Carlo, Study A/B campaign, push or merge was performed.
 
-Phase 3 local commit subject: `feat(study): encode published source matrix and quantity normalization`.
+Phase 3 local commit: `d939c7a1a3bf5614338e1aa406db13d9ab62e9e7`,
+subject `feat(study): encode published source matrix and quantity normalization`.
+
+## Phase 4 completion
+
+- Added `study/runner.py`, a smoke-only sequential wrapper around the existing
+  simulation, processor, constructed-quantity exporter and main normalized plotter.
+  It validates the complete Phase 3 matrix and defaults to its 26 contributions.
+  `smoke-A.json` and `smoke-B.json` differ only in layout; both request two primaries
+  per contribution and the same base seed. Per-contribution seed pairs exclude
+  layout from their derivation. Every attempt is a fresh isolated one-worker
+  process with explicit identity, isotope/full-chain/boundary commands and timeout.
+  Only smoke counts 1–1000 are accepted; no production override exists.
+- Added independent `RunAccounting` output with requested events, actually generated
+  primary particles, processed events, aborted events and run ID. Counters reset
+  between runs. No Hits columns or random draws changed. The runner requires zero
+  process exit, a single worker file, matching identity, consistent accounting and
+  successful validated processing. A failed process has unknown (`null`) generated
+  count unless successful accounting was already verified. Zero-hit output can be
+  software-complete; neither it nor accounting certifies complete decay transport.
+- Campaign manifests record revision/working-source fingerprints, config/matrix,
+  exact commands and seeds, executable/build fingerprints, actual quantities,
+  generated denominators, effective physics/data environment and scientific limits.
+  The linked Geant4 reports its version, resolved dataset paths and the instantiated
+  radioactive-decay process's actual threshold, observed here as 31,536,000 seconds.
+  It is not read from the hadronic parameter's unset sentinel. All 12 effective
+  dataset directory contents were independently fingerprinted successfully. No
+  physics parameter, dataset or source policy was changed; this is provenance
+  capture, not the Phase 9 nuclear-data/branching preflight.
+- CMake embeds an active compiled-source fingerprint separately from geometry
+  identity. Simulation startup, new processed/histogram `CygnoBuildSource` markers
+  and the quantity export identify their build inputs. The runner rejects stale
+  simulation/analysis/exporter builds, mismatching campaign identity or corrupted
+  completed artifacts. Existing standalone analysis compatibility remains intact.
+- Completed matching jobs are revalidated and reused; unrelated failures do not
+  remove them. Default resume retains failures; `--retry-failed` creates a new
+  attempt without replacing old files. Interrupted `running` jobs are incomplete.
+  Atomic manifests, an OS-released advisory lock and output directories outside
+  the source repository protect checkpoints. Explicit subsets remain labeled
+  partial coverage; all reports retain unvalidated scientific/chain status.
+- The existing main plotter now counts exact electron/positron group windows before
+  binning, using its unchanged energy sum and first-position fiducial predicate.
+  Windows are all finite energies, E>10 keV, 10<E<=400 keV, E<0 underflow,
+  0<=E<2000 regular range, and E>=2000 overflow. >10 has no upper cap. Outputs
+  retain original histograms plus `ExactEnergyWindows`; JSON adds per-contribution,
+  category and selected-total rates/variances and regular-bin counts/keV/year
+  densities, with flows separately in counts/year. No threshold-bin approximation,
+  new cuts, branch weights or fitted scale factors were introduced.
+- Release build succeeded. The **full 12/12 CTest suite passed in 74.70 seconds**,
+  including new runner checks and generated/processed accounting across single-
+  worker, two-worker and repeated-run transport fixtures. After the final build
+  provenance additions, all **five affected groups passed in 63.27 seconds**:
+  `study_runner`, `source_matrix`, `analysis`, `layout_analysis`, `root_geometry`.
+  Initial development checks exposed a ROOT string-branch address error in the
+  new counter writer; persistent branch storage fixed it before these passing
+  runs. No implementation changed after the final passing checks.
+- Runner fixtures cover zero-hit completion, rejection of nonempty ROOT output
+  without accounting, incomplete/aborted counts, nonzero process exits/timeouts,
+  failure retention/retry, artifact corruption, changed config/matrix/source,
+  lock collision, all 26 synthetic scheduled jobs, per-piece input and both-layout
+  exact endpoint/overflow/density calculations. They run the real processor and
+  plotter, but replace matrix transport with explicitly labeled synthetic files.
+  They are not Study A or a full-chain transport validation.
+- Fresh fixed-seed 20-primary Po-212 files in both layouts retain exactly the old
+  12-branch schema and all **13,509 Hits rows**, compared directly against Phase 2
+  `layouts-v64g10ci/` artifacts. No detector solids, placements, source sampling,
+  transport settings or historical grouping rules were changed.
+- Artifacts under `../../build/cygno-study/validation-results/` include
+  `layouts-ptfvnjhx/` (unchanged-hit regression), `transport-q37qjw2g/` (accounting),
+  `study-runner-joo5ky76/` (final runner fixtures including synthetic 26-job matrix),
+  `source-matrix-qycpdvx8/` (final matrix checks), and
+  `phase4-dataset-fingerprints.json` (actual installed datasets). Full/targeted test
+  transcripts were also saved at `/tmp/cygno-phase4-full-tests.log` and
+  `/tmp/cygno-phase4-final-tests.log`; CTest retains its latest log in the build.
+  Development fixture manifests record the then-dirty checkout; do not relabel or
+  resume them as a post-commit study. Start Phase 5 in its own clean output directory.
+- `docs/STUDY_RUNNER.md`, README and output/analysis/validation guides document
+  operation, recovery, provenance, exact endpoints and scientific limits. Protected
+  reference material was not touched. No Study A/B, production Monte Carlo,
+  thesis-model work, push or merge was performed.
+
+Phase 4 local commit subject: `feat(study): add resumable smoke runner and exact energy accounting`.
 Resolve its hash at the next phase with:
 
 ```sh
-git log -1 --format=%H --fixed-strings --grep='feat(study): encode published source matrix and quantity normalization'
+git log -1 --format=%H --fixed-strings --grep='feat(study): add resumable smoke runner and exact energy accounting'
 ```
 
 ## Phase ledger
@@ -295,8 +376,8 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): encode published sou
 | 0 Audit and experiment specification | COMPLETE | `7c02de287c5a1e88f360e00122fd5c0b8069d438` |
 | 1 Multiple layouts | COMPLETE | `8589f3c99bebc632647ac7629137eb0003a40aac` |
 | 2 Layout-aware analysis | COMPLETE | `298cd1e7db2ac4fa2daa703cc231ccf49b3ea550` |
-| 3 Published source matrix | COMPLETE | phase commit identified by exact subject above |
-| 4 Study runner | NOT STARTED | - |
+| 3 Published source matrix | COMPLETE | `d939c7a1a3bf5614338e1aa406db13d9ab62e9e7` |
+| 4 Study runner | COMPLETE | phase commit identified by exact subject above |
 | 5 Smoke A | NOT STARTED | - |
 | 6 Smoke B and A/B comparison | NOT STARTED | - |
 | 7 Separate thesis detector model | NOT STARTED | - |
@@ -306,26 +387,25 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): encode published sou
 
 ## Continuation
 
-Resume **Phase 4**, study runner, after inspecting Git state and reading this file.
-Record the Phase 3 commit hash, then implement a small resumable runner around the
-existing `rdecay01`, `SimpleProcessEvents`, normalized plotters, source-matrix helper
-and constructed-quantity exporter. Follow `BACKGROUND_EXPERIMENT.md` and
-`STUDY_SOURCES.md`; do not build a new simulation/analysis architecture.
+Resume **Phase 5**, Smoke A, after inspecting Git state and reading this file.
+Record the Phase 4 hash, read `docs/STUDY_RUNNER.md`, and launch the supplied tiny
+26-contribution A configuration in a new output directory, from the repository root:
 
-The runner must use fresh isolated single-worker processes and recorded seeds,
-explicit layout/model/source identity, the 26-contribution matrix and tiny
-configurable smoke counts. Save raw data and manifests with source revision,
-geometry/matrix/config identity, commands/seeds, effective physics/data environment,
-requested and actually generated counts, constructed quantities and normalization
-inputs. Resume only validated matching completed jobs; preserve those if another
-job fails. A ROOT file or hit count is not proof of a complete run/decay chain.
-Keep failures and unresolved long-lived/Bi-212 behavior visible; do not silently
-change thresholds, omit isotopes or substitute single-daughter branch weights.
-Define exact energy-window and overflow accounting, including >10 keV, without
-approximating it with a histogram bin that straddles the threshold.
+```sh
+source ../../software/geant4-11.4.2/bin/geant4.sh
+cmake --build ../../build/cygno-study --parallel 6
+/opt/homebrew/bin/python3 study/runner.py \
+  --config config/study/smoke-A.json --build ../../build/cygno-study \
+  --output ../../validation-runs/study-A-smoke
+```
 
-Validate runner success/failure/resume behavior with small fixtures before its
-local phase commit. Do not start Study A (Phase 5) before Phase 4 is complete.
-Do not repeat Phases 0–3. No Phase 4 changes have begun. Keep A/B layout-only and
-thesis internals a separate future configuration. Do not launch a production
-matrix, push, or merge to main.
+Inspect every job's accounting/logs and the exact-window/coverage report. Classify
+zero-hit outcomes, runtime failures and unresolved chain transport explicitly;
+never equate 26/26 software completion with valid full-chain background rates.
+Preserve failure artifacts and successful jobs. Do not raise the lifetime threshold,
+omit Bi-212 or substitute daughter weights to obtain passing physics. Stop/recovery
+behavior follows the runner guide; investigate unexpected validation failures before
+moving on. After documenting/validating A, make its own logical local phase commit
+before starting B (Phase 6). Keep the same settings/matrix/seeds for A/B apart from
+layout and derived vessel quantities. The thesis model remains a separate future
+Phase 7 configuration. Do not repeat Phases 0–4, launch production, push or merge.

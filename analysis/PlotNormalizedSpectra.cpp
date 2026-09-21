@@ -1,5 +1,6 @@
 #include "DetectorGeometry.hh"
 #include "Normalization.hh"
+#include "ExactEnergyWindows.hh"
 // ROOT post-processing: normalize elabHits spectra using explicitly configured masses,
 // activities and generated-event counts, then apply the existing fiducial cuts.
 // These inputs and the reconstructed geometry require review before a new study.
@@ -57,6 +58,8 @@ int main(int argc, char** argv) try {
 
   TFile* outDef = new TFile("NormalizedHisto.root","recreate");
 
+  ExactEnergyWindowOutput exactWindows;
+
   /*
   TTree* pos_tree = new TTree("pos_tree","pos_tree");
 
@@ -96,6 +99,7 @@ int main(int argc, char** argv) try {
       temp_histo = new TH1D(Form("%s_%s",(component.first).c_str(), (val.first).c_str() ), Form("%s_%s",(component.first).c_str(), (val.first).c_str() ),900,0,2000);
       temp_histocut = new TH1D(Form("%s_%s_cut",(component.first).c_str(), (val.first).c_str() ), Form("%s_%s_cut",(component.first).c_str(), (val.first).c_str() ),900,0,2000);
       
+      ExactEnergyWindows windows;
       for(int i=0;i< tree->GetEntries();i++){
 	tree->GetEntry(i);
 	
@@ -107,7 +111,9 @@ int main(int argc, char** argv) try {
 	    totEdep+=(*EDep)[j]*1000;	    
 	  }//chiudo for on vector
 
-	  if(isWithin( VolumeMap,(*X_Vertex)[0],(*Y_Vertex)[0],(*Z_Vertex)[0],(*VolNum)[0] )){
+	  const bool fiducial=isWithin( VolumeMap,(*X_Vertex)[0],(*Y_Vertex)[0],(*Z_Vertex)[0],(*VolNum)[0] );
+          windows.Observe(totEdep,fiducial);
+          if(fiducial){
 	    temp_histocut->Fill( totEdep );
 	  }//chiudo if within the volume  
 
@@ -134,6 +140,7 @@ int main(int argc, char** argv) try {
       temp_histo->Scale( settings.Scale(component.first,val.first) );
       temp_histocut->Scale( settings.Scale(component.first,val.first) );
 
+      exactWindows.Add(windows,component.first+"_"+val.first,settings.Scale(component.first,val.first));
       categories.Add(settings.categories.at(component.first),*temp_histo,*temp_histocut);
       Histo.push_back(temp_histo);
       HistoCut.push_back(temp_histocut);
@@ -178,6 +185,7 @@ int main(int argc, char** argv) try {
   Hstack->Write();
   Hstack_cut->Write();
   
+  exactWindows.Write();
   categories.Write(*outDef, settings);
   cygno::analysis::WriteIdentity(*outDef, settings.identity);
   outDef->Save();

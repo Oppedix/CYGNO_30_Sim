@@ -69,6 +69,11 @@ explicit kg/piece normalization and categories from separately scaled materials.
 Normalized plotters require a study configuration; old masses and assays are
 **not production defaults**. See [analysis and normalization](docs/ANALYSIS.md).
 
+The [resumable smoke runner](docs/STUDY_RUNNER.md) records counts, seeds, datasets,
+quantities and failures, with exact energy windows and explicit unvalidated-chain
+status. Follow the phase gate in [study progress](docs/STUDY_PROGRESS.md) before
+starting a campaign.
+
 Read [architecture and event lifecycle](docs/CODE_GUIDE.md),
 [geometry](docs/LAYOUT.md), [source and decay policy](docs/SOURCES.md),
 [output schema](docs/OUTPUT.md), [validation](validation/README.md),

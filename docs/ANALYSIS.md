@@ -157,3 +157,14 @@ applicability is unresolved. The historical vessel mass 1102.24 kg must not be
 carried into the resized shell automatically. No replacement assay or generated
 count has been invented. Create a separate study file only after resolving those
 inputs. A passing transcription test does not establish their scientific validity.
+
+## Study runner exports (Phase 4)
+
+The main normalized plotter additionally writes `ExactEnergyWindows` with unbinned
+electron/positron group counts and rates for full range, >10 keV, (10,400] keV and
+explicit underflow/regular/overflow partitions. The other variants retain their
+existing outputs. New processed/histogram files carry `CygnoBuildSource` for runner
+stale-build detection; this is separate from the geometry compatibility markers.
+See [STUDY_RUNNER.md](STUDY_RUNNER.md) for exact endpoints, density units, manifest
+validation, partial coverage and the distinction between pipeline completion and
+unvalidated decay chains.

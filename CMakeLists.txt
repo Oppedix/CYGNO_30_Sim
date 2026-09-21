@@ -6,6 +6,20 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS common/DetectorGeometry.hh)
 file(SHA256 "${PROJECT_SOURCE_DIR}/common/DetectorGeometry.hh" CYGNO_GEOMETRY_HASH)
+# Record the compiled source inputs so a runner cannot label a stale binary with
+# the current checkout. Python study/config files have separate manifest hashes.
+file(GLOB_RECURSE CYGNO_BUILD_INPUTS CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
+  app/*.cc src/*.cc include/*.hh common/*.hh common/*.in analysis/*.cpp analysis/*.cc analysis/*.hh)
+list(APPEND CYGNO_BUILD_INPUTS CMakeLists.txt analysis/CMakeLists.txt
+  validation/CMakeLists.txt validation/geometry_quantities.cc)
+list(SORT CYGNO_BUILD_INPUTS)
+set(CYGNO_SOURCE_RECORD "")
+foreach(input IN LISTS CYGNO_BUILD_INPUTS)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${input}")
+  file(SHA256 "${PROJECT_SOURCE_DIR}/${input}" digest)
+  string(APPEND CYGNO_SOURCE_RECORD "${input}:${digest}\n")
+endforeach()
+string(SHA256 CYGNO_SOURCE_HASH "${CYGNO_SOURCE_RECORD}")
 configure_file(common/BuildInfo.hh.in generated/BuildInfo.hh @ONLY)
 
 option(WITH_GEANT4_UIVIS "Enable Geant4 interactive visualization" ON)

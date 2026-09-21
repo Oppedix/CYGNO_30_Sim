@@ -34,6 +34,7 @@
 #include "cygno/source/PrimaryGeneratorAction.hh"
 #include "G4AnalysisManager.hh"
 
+#include "G4Event.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
 #include "G4PhysicalConstants.hh"
@@ -56,6 +57,12 @@ Run::~Run()
 { }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Run::RecordEvent(const G4Event* event)
+{
+  if (event->IsAborted()) ++fAbortedEvents;
+  G4Run::RecordEvent(event);
+}
 
 void Run::SetPrimary(G4ParticleDefinition* particle, G4double energy)
 { 
@@ -165,6 +172,8 @@ void Run::EvisEvent(G4double Evis)
 void Run::Merge(const G4Run* run)
 {
   const Run* localRun = static_cast<const Run*>(run);
+
+  fAbortedEvents += localRun->fAbortedEvents;
 
   //primary particle info
   //

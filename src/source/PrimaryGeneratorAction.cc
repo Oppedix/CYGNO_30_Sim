@@ -108,6 +108,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   // Sample before this same event creates its vertex. The algorithm is unchanged.
   fParticleGun->SetParticlePosition(fSourceSampler.Sample(fElement).position);
   fParticleGun->GeneratePrimaryVertex(anEvent);
+  fGeneratedPrimaries += fParticleGun->GetNumberOfParticles();
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
