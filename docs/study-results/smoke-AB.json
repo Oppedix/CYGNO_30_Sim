@@ -1,0 +1,362 @@
+{
+  "A_audit_sha256": "519182d2c8bea06163f5298b5042d538a726bc0a9ad7225c2a130b17138a7d8c",
+  "A_campaign_fingerprint": "36f023b564c07fcdb1172a1c2da8f03110f9a1aca346f1517e2161c46b055062",
+  "A_revision": "ecf3eeba31082e5b53f3d522e543f3446d5a544b",
+  "B_campaign_fingerprint": "c027ebbbe444fa8adb93b1993249853d6c8dec0fc7d16aefd19367a367793e2a",
+  "B_local_audit_sha256": "93ad6d9e99e061cdab17dee3e9a0956ba142e8944d89f1dfac7fd53099d4f482",
+  "B_portable_audit_sha256": "9888044a6eed7b5e80f48cdd18fff7b31f237ba4efea3599a25a4361d81dad37",
+  "B_revision": "930327949aca0033dce48c489a63f47b27bdecba",
+  "all_exact_windows_empty": true,
+  "all_original_A_files_unchanged": true,
+  "audit_script_relative": "../../validation-runs/study-B-smoke/audit/compare_AB.py",
+  "audit_script_sha256": "fa0ee3c3fd92e1e171b0892edc25bf99cb878fba7313cadef5d08ef8367e4811",
+  "build_tool_sha256": {
+    "plotter": "9d94bd0758e69f8c49df66f9e0ee0027095238aaf745b9a6d302520d06b8a5ba",
+    "processor": "1489213d6d41c3169f201deeb6db8c2d7cfc83ca25404dc7351408b26998458a",
+    "quantities": "87069b1b885d092d7b8dda11efc475617e4cf553956424e246892b9d939c7fc1",
+    "simulation": "ba3c68a71fb960c5a35aaa71eca52b24aa6a3fdd819ca88f6420df5604e5a24e"
+  },
+  "chain_validity": "failed-primary-transport",
+  "compiled_source_hash": "43fcab213dcdde608b051875799d0d03b7e257e438a50bf864de944f217b6fc0",
+  "configuration_differences": [
+    "layout"
+  ],
+  "datasets_identical": true,
+  "date": "2026-09-22",
+  "effective_environment_identical": true,
+  "geometry_reference": "docs/BACKGROUND_EXPERIMENT.md: Phase 1 validated layout centers and vessel/world bounds; not rerun in Phase 6",
+  "identical_campaign_identity_fields": [
+    "build_tools",
+    "cmake_cache_sha256",
+    "datasets",
+    "effective_environment",
+    "execution_environment",
+    "matrix",
+    "platform",
+    "python",
+    "python_executable",
+    "root"
+  ],
+  "jobs": [
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1149725120,
+        238324599
+      ],
+      "contribution": "GEMsCore_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        456749757,
+        840354189
+      ],
+      "contribution": "GEMsCore_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        617163574,
+        648875474
+      ],
+      "contribution": "GEMsCore_K40",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        317611135,
+        157713753
+      ],
+      "contribution": "GEMsOuter_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        891675980,
+        1377640763
+      ],
+      "contribution": "GEMsOuter_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        56752696,
+        1853886349
+      ],
+      "contribution": "RingSupports_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1362424132,
+        1328873802
+      ],
+      "contribution": "RingSupports_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1135050069,
+        1281550407
+      ],
+      "contribution": "RingSupports_K40",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 2,
+      "B_raw_rows": 2,
+      "common_seeds": [
+        1803689226,
+        561779727
+      ],
+      "contribution": "RingStrips_U238",
+      "max_local_position_delta_mm": 2.2737367544323206e-13,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 2,
+      "B_raw_rows": 2,
+      "common_seeds": [
+        3711361,
+        804087405
+      ],
+      "contribution": "RingStrips_Th232",
+      "max_local_position_delta_mm": 4.547473508864641e-13,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 1,
+      "B_raw_rows": 1,
+      "common_seeds": [
+        256308084,
+        899354980
+      ],
+      "contribution": "Cathodes_U238",
+      "max_local_position_delta_mm": 6.478151348687788e-14,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 1,
+      "B_raw_rows": 1,
+      "common_seeds": [
+        1118234307,
+        466663206
+      ],
+      "contribution": "Cathodes_Th232",
+      "max_local_position_delta_mm": 4.463096558993129e-14,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1350688534,
+        347082918
+      ],
+      "contribution": "Vessel_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        434231924,
+        91399635
+      ],
+      "contribution": "Vessel_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        251194745,
+        57601636
+      ],
+      "contribution": "Sensors_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        866453537,
+        101221573
+      ],
+      "contribution": "Sensors_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1451647528,
+        167144435
+      ],
+      "contribution": "Sensors_K40",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1099271432,
+        1925877871
+      ],
+      "contribution": "Lens_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        47258083,
+        1476784606
+      ],
+      "contribution": "Lens_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        88825152,
+        1816554048
+      ],
+      "contribution": "Lens_K40",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1473735257,
+        490625227
+      ],
+      "contribution": "Resistors_U238",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        600001801,
+        1984759990
+      ],
+      "contribution": "Resistors_Th232",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        741524056,
+        237295831
+      ],
+      "contribution": "Resistors_K40",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1411016113,
+        297304273
+      ],
+      "contribution": "Resistors_U235",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        873269998,
+        953893160
+      ],
+      "contribution": "Resistors_Ra226",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    },
+    {
+      "A_raw_rows": 0,
+      "B_raw_rows": 0,
+      "common_seeds": [
+        1452605873,
+        1213471289
+      ],
+      "contribution": "Resistors_Th228",
+      "max_local_position_delta_mm": 0.0,
+      "same_primary_rows_after_module_translation": true
+    }
+  ],
+  "limits": [
+    "Two primaries per contribution; pipeline diagnostic only.",
+    "No decay settings, nuclear datasets, model internals or sampling policy changed.",
+    "Bi-212 never reached; PART122 remains unresolved."
+  ],
+  "normalization_quantity_differences": [
+    "Vessel_U238",
+    "Vessel_Th232"
+  ],
+  "original_A_files_checked": 266,
+  "physical_comparison": "Unavailable: both campaigns failed primary decay transport; empty spectra cannot measure a layout effect or published-rate agreement.",
+  "quantities_differing": [
+    "Vessel"
+  ],
+  "rate_ratio": null,
+  "rate_ratio_reason": "Undefined 0/0; deliberately not computed",
+  "resistor_quantity_pieces": 750,
+  "source_file_differences": [
+    "docs/STUDY_A_SMOKE.md",
+    "docs/STUDY_PROGRESS.md",
+    "docs/study-results/smoke-A.json"
+  ],
+  "spectra_json_identical": true,
+  "status": "passed-layout-only-smoke-audit",
+  "studies": [
+    "A",
+    "B"
+  ],
+  "vessel_mass_kg": {
+    "A": 4116.556273833247,
+    "B": 4203.489372573545,
+    "difference": 86.93309874029728,
+    "relative_difference_percent": 2.111791822035447
+  }
+}

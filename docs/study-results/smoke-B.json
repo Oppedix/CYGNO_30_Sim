@@ -1,0 +1,856 @@
+{
+  "aborted_events": 0,
+  "artifact_root_relative_to_repository": "../../validation-runs/study-B-smoke",
+  "audit_script_relative": "audit/check_smoke_B.py",
+  "audit_script_sha256": "1b8f5b36e6f282e1b102adf45a0e2410db6296bfea0ce71b8ce84c29dd2c3c95",
+  "bi212_status": "Not reached or exercised; PART122 unresolved",
+  "campaign_fingerprint": "c027ebbbe444fa8adb93b1993249853d6c8dec0fc7d16aefd19367a367793e2a",
+  "campaign_manifest_sha256": "80a80a7e3364dde209cf9164cf336fcb1f1ea4cd34820e2d8ecaf7d33c230765",
+  "category_window_rows": 84,
+  "chain_validity": "failed-primary-transport",
+  "compiled_source_hash": "43fcab213dcdde608b051875799d0d03b7e257e438a50bf864de944f217b6fc0",
+  "completed_jobs": 26,
+  "configuration": {
+    "layout": "cygno-5x5x3-v1",
+    "mode": "smoke",
+    "model": "code-compatible",
+    "primaries_per_job": 2,
+    "schema_version": 1,
+    "seed": 12345,
+    "source_policy": "historical",
+    "timeout_seconds": 120
+  },
+  "dataset_fingerprints": {
+    "G4ABLADATA": {
+      "content_sha256": "955453180099d3c27bf0a7f36736872af582f9b5e1f660115f566ba1ea12a4fa",
+      "files": 10,
+      "version_directory": "G4ABLA3.3"
+    },
+    "G4CHANNELINGDATA": {
+      "content_sha256": "41409f92d08768a8ce7a66329ea7c9b7866f505753639c892f20f043252854cd",
+      "files": 21,
+      "version_directory": "G4CHANNELING2.0"
+    },
+    "G4ENSDFSTATEDATA": {
+      "content_sha256": "6c0528b4a25a7de8067ebaf087ccdeb0f10bf48035d94d71ad25bd0b4d310cb8",
+      "files": 3,
+      "version_directory": "G4ENSDFSTATE3.0"
+    },
+    "G4INCLDATA": {
+      "content_sha256": "841b15bd106d753cd66b767eaba683c8b6c74f5fb4f3335510405a8e95b24031",
+      "files": 16,
+      "version_directory": "G4INCL1.3"
+    },
+    "G4LEDATA": {
+      "content_sha256": "c20c4bf60be1b1dba98b23f1e6210ff710edc1413146ae317075553b9fb3172d",
+      "files": 11424,
+      "version_directory": "G4EMLOW8.8"
+    },
+    "G4LEVELGAMMADATA": {
+      "content_sha256": "e15ba3773bdda9783ce71c2e5ad58c8ddec9894ef0641d06afc4f8284456237e",
+      "files": 3366,
+      "version_directory": "PhotonEvaporation6.1.2"
+    },
+    "G4NEUTRONHPDATA": {
+      "content_sha256": "7d145e239737ad89d92454692bec4a9457a91ce6d9f5aad2cf28039aff72e755",
+      "files": 16092,
+      "version_directory": "G4NDL4.7.1"
+    },
+    "G4PARTICLEXSDATA": {
+      "content_sha256": "e5435b5778c633aaccd4516fc54e67480479e831f5677fd746b529333a147c3a",
+      "files": 3362,
+      "version_directory": "G4PARTICLEXS4.2"
+    },
+    "G4PIIDATA": {
+      "content_sha256": "83f8c7920ca48521f92088878146d602b816d0ae43514b48406064a5a9af59e3",
+      "files": 6189,
+      "version_directory": "G4PII1.3"
+    },
+    "G4RADIOACTIVEDATA": {
+      "content_sha256": "a092b8a268adb0416c860e4edfb2733c521c3c4f32a3364519fb8d2b690cc85d",
+      "files": 2965,
+      "version_directory": "RadioactiveDecay6.1.2"
+    },
+    "G4REALSURFACEDATA": {
+      "content_sha256": "a08bf722d2c39b0de20c1eed8a8212d55994c0d764a7c2284a56b9e3d80248bc",
+      "files": 41,
+      "version_directory": "RealSurface2.2"
+    },
+    "G4SAIDXSDATA": {
+      "content_sha256": "531fa4821c22da77736d79bb39ad3608644a297d00ce00bb5815e21971c23c18",
+      "files": 37,
+      "version_directory": "G4SAIDDATA2.0"
+    }
+  },
+  "date": "2026-09-22",
+  "decay_time_threshold_seconds": 31536000.0,
+  "effective_geant4": "$Name: geant4-11-04-patch-02 [MT]$",
+  "exact_window_rows": 312,
+  "failed_jobs": 0,
+  "generated_primaries": 52,
+  "geometry_hash": "af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79e2e3a8156b2",
+  "inspected_artifacts_sha256": {
+    "reports/report-1790073946808033000/NormalizedHisto.root": "e81feef96fcc8c86952be99c55ffa08c985a99cf7f4defa7e547cedb1d0d4439",
+    "reports/report-1790073946808033000/normalization.tsv": "f06b07ee4abafe24da8185f136d82983553cb93686d059b9e524a9657228a235",
+    "reports/report-1790073946808033000/spectra.json": "cac7acc7b103b012cbcebed24c4c90e271522b12d377b186b4bc21ee2e0ed18d",
+    "reports/report-1790073946808033000/summary.json": "8ff4087c301739a0aa3a02cc6f039baf60b39a477e7f3e109de0de3e8b4d5a4a"
+  },
+  "interpretation": "All six starting isotope mean lifetimes exceed the recorded one-year threshold; installed G4VRadioactiveDecay applicability/mean-life checks reject them. This matches the primary-only inventories in all logs.",
+  "jobs": [
+    {
+      "aborted_events": 0,
+      "contribution": "GEMsCore_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "14c2beb77ceb9ffa4075a6351f42271d1360f345bf5c945a73b17bb870de4c38",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "9b7aa05dc92da01901b42b9891cf7468cdccee9d76a154b9de90fee50b1c8e69",
+      "seeds": [
+        1149725120,
+        238324599
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "GEMsCore_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "506c27dcb686f1ab40dc73eb3c494d88806303ba3c56e0f236583d50531f013c",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "e636a576fa3019b946627e2668d9dd4772600115b3db1dcf2197b9499938a616",
+      "seeds": [
+        456749757,
+        840354189
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "GEMsCore_K40",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "afafceaa72a7568a7a3d720344dfe1b597f19627d0c385ea559e252212b99b64",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "94a67d1743de64c9881c36a15186645f73131fc9e25af3abbaf44d51661f1fe6",
+      "seeds": [
+        617163574,
+        648875474
+      ],
+      "tracked_primary": "K40",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "GEMsOuter_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "61032cc222c038045725dd2acb728792d92c2d1e401755984af9812748dc894d",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "9778a7bfce0ae1d849503fc0c08a64831e76b1796b14e42ee3a731c6db280a92",
+      "seeds": [
+        317611135,
+        157713753
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "GEMsOuter_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "9fc403b613e826397fa0b6108a9782cd9520c62822049e750c1760be79b2fbb4",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "42072ce96fab2a027b931b0019872bdeb32d385cc585a8b7f82364a7157055c8",
+      "seeds": [
+        891675980,
+        1377640763
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "RingSupports_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "f7d5561b702f7592897c223864428d0d4c046cb8c34f3039a294b3ef3a80aea5",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "09ce7654a005e977b3e5e54a81c1129570b61282e3a634353e26876ce884b77f",
+      "seeds": [
+        56752696,
+        1853886349
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "RingSupports_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "1814b6bb27701f173f3ee3d5bda81e715d364562c6c4721b838a5149f622a81b",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "4d61116e7c381164791f8f4369bd9cd16ee5b8695072199d4367f82e485b3af1",
+      "seeds": [
+        1362424132,
+        1328873802
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "RingSupports_K40",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "53501104f5865003163cc4d84da034c72bbda66e64f60cf38a001c161ac82e7c",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "dfbb7a3d67f0549d7efd7f93bf8a8b29d17d1a973b448019b9db1f5d1cae12c0",
+      "seeds": [
+        1135050069,
+        1281550407
+      ],
+      "tracked_primary": "K40",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "RingStrips_U238",
+      "generated": 2,
+      "hit_rows": 2,
+      "manifest_sha256": "040f0a4d967d5428411909d49565fa70d641ecfa32e9759dcf5b7b254f089927",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 0.0,
+          "Nucleus": "U238",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "U238",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 147.0,
+          "x_hits": 986.1089585437268,
+          "y_hits": 2007.9917750818388,
+          "z_hits": -2585.537119227648
+        },
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 1.0,
+          "Nucleus": "U238",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "U238",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 72.0,
+          "x_hits": 1257.9946372237512,
+          "y_hits": 1464.2157728877664,
+          "z_hits": -1996.3512929426042
+        }
+      ],
+      "raw_sha256": "eba09de460ab3e1172e9f2e06615565ba26d0fe01c834c00910809b24d7f3c6e",
+      "seeds": [
+        1803689226,
+        561779727
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "RingStrips_Th232",
+      "generated": 2,
+      "hit_rows": 2,
+      "manifest_sha256": "a72cf28021139ec685f25cfe223b8e39a2472fa19ab7fe47a9e090debb0916db",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 0.0,
+          "Nucleus": "Th232",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "Th232",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 134.0,
+          "x_hits": 482.1089585437268,
+          "y_hits": 2007.9963646822134,
+          "z_hits": 2207.0628807723524
+        },
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 1.0,
+          "Nucleus": "Th232",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "Th232",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 145.0,
+          "x_hits": 1257.9911421636075,
+          "y_hits": 660.2157728877663,
+          "z_hits": -100.05129294260405
+        }
+      ],
+      "raw_sha256": "98e691ec7beae3e7013fcc552a933ecf3d7433e11d862f615f82f2a39536886f",
+      "seeds": [
+        3711361,
+        804087405
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Cathodes_U238",
+      "generated": 2,
+      "hit_rows": 1,
+      "manifest_sha256": "f4fa7c00e46925c70105ac36db1bb13965eb5d683824e944671c439ec5a8dd1f",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 1.0,
+          "Nucleus": "U238",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "U238",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 105.0,
+          "x_hits": 161.21437784750015,
+          "y_hits": -1938.3157847374678,
+          "z_hits": -2285.5799425876776
+        }
+      ],
+      "raw_sha256": "eec9bfe1071c75803f8b7f1c27fe57196b4d75663ad033d252cc0333561cafff",
+      "seeds": [
+        256308084,
+        899354980
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Cathodes_Th232",
+      "generated": 2,
+      "hit_rows": 1,
+      "manifest_sha256": "1a6e3f099f700466e7955098b01af5b190138c9510a3e94de16910e9ad72ff4a",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [
+        {
+          "EnergyDeposit": 0.0,
+          "EventNumber": 0.0,
+          "Nucleus": "Th232",
+          "ParentID": 0.0,
+          "ParticleID": 1.0,
+          "ParticleName": "Th232",
+          "ParticleTag": -1.0,
+          "ProcessType": "",
+          "VolumeNumber": 120.0,
+          "x_hits": 544.7317720819265,
+          "y_hits": -1623.5230700969696,
+          "z_hits": -2285.7101443733222
+        }
+      ],
+      "raw_sha256": "b51120f16ac4b34672458d7a1761c877ebf46475b9e6ccbedd5061fa7323fbdb",
+      "seeds": [
+        1118234307,
+        466663206
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Vessel_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "1b066d6a271790b41410a8a99fbd3b81d3890fd43001cfa1557117f697d26032",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "5b81c8a5637001e7ce5dbd57ed24bf95c944c17cb235c1faac53af2124cf9fe8",
+      "seeds": [
+        1350688534,
+        347082918
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Vessel_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "b974fb32770064679a2df334bba5d00523a439cf860c885b2c6c532b7ecf6198",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "aadf8c3e5cd19ad2934d53f2718c27e2c729cad58d4783b5b6675223e88b1404",
+      "seeds": [
+        434231924,
+        91399635
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Sensors_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "9a6d3636323b378ca5f256820f07e71c91bf4191d20cb4937478bd194f741055",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "66a96250290053cce90bd1478cdaf659625342439a35296b47561d6d20557de3",
+      "seeds": [
+        251194745,
+        57601636
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Sensors_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "95116c8988cf72a0066268ca54889468c51c590b7a061f4277a075101104e2fb",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "42102e9ae02834926e6bd33cc5c5df2c3df84bb2c60c9424912704161f34db4b",
+      "seeds": [
+        866453537,
+        101221573
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Sensors_K40",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "21893f61c3ef80ba089e3bd7f9e33a6140d656cec853f99396376cbc88296a64",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "fdb16613a280c8aeafc55ef0f42b43912386aced41b1d4b4038576edffdeca0b",
+      "seeds": [
+        1451647528,
+        167144435
+      ],
+      "tracked_primary": "K40",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Lens_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "5964d19bd79568981778131d7e805f017fa3280c0a06fec9637b3934cbb23b09",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "f36c9fab2ff5c826710a8100bbf2439a9bad227a87b798821973a244226c4c32",
+      "seeds": [
+        1099271432,
+        1925877871
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Lens_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "c1d540964ab86ec8b3466b6b32a79b179b0a4143babd5b3f1755cbecae42b994",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "6b60966529030a4f00102408f0f167b0437f6bab66de06cd701d0b6d7d5e3396",
+      "seeds": [
+        47258083,
+        1476784606
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Lens_K40",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "402cf0f3efc5ea97bfaa600e54163b91ee6b7d3b4f290481b580d6bbe8659c61",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "29518e75191640dd6a80adb652025c634fa28c0816b236a145ca1cf9da59f170",
+      "seeds": [
+        88825152,
+        1816554048
+      ],
+      "tracked_primary": "K40",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_U238",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "9862244d78a15a0213ad8a9cc009349bcabe8cd845d3a7d94f654baff702f63f",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "c015de36b2fd7e6a6071bb3dffdd66733deeb983b78cfb67fe2d32b8c78bc317",
+      "seeds": [
+        1473735257,
+        490625227
+      ],
+      "tracked_primary": "U238",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_Th232",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "b4af34e179026125872b9b505b36114a7a0d8d4a8c678d107bc2172c0b60725f",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "3078de569643a7f04a7ea49294a4924e6b22b2514a7f7588505d9b4b15dc8ab9",
+      "seeds": [
+        600001801,
+        1984759990
+      ],
+      "tracked_primary": "Th232",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_K40",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "532e256f3e497ad2a302ddf07a98f7330fe5b033dce39562ad0b6602736acf5d",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "88f639950a890f475ca75625a05f3d92fa6b8241b3eb6a25dbe7141cb4c3f3c6",
+      "seeds": [
+        741524056,
+        237295831
+      ],
+      "tracked_primary": "K40",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_U235",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "eed574225db642a79b9fe01ef919547f318a702240b6b93980440125d9348b85",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "9869cf1a9c09f52da51e4d032c425983e278675b9b7b6b21719d96ca16d59026",
+      "seeds": [
+        1411016113,
+        297304273
+      ],
+      "tracked_primary": "U235",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_Ra226",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "0210d48e704f005516205d7dda62c7aca003c1e9a6cb65a79dfd20760783305f",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "deeb452024e4ca03e41c93d50a7f13b8d0d70e41d9ff71525198194cef3cd45e",
+      "seeds": [
+        873269998,
+        953893160
+      ],
+      "tracked_primary": "Ra226",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    },
+    {
+      "aborted_events": 0,
+      "contribution": "Resistors_Th228",
+      "generated": 2,
+      "hit_rows": 0,
+      "manifest_sha256": "372ad4b4d1827ca4cadfec244e043f062b98605917379842e59614f6e47ac8ee",
+      "processed_events": 2,
+      "processed_groups": 0,
+      "raw_rows": [],
+      "raw_sha256": "1e8e0f9eca0378600ec50c8f2525403ef13fb5c4a8d8787e5fd1ccccacd12d8c",
+      "seeds": [
+        1452605873,
+        1213471289
+      ],
+      "tracked_primary": "Th228",
+      "tracked_primary_count": 2,
+      "tracked_secondaries": 0
+    }
+  ],
+  "latest_report_relative": "reports/report-1790073946808033000",
+  "normalization_rows": 26,
+  "paired_config_difference": [
+    "layout"
+  ],
+  "physical_result": "No source decays transported; invalid as a physical background-rate prediction",
+  "physics": "QGSP_BIC_EMZ+G4RadioactiveDecayPhysics",
+  "pipeline_status": "complete",
+  "primary_mean_lives_from_logs": {
+    "K40": {
+      "reported_mean_life": 1802000000.0,
+      "unit": "y"
+    },
+    "Ra226": {
+      "reported_mean_life": 2310.0,
+      "unit": "y"
+    },
+    "Th228": {
+      "reported_mean_life": 2.76,
+      "unit": "y"
+    },
+    "Th232": {
+      "reported_mean_life": 20210000000.0,
+      "unit": "y"
+    },
+    "U235": {
+      "reported_mean_life": 1016000000.0,
+      "unit": "y"
+    },
+    "U238": {
+      "reported_mean_life": 6450000000.0,
+      "unit": "y"
+    }
+  },
+  "processed_events": 52,
+  "processed_groups": 0,
+  "quantities": {
+    "Cathodes": {
+      "geometry_material": "G4_Cu",
+      "mass_kg": 268.7999999999998,
+      "pieces": 75
+    },
+    "GEMsCore": {
+      "geometry_material": "PMMA",
+      "mass_kg": 6.211799999999944,
+      "pieces": 450
+    },
+    "GEMsOuter": {
+      "geometry_material": "G4_Cu",
+      "mass_kg": 72.57386477957122,
+      "pieces": 450
+    },
+    "Lens": {
+      "geometry_material": "Silicon Dioxide",
+      "mass_kg": 0.4995132319207769,
+      "pieces": 300
+    },
+    "Resistors": {
+      "geometry_material": "Al2O3",
+      "mass_kg": 0.00838464000000007,
+      "pieces": 750
+    },
+    "RingStrips": {
+      "geometry_material": "G4_Cu",
+      "mass_kg": 27.448670382636887,
+      "pieces": 600
+    },
+    "RingSupports": {
+      "geometry_material": "PMMA",
+      "mass_kg": 17.363011177957574,
+      "pieces": 150
+    },
+    "Sensors": {
+      "geometry_material": "G4_Si",
+      "mass_kg": 0.13929672000000032,
+      "pieces": 300
+    },
+    "Vessel": {
+      "geometry_material": "G4_Cu",
+      "mass_kg": 4203.489372573545,
+      "pieces": 1
+    }
+  },
+  "quantities_sha256": "c8229592b6e297d5ffee2a3b0836d83f5399677f1e934684322259cf6eb03be6",
+  "raw_hit_rows": 6,
+  "requested_primaries": 52,
+  "resume_verification": {
+    "new_attempts": 0,
+    "normalization_and_spectra_unchanged": true,
+    "original_artifact_checksums_match": true,
+    "original_report_relative": "reports/report-1790073854956279000",
+    "reused_jobs": 26
+  },
+  "run_source_revision": "930327949aca0033dce48c489a63f47b27bdecba",
+  "scope": "Phase 6 complete as smoke diagnostic; physical primary transport failed; not production validated",
+  "source_clean_at_run": true,
+  "study": "B",
+  "total_raw_energy_deposit_MeV": 0,
+  "totals": [
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "all"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "gt10"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "gt10_le400"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "underflow"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "in_range"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 0,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "overflow"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "all"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "gt10"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "gt10_le400"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "underflow"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "in_range"
+    },
+    {
+      "category": "total",
+      "count": 0,
+      "fiducial": 1,
+      "rate_per_year": 0.0,
+      "variance_per_year2": 0.0,
+      "window": "overflow"
+    }
+  ],
+  "tracked_primaries": 52,
+  "tracked_secondaries": 0,
+  "zero_hit_jobs": 22
+}

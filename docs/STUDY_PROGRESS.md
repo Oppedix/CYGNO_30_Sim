@@ -1,9 +1,10 @@
 # Background-study progress
 
-Updated: 2026-09-22. Study status: IN PROGRESS. Current phase: **Phase 5 COMPLETE (smoke diagnostic)**.
-First incomplete phase: **Phase 6**, Smoke B and A/B comparison. Study A completed
-26/26 software jobs, but primary decay transport failed under the one-year threshold.
-Its empty spectra are not physical background predictions. Study B has not started.
+Updated: 2026-09-22. Study status: IN PROGRESS. Current phase: **Phase 6 COMPLETE (smoke diagnostic)**.
+First incomplete phase: **Phase 7**, Separate thesis detector model. Studies A and B
+both completed 26/26 software jobs, but primary decay transport failed under the
+one-year threshold. Their empty spectra cannot establish a physical layout effect
+or background prediction. The audited A/B controls preserve a layout-only comparison.
 
 ## Recovery contract
 
@@ -428,11 +429,76 @@ subject `feat(study): add resumable smoke runner and exact energy accounting`.
   No Study B, production Monte Carlo, thesis-model changes, reference-file writes,
   push or merge was performed.
 
-Phase 5 local commit subject: `docs(study): record smoke A and primary decay suppression`.
+Phase 5 local commit: `930327949aca0033dce48c489a63f47b27bdecba`,
+subject `docs(study): record smoke A and primary decay suppression`.
+
+## Phase 6 completion: Study B smoke and A/B diagnostic comparison
+
+- Ran unchanged `config/study/smoke-B.json` from clean Phase 5 commit
+  `930327949aca0033dce48c489a63f47b27bdecba`, after confirming the existing Release
+  build was up to date. B uses cygno-5x5x3-v1, code-compatible internals, historical
+  sampling, two primaries for each of the 26 Table 7.1 contributions, one fresh
+  single-worker process per contribution, base seed 12345 and unchanged chain commands.
+- Original B campaign: `../../validation-runs/study-B-smoke/`, fingerprint
+  `c027ebbbe444fa8adb93b1993249853d6c8dec0fc7d16aefd19367a367793e2a`.
+  Initial run and identical resume both returned zero. **26/26 jobs**, **52
+  requested/generated/processed primary events**, no aborted events or failures.
+  Resume produced 26 REUSE results and no new attempts, with original job/attempt
+  manifests and artifact checksums intact; normalization and spectra unchanged.
+- Before transport, checked A/B configuration differences (layout only), compiled
+  source hash, all four executable checksums, build cache, complete matrix, all 26
+  macros/seeds, effective physics environment and all 12 dataset fingerprints.
+  The final comparison checks every remaining campaign-identity field, including
+  Python/ROOT/platform/execution environment. A/B source revisions differ only by
+  the three Phase 5 documentation/evidence files. No application/configuration
+  file, decay threshold, daughter weight, isotope list or nuclear data changed.
+- **B also failed physical primary decay transport.** Every run inventory has
+  only its two primary nuclei, zero secondary particles and zero terminal-ion time.
+  Printed mean lifetimes match A and all exceed the unchanged 31,536,000-second
+  threshold. Bi-212 was not reached; PART122 remains unresolved/unexercised.
+  Configured split-chain commands do not validate daughter or boundary transport.
+- B has **six zero-energy primary-ion raw rows** in the same four contributions
+  as A: Cathodes_U238/Th232 (one each), RingStrips_U238/Th232 (two each).
+  Twenty-two jobs have no raw rows; all 26 have zero processed groups. The six
+  particle/event/copy records match A, and their positions after subtracting the
+  respective module centers agree within 4.55e-13 mm. Full raw fields are retained
+  in the B evidence. This does not certify inherited geometry/source sampling.
+- Actual quantities are identical for all eight non-vessel components, with
+  materials and placement counts equal for all nine. Vessel mass changes from
+  4116.5562738332474 to 4203.489372573545 kg: +86.93309874029728 kg (+2.111791822%).
+  These remain the actual Boolean-solid construction estimates, not corrected
+  analytic masses. Only the two vessel normalization quantities change; all
+  activities, units, categories and denominators match, including 750 pieces for
+  each of the six resistor contributions. Layout-derived vessel/World envelopes
+  retain the Phase 1 validated behavior; completed geometry tests were not rerun.
+- Independently inspected all B artifacts/identity/accounting, processed files,
+  macros/receipts and complete particle inventories, all 26 normalization rows,
+  312 exact contribution windows, 84 category windows, 12 totals and 14 density
+  exports (900 bins each, with flows). ROOT/JSON outputs agree; all spectra and
+  counting variances are zero, and A/B spectra JSON is identical. **No physical
+  layout effect, upper limit, rate precision, published-rate agreement or 0/0 ratio
+  can be inferred.** The quantity change is not a measured background-rate change.
+- Both independent audits passed on first execution. The paired audit also reads
+  both campaigns' raw files and checks all **266 original A files** against the
+  pre-B checksum snapshot. A was never rerun, resumed, relabeled or edited. No
+  completed CTest group was rerun because no implementation changed in Phase 6.
+- [STUDY_AB_SMOKE.md](STUDY_AB_SMOKE.md) documents the result and recovery.
+  [study-results/smoke-B.json](study-results/smoke-B.json) and
+  [study-results/smoke-AB.json](study-results/smoke-AB.json) preserve portable audited
+  evidence and script fingerprints. B's `audit/` retains the adapted B audit,
+  read-only A/B comparison script, preflight, transcripts and checksum snapshots.
+  Reports: `reports/report-1790073854956279000` (initial) and
+  `reports/report-1790073946808033000` (resume). Campaign manifests stay
+  `unvalidated`; separate audits classify `failed-primary-transport`.
+- Phase 6 is complete as the prescribed B smoke and controlled A/B diagnosis,
+  not physics validation. The separate thesis model has not started. No production
+  Monte Carlo, protected-reference write, push or merge was performed.
+
+Phase 6 local commit subject: `docs(study): record smoke B and controlled A/B diagnosis`.
 Resolve its hash at the next phase with:
 
 ```sh
-git log -1 --format=%H --fixed-strings --grep='docs(study): record smoke A and primary decay suppression'
+git log -1 --format=%H --fixed-strings --grep='docs(study): record smoke B and controlled A/B diagnosis'
 ```
 
 ## Phase ledger
@@ -444,8 +510,8 @@ git log -1 --format=%H --fixed-strings --grep='docs(study): record smoke A and p
 | 2 Layout-aware analysis | COMPLETE | `298cd1e7db2ac4fa2daa703cc231ccf49b3ea550` |
 | 3 Published source matrix | COMPLETE | `d939c7a1a3bf5614338e1aa406db13d9ab62e9e7` |
 | 4 Study runner | COMPLETE | `ecf3eeba31082e5b53f3d522e543f3446d5a544b` |
-| 5 Smoke A | COMPLETE — diagnostic; primary decays suppressed | phase commit identified by exact subject above |
-| 6 Smoke B and A/B comparison | NOT STARTED | - |
+| 5 Smoke A | COMPLETE — diagnostic; primary decays suppressed | `930327949aca0033dce48c489a63f47b27bdecba` |
+| 6 Smoke B and A/B comparison | COMPLETE — diagnostic; primary decays suppressed | phase commit identified by exact subject above |
 | 7 Separate thesis detector model | NOT STARTED | - |
 | 8 Smoke C/D and comparisons | NOT STARTED | - |
 | 9 Th-232 / Bi-212 preflight | NOT STARTED | - |
@@ -453,35 +519,39 @@ git log -1 --format=%H --fixed-strings --grep='docs(study): record smoke A and p
 
 ## Continuation
 
-Resume **Phase 6**, Smoke B and A/B comparison, after inspecting Git state and
-reading this file. Record the Phase 5 commit hash and read `STUDY_A_SMOKE.md` and
-`STUDY_RUNNER.md`. Preserve the completed A campaign; do not rerun A merely because
-this documentation commit changes the checkout revision. Its independent audit can
-still inspect the original artifacts without rewriting their source identity.
+Resume **Phase 7**, Separate thesis detector model, after inspecting Git state and
+reading this file. Record the Phase 6 commit hash. Read `BACKGROUND_EXPERIMENT.md`
+(especially Axis 2), `STUDY_AB_SMOKE.md`, `LAYOUT.md`, and the existing geometry,
+source-policy and analysis identity implementations before changing them.
 
-Verify that B shares A's compiled source hash, executable checksums, matrix, effective
-physics/data, seeds, counts, internal model and source policy; this Phase 5 commit
-changes documentation/evidence only. Launch the configured tiny B campaign in a new
-directory, from the repository root:
+**Next exact task:** resolve and document the outstanding thesis-model geometry
+and material choices against read-only reference evidence, then implement an
+explicit, separate `thesis-7.3` configuration within the existing architecture.
+Outstanding choices include resistor axes/count/end connections, five-band end
+clearances, Suprasil density, GEM/optics reference positions and the common-vessel
+interpretation for middle-layer optics. Do not invent precise values from an
+illustration or silently treat assumptions as thesis statements. Use supported
+provenance or clearly recorded decisions before dependent construction changes.
 
-```sh
-source ../../software/geant4-11.4.2/bin/geant4.sh
-cmake --build ../../build/cygno-study --parallel 6
-/opt/homebrew/bin/python3 study/runner.py \
-  --config config/study/smoke-B.json --build ../../build/cygno-study \
-  --output ../../validation-runs/study-B-smoke
-```
+Preserve code-compatible solids/placements/materials and historical sampling for
+A/B. Thesis corrections include the cathode/gas boundary, aligned cage support,
+five bands per side, 40 micrometre GEM core plus two 5 micrometre copper faces,
+10 mm vessel wall, and documented resistor/optics/sensor dimensions. Model identity
+must propagate through construction, source quantities, raw/processed metadata,
+analysis geometry, normalization and smoke configurations without conflating the
+two models. Source policy is a separate axis: choose the same explicit policy for
+future C/D and disclose any difference from A/B. Do not silently change source or
+decay physics as a side effect of detector corrections.
 
-Inspect B's accounting, all particle inventories, raw primary steps, exact windows
-and normalization inputs. Compare A/B only after explicitly checking that layout
-and its derived vessel envelope/mass are the controlled differences. If B has the
-same absent primary decays, document the negative transport result and pipeline/
-quantity comparison; empty spectra cannot establish a physical layout effect or
-published-rate agreement. Never form a 0/0 ratio or treat zero counting errors as
-physical precision. Retain any runtime failures without omitting contributions.
+Use focused geometry/identity/source/analysis checks and tiny transport smoke
+checks during development. Complete and validate Phase 7, update this progress
+file and make its own local phase commit before launching C/D in Phase 8. Keep
+long-lived transport and the Th-232/Bi-212 failure visible for the planned Phase 9
+preflight; do not raise thresholds, omit isotopes or substitute branching weights
+to hide the observed A/B suppression.
 
-Do not silently raise thresholds, omit Bi-212 or substitute daughter branch weights.
-The known suppression and unexercised Bi-212 failure stay visible for the planned
-preflight. After documenting/validating B and A/B, update this file and make its own
-logical local phase commit before starting the separate thesis model in Phase 7.
-Do not repeat Phases 0–5, launch production, push or merge to main.
+Preserve both original A/B campaigns and their run revisions; documentation commits
+must not trigger a rerun or bypass the runner's strict resume guard. Their independent
+audits can inspect original artifacts without rewriting source identity. Do not
+repeat Phases 0–6, launch production Monte Carlo, push or merge to main. Protected
+`local_refs/` and absent `local_context/` remain read-only and excluded from commits.
