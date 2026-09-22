@@ -1,8 +1,9 @@
 # Background-study progress
 
-Updated: 2026-09-21. Study status: IN PROGRESS. Current phase: **Phase 4 COMPLETE**.
-First incomplete phase: **Phase 5**, Smoke A. No Study A/B campaign has been
-launched; Phase 4 runner fixtures are synthetic software validation only.
+Updated: 2026-09-22. Study status: IN PROGRESS. Current phase: **Phase 5 COMPLETE (smoke diagnostic)**.
+First incomplete phase: **Phase 6**, Smoke B and A/B comparison. Study A completed
+26/26 software jobs, but primary decay transport failed under the one-year threshold.
+Its empty spectra are not physical background predictions. Study B has not started.
 
 ## Recovery contract
 
@@ -362,11 +363,76 @@ subject `feat(study): encode published source matrix and quantity normalization`
   reference material was not touched. No Study A/B, production Monte Carlo,
   thesis-model work, push or merge was performed.
 
-Phase 4 local commit subject: `feat(study): add resumable smoke runner and exact energy accounting`.
+Phase 4 local commit: `ecf3eeba31082e5b53f3d522e543f3446d5a544b`,
+subject `feat(study): add resumable smoke runner and exact energy accounting`.
+
+## Phase 5 completion: Study A smoke diagnostic
+
+- Ran the unchanged `config/study/smoke-A.json` from clean Phase 4 commit
+  `ecf3eeba31082e5b53f3d522e543f3446d5a544b`, after confirming the existing Release
+  build was up to date. All 26 Table 7.1 contributions used legacy-25x3,
+  code-compatible internals, historical sampling, two primaries per job, one fresh
+  single-worker process per job, common base seed 12345 and the unchanged split-chain
+  commands. No simulation, analysis, source-matrix or configuration files changed.
+- Original campaign: `../../validation-runs/study-A-smoke/`, fingerprint
+  `36f023b564c07fcdb1172a1c2da8f03110f9a1aca346f1517e2161c46b055062`.
+  The run and subsequent identical resume both returned zero. All **26/26 jobs**
+  completed software checks; **52 requested/generated/processed primary events**,
+  no aborted events and no failed processes. All raw files, manifests, logs and
+  normalization inputs are preserved outside the repository.
+- **Physical primary decay transport failed.** All 26 run-summary particle
+  inventories contain only their two primary nuclei, with no secondaries. Every
+  starting isotope (U-238, Th-232, K-40, U-235, Ra-226, Th-228) has a printed mean
+  lifetime longer than the effective 31,536,000-second threshold; even Th-228 is
+  2.76 years. Installed `G4VRadioactiveDecay::IsApplicable` and `GetMeanLifeTime`
+  enforce this exclusion. The observed primary-only chains/zero terminal times
+  are consistent with this mechanism. No threshold, branching, data or physics
+  change was made to obtain nonempty output. Bi-212 was not reached, so PART122
+  remains unresolved and was not exercised by this campaign.
+- Twenty-two jobs have no raw rows. Cathodes_U238 and Cathodes_Th232 have one each;
+  RingStrips_U238 and RingStrips_Th232 have two each: **six raw rows total**, all
+  zero-deposit primary-ion steps (track 1, parent 0, empty creator process). These
+  do not establish radioactive decays. The inherited processor excludes these
+  ions, giving **zero processed groups** for all jobs. Positions/copy IDs are kept
+  in the committed audit record. No inherited geometry/sampling issue was altered.
+- Verified every normalization row against its matrix activity, actual quantity and
+  denominator of two. Vessel mass is 4116.5562738332474 kg; all six resistor rows
+  use 750 pieces. All 312 exact contribution-window records, 84 category-window
+  records, 12 total-window records, individual/category ROOT spectra and 14
+  900-bin category density exports are zero, including flows. They are pipeline
+  outputs under suppressed decay, **not zero-background estimates, upper limits
+  or a successful thesis reproduction**. Do not infer physics from their zero
+  counting errors or form zero-over-zero A/B ratios.
+- Independently audited every job's saved checksums, raw identity/accounting,
+  processed structure, macro/seeds, simulation/processing receipts and complete
+  particle inventory, then ROOT/JSON spectra and all 26 normalization rows. An
+  initial audit assumption of zero raw rows was corrected after inspecting the
+  six zero-energy primary rows; the corrected audit passed without application
+  changes or a simulation rerun. Previously completed CTest phases were not rerun.
+- Before repository edits, repeated the identical runner invocation once: **26
+  REUSE results, zero new attempts**. Job artifacts still match original recorded
+  checksums/attempt manifests; normalization text and exported spectra are identical
+  to the initial report. Reports are `reports/report-1790064245127040000` and
+  `reports/report-1790064361458512000`. Audit scripts, checksums and both runner
+  transcripts are preserved in the campaign's `audit/` directory.
+- [STUDY_A_SMOKE.md](STUDY_A_SMOKE.md) documents execution, negative transport
+  outcome, exact counts and limits. [study-results/smoke-A.json](study-results/smoke-A.json)
+  is the portable audited evidence, including per-job seeds/raw checksums and
+  effective dataset content fingerprints. Original manifests remain unchanged
+  (`unvalidated`); the separate audit explicitly classifies `failed-primary-transport`.
+  Do not relabel the campaign to this documentation commit or bypass its strict
+  resume guard. Its original revision is recorded above.
+- Phase 5 is complete **as the prescribed smoke run and diagnosis**, not as physics
+  validation. Phase 6 remains a layout-only smoke comparison with the same
+  suppression unless a later explicitly separated physics study changes it.
+  No Study B, production Monte Carlo, thesis-model changes, reference-file writes,
+  push or merge was performed.
+
+Phase 5 local commit subject: `docs(study): record smoke A and primary decay suppression`.
 Resolve its hash at the next phase with:
 
 ```sh
-git log -1 --format=%H --fixed-strings --grep='feat(study): add resumable smoke runner and exact energy accounting'
+git log -1 --format=%H --fixed-strings --grep='docs(study): record smoke A and primary decay suppression'
 ```
 
 ## Phase ledger
@@ -377,8 +443,8 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): add resumable smoke 
 | 1 Multiple layouts | COMPLETE | `8589f3c99bebc632647ac7629137eb0003a40aac` |
 | 2 Layout-aware analysis | COMPLETE | `298cd1e7db2ac4fa2daa703cc231ccf49b3ea550` |
 | 3 Published source matrix | COMPLETE | `d939c7a1a3bf5614338e1aa406db13d9ab62e9e7` |
-| 4 Study runner | COMPLETE | phase commit identified by exact subject above |
-| 5 Smoke A | NOT STARTED | - |
+| 4 Study runner | COMPLETE | `ecf3eeba31082e5b53f3d522e543f3446d5a544b` |
+| 5 Smoke A | COMPLETE — diagnostic; primary decays suppressed | phase commit identified by exact subject above |
 | 6 Smoke B and A/B comparison | NOT STARTED | - |
 | 7 Separate thesis detector model | NOT STARTED | - |
 | 8 Smoke C/D and comparisons | NOT STARTED | - |
@@ -387,25 +453,35 @@ git log -1 --format=%H --fixed-strings --grep='feat(study): add resumable smoke 
 
 ## Continuation
 
-Resume **Phase 5**, Smoke A, after inspecting Git state and reading this file.
-Record the Phase 4 hash, read `docs/STUDY_RUNNER.md`, and launch the supplied tiny
-26-contribution A configuration in a new output directory, from the repository root:
+Resume **Phase 6**, Smoke B and A/B comparison, after inspecting Git state and
+reading this file. Record the Phase 5 commit hash and read `STUDY_A_SMOKE.md` and
+`STUDY_RUNNER.md`. Preserve the completed A campaign; do not rerun A merely because
+this documentation commit changes the checkout revision. Its independent audit can
+still inspect the original artifacts without rewriting their source identity.
+
+Verify that B shares A's compiled source hash, executable checksums, matrix, effective
+physics/data, seeds, counts, internal model and source policy; this Phase 5 commit
+changes documentation/evidence only. Launch the configured tiny B campaign in a new
+directory, from the repository root:
 
 ```sh
 source ../../software/geant4-11.4.2/bin/geant4.sh
 cmake --build ../../build/cygno-study --parallel 6
 /opt/homebrew/bin/python3 study/runner.py \
-  --config config/study/smoke-A.json --build ../../build/cygno-study \
-  --output ../../validation-runs/study-A-smoke
+  --config config/study/smoke-B.json --build ../../build/cygno-study \
+  --output ../../validation-runs/study-B-smoke
 ```
 
-Inspect every job's accounting/logs and the exact-window/coverage report. Classify
-zero-hit outcomes, runtime failures and unresolved chain transport explicitly;
-never equate 26/26 software completion with valid full-chain background rates.
-Preserve failure artifacts and successful jobs. Do not raise the lifetime threshold,
-omit Bi-212 or substitute daughter weights to obtain passing physics. Stop/recovery
-behavior follows the runner guide; investigate unexpected validation failures before
-moving on. After documenting/validating A, make its own logical local phase commit
-before starting B (Phase 6). Keep the same settings/matrix/seeds for A/B apart from
-layout and derived vessel quantities. The thesis model remains a separate future
-Phase 7 configuration. Do not repeat Phases 0–4, launch production, push or merge.
+Inspect B's accounting, all particle inventories, raw primary steps, exact windows
+and normalization inputs. Compare A/B only after explicitly checking that layout
+and its derived vessel envelope/mass are the controlled differences. If B has the
+same absent primary decays, document the negative transport result and pipeline/
+quantity comparison; empty spectra cannot establish a physical layout effect or
+published-rate agreement. Never form a 0/0 ratio or treat zero counting errors as
+physical precision. Retain any runtime failures without omitting contributions.
+
+Do not silently raise thresholds, omit Bi-212 or substitute daughter branch weights.
+The known suppression and unexercised Bi-212 failure stay visible for the planned
+preflight. After documenting/validating B and A/B, update this file and make its own
+logical local phase commit before starting the separate thesis model in Phase 7.
+Do not repeat Phases 0–5, launch production, push or merge to main.
