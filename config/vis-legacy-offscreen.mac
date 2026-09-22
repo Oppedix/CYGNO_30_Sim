@@ -1,0 +1,14 @@
+# Reference-layout image using Geant4 ToolsSG; visualization only.
+# Copy as vis.mac into a new external directory and run without a batch macro.
+/vis/open TSG_OFFSCREEN
+/vis/viewer/set/autoRefresh false
+/vis/drawVolume
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility Vessel 0 false
+/vis/viewer/set/viewpointThetaPhi 15 25
+/vis/viewer/set/style surface
+/vis/viewer/set/background white
+/vis/tsg/offscreen/set/size 1600 800
+/vis/tsg/offscreen/set/format zb_png
+/vis/tsg/offscreen/set/file legacy-25x3.png
+/vis/viewer/flush

@@ -36,6 +36,9 @@ Simulation writes ROOT through Geant4; the separate analysis links CERN ROOT.
 (cd "$BUILD" && ./rdecay01 --layout legacy-25x3)
 ```
 
+A tested headless image-export alternative is documented in
+[the validation handoff](docs/FINALIZATION.md#visualization).
+
 `legacy-25x3` retains 75 modules / 150 gas cells, centers `(504*i,804*j,0)` mm,
 `i=-12..12`, `j=-1..1`, and gas copies `side*75 + 3*(i+12)+(j+1)`.
 `cygno-5x5x3-v1` also remains supported and is the executable's compatibility
@@ -52,7 +55,7 @@ new directory (each macro uses output basename `raw`):
 python3 study/runner.py --mode smoke --macros-dir "$RUNS/macros-smoke"
 mkdir -p "$RUNS/manual-k40"
 (cd "$RUNS/manual-k40" && "$BUILD/rdecay01" \
-  "$RUNS/macros-smoke/Lens_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
+  "$RUNS/macros-smoke/GEMsCore_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
 rootls -t "$RUNS/manual-k40/outfiles_V2/raw_t0.root"
 "$BUILD/analysis/SimpleProcessEvents" \
   "$RUNS/manual-k40/outfiles_V2/raw_t0.root" "$RUNS/manual-k40/processed.root"

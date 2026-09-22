@@ -110,7 +110,8 @@ A new report directory is created each time. Incomplete reports return exit 2.
 configuration, source matrix and fingerprint, executable/build fingerprints, ROOT
 and Python versions, Geant4 version, effective threshold, resolved nuclear-data
 version directories/content hashes, environment, quantities checksum, preflight
-status and job status. `quantities.tsv` records all constructed component masses
+status and job status. Constructed quantities and per-job seeds/requested/generated
+counts are also embedded directly in the campaign manifest. `quantities.tsv` records all constructed component masses
 and placement counts. Each `jobs/ID/manifest.json` and immutable attempt manifest
 records contribution, seeds, requested count, verified actual generated count (null
 when unavailable), accounting, processed path, status/error, previous attempt and

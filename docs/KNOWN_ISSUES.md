@@ -131,3 +131,13 @@ code-compatible dimensions differ from thesis descriptions, historical sampling 
 not uniform bulk, internal overlaps persist, and grouping/fiducialization are
 historical heuristics. Source provenance and actual thesis production revision are
 not fully recovered. Published values must never be used to tune calculated rates.
+
+
+The completed 26-job two-primary smoke broadened the observed failure scope:
+only the five K-40 contributions pass. Nineteen attempts abort with PART122,
+including U-238, U-235 and Ra-226 contributions; two tiny Th-232 attempts finish
+but remain excluded because the independent full-chain preflight fails. Duplicate
+ions include Pa234[73.92000X], Po214[609.31700], Ra224, Th228[57.77300], Th231,
+Tl208 and U234. Retry reproduces the same incomplete 5/26 coverage. Thus this
+11.4.2 environment is not qualified for complete U/Th-chain production either.
+[Final evidence](study-results/finalization.json) preserves per-job outcomes.

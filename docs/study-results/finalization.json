@@ -1,0 +1,698 @@
+{
+  "additive_manifest_validation": {
+    "revision": "c7058d0",
+    "scope": "embedded quantities/seeds/generated counts; no transport change",
+    "test": "study_runner passed, 19.75 s"
+  },
+  "analysis_regeneration": {
+    "exact_exports_unchanged": true,
+    "launched_geant4": false
+  },
+  "campaign_fingerprint": "4ee33e9fb81ef37537c2c4b350f97d5c734bba65d6894a232744d8e2fa724623",
+  "campaign_manifest_sha256": "b3cf8e739230442eec0f9a5fff13d5b4cfa405fa11eb940b548bf657c0f34a56",
+  "coverage": "5/26",
+  "datasets": {
+    "G4ABLADATA": {
+      "content_sha256": "955453180099d3c27bf0a7f36736872af582f9b5e1f660115f566ba1ea12a4fa",
+      "files": 10,
+      "version_directory": "G4ABLA3.3"
+    },
+    "G4CHANNELINGDATA": {
+      "content_sha256": "41409f92d08768a8ce7a66329ea7c9b7866f505753639c892f20f043252854cd",
+      "files": 21,
+      "version_directory": "G4CHANNELING2.0"
+    },
+    "G4ENSDFSTATEDATA": {
+      "content_sha256": "6c0528b4a25a7de8067ebaf087ccdeb0f10bf48035d94d71ad25bd0b4d310cb8",
+      "files": 3,
+      "version_directory": "G4ENSDFSTATE3.0"
+    },
+    "G4INCLDATA": {
+      "content_sha256": "841b15bd106d753cd66b767eaba683c8b6c74f5fb4f3335510405a8e95b24031",
+      "files": 16,
+      "version_directory": "G4INCL1.3"
+    },
+    "G4LEDATA": {
+      "content_sha256": "c20c4bf60be1b1dba98b23f1e6210ff710edc1413146ae317075553b9fb3172d",
+      "files": 11424,
+      "version_directory": "G4EMLOW8.8"
+    },
+    "G4LEVELGAMMADATA": {
+      "content_sha256": "e15ba3773bdda9783ce71c2e5ad58c8ddec9894ef0641d06afc4f8284456237e",
+      "files": 3366,
+      "version_directory": "PhotonEvaporation6.1.2"
+    },
+    "G4NEUTRONHPDATA": {
+      "content_sha256": "7d145e239737ad89d92454692bec4a9457a91ce6d9f5aad2cf28039aff72e755",
+      "files": 16092,
+      "version_directory": "G4NDL4.7.1"
+    },
+    "G4PARTICLEXSDATA": {
+      "content_sha256": "e5435b5778c633aaccd4516fc54e67480479e831f5677fd746b529333a147c3a",
+      "files": 3362,
+      "version_directory": "G4PARTICLEXS4.2"
+    },
+    "G4PIIDATA": {
+      "content_sha256": "83f8c7920ca48521f92088878146d602b816d0ae43514b48406064a5a9af59e3",
+      "files": 6189,
+      "version_directory": "G4PII1.3"
+    },
+    "G4RADIOACTIVEDATA": {
+      "content_sha256": "a092b8a268adb0416c860e4edfb2733c521c3c4f32a3364519fb8d2b690cc85d",
+      "files": 2965,
+      "version_directory": "RadioactiveDecay6.1.2"
+    },
+    "G4REALSURFACEDATA": {
+      "content_sha256": "a08bf722d2c39b0de20c1eed8a8212d55994c0d764a7c2284a56b9e3d80248bc",
+      "files": 41,
+      "version_directory": "RealSurface2.2"
+    },
+    "G4SAIDXSDATA": {
+      "content_sha256": "531fa4821c22da77736d79bb39ad3608644a297d00ce00bb5815e21971c23c18",
+      "files": 37,
+      "version_directory": "G4SAIDDATA2.0"
+    }
+  },
+  "effective_threshold_seconds": "3.1535999999999996e+67",
+  "geant4": "$Name: geant4-11-04-patch-02 [MT]$",
+  "interrupt": {
+    "completed_preserved": "GEMsCore_K40/attempt-0001",
+    "exit_code": 130,
+    "interrupted_resumed": "Lens_K40/attempt-0002",
+    "primaries_per_job": 100
+  },
+  "jobs": {
+    "Cathodes_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "787f619d06b9373de23083ee3691b7d39245a8b87f84c384e0ffa0faab7ffdbd",
+        "outfiles_V2/raw_t0.root": "91a9a8961e70767a5a40e7efa95360cb013e891e3296b1ae6c295c15ade0a4d0",
+        "run.mac": "c5e4821906c8c012bf59cfc941941d7cf7d852d41f001b04948c0ae7c41dcb3b",
+        "simulation.command.json": "cee295705cdc5759b4c7879863865e7d341170df7cd5ab930d94c0052838106c",
+        "simulation.log": "7d2415b701124f40f27414f7151aebdf288fd667e30852809470cb0f4e020992"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Ra224",
+        "Ra224"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Cathodes_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "4ac45fe07f9cbb6cf48419dc0d2e7906950da9e86162499b9887720a73d93542",
+        "outfiles_V2/raw_t0.root": "7bb46292d0d7cda402c2f0376c3b14506f8bb0648f9d63d9858c41e4848b3c4a",
+        "run.mac": "4b86935c0173c644ecf14e777cc2a869c506ce4590613070fabb64c7c8443b51",
+        "simulation.command.json": "21715c2b0e64018a8af49e57ac28bd030f3390edfd2bd4c8882542dc0df750fa",
+        "simulation.log": "f17e00a412d513bc982b1c4e2ad6e4768dc2cf53654e2351e1b7e6d9ab16091c"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "GEMsCore_K40": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "d3d1b67b0b020accac0b8c8bdc5935dd4631cdda0559dd7087d2b6538985d288",
+        "processed.root": "69424cc41995e747c135c052dcff40e7c95a21352ecef6e6152b6573f66315d9",
+        "processing.command.json": "b278ccd7b6dbeb6ea5b3514e42a37e99d5210da6871f190cc4197de3636b6a37",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "cf61eb5218498de2d178209f563abd8eb540ed96198686fbef06d825819580a5",
+        "simulation.command.json": "ee3db7592e4bb9e0d4c9f98c02ccae1ef6ab401914107a5ff0876e5d41adddaf",
+        "simulation.log": "6bd645fb1409ab09c0dfa12ee68836cf7eecc78c7710f348697c870ea8bd3bc5"
+      },
+      "attempt": "attempt-0001",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 352,
+      "processed_groups": 2,
+      "status": "complete"
+    },
+    "GEMsCore_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "d198f20d8d12f0fff049fcd19360e56b5c15fe9a5a588c5db58b1e98fbbfd9bd",
+        "outfiles_V2/raw_t0.root": "35a04356760fbe8672886a82600574a6f350e20238e2ea3274cf9b9c4b5ffd2d",
+        "run.mac": "df8bcc4c3535517c5fef25036bbde23fb2d2420604af25008a6efc96ca93eb1b",
+        "simulation.command.json": "b752dcefb6556c0e372d5bf5fd044f4556038d8785f41f761aab01b99db60f2b",
+        "simulation.log": "f21eb4342bf938798ccfed7ccc43b703f2286933c841fbed740758fd4ed2e2d6"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Th228[57.77300]",
+        "Th228[57.77300]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "GEMsCore_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "5003fac2b24c6a5188dc6c63b902880f9bc39791ae28e4b5c2b28dba55865fbd",
+        "outfiles_V2/raw_t0.root": "cb765ef3c4b55bece94da3c3874a6efd8235627d616cb8ba7c84743ef0462afb",
+        "run.mac": "67b99d2fa341371d4363639b33ee2f4d81fea65e680bd2a48c38f759a60d029d",
+        "simulation.command.json": "7050b5f8fbba6a3a4bb87633191e3d85152990a1389d9766609ee82058965107",
+        "simulation.log": "51ca5660f3eff6dfc6ee7befb4b00e2b7b26f89f170cbd8dadc6201b15e82ab7"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "GEMsOuter_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "77f2a75ef62bdc28c77cfe43a97e8ad8c9edd38f8fa59b7f53929be203a35270",
+        "outfiles_V2/raw_t0.root": "ed40a0424743657419360beba339088dd43b0280d6b567625b0141650f4311b0",
+        "run.mac": "5cf0a6528cf2370c82c4ca1b9a1230de9b6df4936d71888ba4f954b668238139",
+        "simulation.command.json": "5967dcc82f692ebd2f2981448bbcdb51701b7e7dd3e899fe51e1f5ff1d221d49",
+        "simulation.log": "25074ba66e6b03f7fd2dd34ff50756652407ace1f05922a7a2e1317b8e9ac829"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Th228[57.77300]",
+        "Th228[57.77300]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "GEMsOuter_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "64d278821a12732546b069957760426ae29392b4837581e2796f8fe4e52f13cf",
+        "outfiles_V2/raw_t0.root": "fe6436f93b456d535840fcd1dbe4886e5d360b8dc6137ca8bf2d18103a2a8720",
+        "run.mac": "f8fe742b8523748545b4d908fdb92ce05d277a3fab4ff12d455d8dc184ed3e42",
+        "simulation.command.json": "cb8902c133ce6ff608f88504eaffde2c2b2ab121fc4e13817c392bc399680433",
+        "simulation.log": "cd6db9e2caa71e87939394f678feb9bca0001e9f606608e563c25f5fbef15aad"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Lens_K40": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "6adc97e7f6b2a7bd6686f24f0b837acce067d79c0b0a3352beac77550171e3d9",
+        "processed.root": "731c50b7947603c6fc51de80290567d6e2a039764f603107de5c69bbec91801e",
+        "processing.command.json": "5fcb3e059b4e44dde69545d5cc12938f6d21340afe27ea46a92bfe462463d628",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "cde0493b6583fe1b7e42408d7ba83008745f33846e6ad24cf3ea5f457c1f3aca",
+        "simulation.command.json": "36e31d0a8701029d77c319d836d90cd8960ac2058cf5d19365d6c66842cd3a57",
+        "simulation.log": "b37c41b4d0e2d2c68f077be1c4dde54102976f8b9cb9d20bb45abc91e91208a1"
+      },
+      "attempt": "attempt-0001",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 0,
+      "processed_groups": 0,
+      "status": "complete"
+    },
+    "Lens_Th232": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "a3457448eefd5e7cbfd9d932ad0f6ff3df82fb009d47a470092e293519127335",
+        "processed.root": "0b38e27812b7905f01977ee8a62a8eb8c2308a0fbb7692a8b2bfb9c0efa231d2",
+        "processing.command.json": "ae6326398ca68e00594ad00cc9261e7352c934a82a3f3293703f3a11d98b275f",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "4500f699c5f795eeaf4d7e6687bb33288d6e4bb62156577886ebabf10b45a851",
+        "simulation.command.json": "9fa8a6b3ec580748fd3ef93b4cab59b74ab3b18f0aaaecc1f61724b46886791d",
+        "simulation.log": "fc909e67c5ce9aeedb3b1c05008dfe23b67b08f14b2274ea55eb78df02e1dc12"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 21,
+      "processed_groups": 0,
+      "status": "failed"
+    },
+    "Lens_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "7c8194a1a376a758a0f73cd12265549a9e8e07e38cd50b2d14597da7c2c40667",
+        "outfiles_V2/raw_t0.root": "ed7311d7ee3106df9e8cb789bd50482c9b6890b27576814b5d6a0883f10e3225",
+        "run.mac": "3eea0546e3e02af920d9fc92d7fc6982e4bbc38acd77904335d44db5180be785",
+        "simulation.command.json": "cf90dce333d590d7ed2a968b83ef0f428fd04baac126e1875bd5fbfc2fecae13",
+        "simulation.log": "cecf0e4401a307d8328250362184f97531c1e1a2098fe4aad866a329323f2c8f"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Resistors_K40": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "98489a9f7e585111222e40ec6eb76e7d36a1848fe447fd84cf4371c424840786",
+        "processed.root": "315d95978eeb29ee55d594b362ae473b7cfa17f0883d3f7dad48a0f70d97226c",
+        "processing.command.json": "97deda4c09719f51f326f6a8ab10d3de13da75a43ab409a7c78bc6f918d8fac3",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "33f01518ea44d2de672fde4b15560b4c1a9083c679fef8829c427cfe1bd58c1c",
+        "simulation.command.json": "b45c58e52bebe1ffe547b37f6efdc2c2e76254fcebd4bec8af4ef5aaccb69470",
+        "simulation.log": "f8cf95a9cc78481864644a5ba50044db71c876a53b63d11f528b526094507d07"
+      },
+      "attempt": "attempt-0001",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 3,
+      "processed_groups": 0,
+      "status": "complete"
+    },
+    "Resistors_Ra226": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "21cbdaeba60a9a07ad52ad1f73426dcb07b61f728baf50bdacebeeb802722506",
+        "outfiles_V2/raw_t0.root": "4c503bfed9cbd784c44fe5432807a44512831d43bb2116a604c3114816238f2d",
+        "run.mac": "ae643d3680cb17d00e29666156c7c8c04e976d386da193b3f6bc0558e06641db",
+        "simulation.command.json": "f8d85f33ddd2be2a9f311abb09895032cd6731b98c57d9c001fc265ace526eb6",
+        "simulation.log": "557a6097dff048fba763664ca5d6c9849e331261fbe05919f95b9d04a948e239"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Po214[609.31700]",
+        "Po214[609.31700]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Resistors_Th228": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "0deda8c068662bc58772696db7d6f2c9ea32a756534cd0464b4f2a92c22bca9c",
+        "outfiles_V2/raw_t0.root": "05333383bb69e183c8fa201c8329aad9430e1bf72db1daad2f6f29f3e7a3d877",
+        "run.mac": "7b928647ad16f12a5194cec6c9945408c483640de57bc6f7adaa017e3dba0a77",
+        "simulation.command.json": "7aa7f858b81b31a1c358b2aae88b8b56b30ca668a0d7a9a0deb19595f9dc80ac",
+        "simulation.log": "392398c59fa53655459e7a77e0fe6e7ed9d5d8ed9ff26aaf6fe556c0cbb677e3"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Ra224",
+        "Ra224"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Resistors_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "49a8f1a6b89644d77b761cb33d2c85e0aef80461ed8cbd55692ab7275eb03afc",
+        "outfiles_V2/raw_t0.root": "1a11eaf9ea83ebb2e3f58f6aedb1a5e70ee41f26983a4aa16c084ad9285e42db",
+        "run.mac": "9038c76a8ca5ace2ab521e9e93e67a0a76d394200a52a0f839630f604dcf2172",
+        "simulation.command.json": "7ff2cde5ab4d153e43a26b36061be5daeaab9a62632330b01f1adf8ca3188f16",
+        "simulation.log": "b116939521d066371897540cc6d4a7cb492a4246e3b612c4bb5121e60017ac72"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Th228[57.77300]",
+        "Th228[57.77300]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Resistors_U235": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "f0dbab242e04507bed9d32d2d9bed77011a70eba4927fbfa35bf99c76a30ab80",
+        "outfiles_V2/raw_t0.root": "4b5b9d0494e95c455eb3d5d4f7c568846c067bd26f944b2db46f54d9fa964be3",
+        "run.mac": "28161d265dfbcc3ab362c8d972710821f440dc1211bfda8e0b752ce115617471",
+        "simulation.command.json": "d51ec4189775e0d198fa1dd7c22b9c763b2a2ec6850e6315f7cc1ea789d2cd51",
+        "simulation.log": "68adbf9a8a53697a3a764253901f47e63171f16ca97ed6f7abd0d03ebe70b64f"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Th231",
+        "Th231"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Resistors_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "6212f307b2d16cee5aa4437336b45778bcdb0c19c3431530f446947fbb55bf80",
+        "outfiles_V2/raw_t0.root": "1350ed84dc052253caea98f356dee28e0b2f0a651e8018ef24277bad9f5c961f",
+        "run.mac": "d6dbb908276082573ce0a3e286639f6b6aa9b63601f436e9f1eac7a442a9387f",
+        "simulation.command.json": "66a51beda2cb7fb59b7bc801d3333defa67a172b125e1fb95f1e97fbc306ebc0",
+        "simulation.log": "0137516daf02ce4c4efd79840e9e54ab2fc524cf4fdcbe3257f25f129883e158"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "RingStrips_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "d314bb5fbff055c114a822a6d2238222c593d64b61aee50669a3b052dd54ac86",
+        "outfiles_V2/raw_t0.root": "4b9f81bdd59966d89f21b6afd769e89ecbce430c1927d61eb5c30d8ed9a1c914",
+        "run.mac": "2ff0c00cff934986d74b55156491de532e7fd3c82bb3e51e0d85cf378578b96d",
+        "simulation.command.json": "286af13256497cc24caf684c6dc552f64eaabef9e9f67c1bee9fb5d6122e27dc",
+        "simulation.log": "a9b76ceefc55e9c58b9239c9924ec3cf70b0d890f95f6dd1bed05ecc18083d6c"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Tl208",
+        "Tl208"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "RingStrips_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "0d17cf6f5476e3a5e66afe724bbd298873bdda991dceeba465eb757ed87a69b9",
+        "outfiles_V2/raw_t0.root": "cbdbe085a7291b5db1b167a9b56fa90d4ad1dd8b52c033522eaf80c1f4006c1f",
+        "run.mac": "a89247e0f4151dfa545eb6c2a831a50b186634f3489c230fd64d7eb44c762e1a",
+        "simulation.command.json": "39431d811ed31a067166dc9a0073adf44b2510481cf134c24e576309344d0c06",
+        "simulation.log": "facb251e1c678c31ed5083f2c3a569a571f464ba08888dea1e8298b911e26d58"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Pa234[73.92000X]",
+        "Pa234[73.92000X]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "RingSupports_K40": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "2e4d2a2a8b28a352dbd2784eac07fdd97c092e3dd416f69631669d2e474e0c96",
+        "processed.root": "4c445662d4fcd70b835aca70f8cf2cd64fac8f2f999f69d2e6ebdf72bc008aff",
+        "processing.command.json": "72e80197f910ead3060c0d42405d193bf26788925b0dd1854e754cf2a6b57567",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "a99a56a28651f514dd1d2c7aff6982f122f352fb3e9af16fee3dd6ecbb675d5a",
+        "simulation.command.json": "7618bfb24b00c62308ef330f39e5af077e574b201d8ac747d91612f63d20fa20",
+        "simulation.log": "1449db99c345cf472eb68f202a62c802e194c9cfe3ce5370d078a0898c71747b"
+      },
+      "attempt": "attempt-0001",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 206,
+      "processed_groups": 2,
+      "status": "complete"
+    },
+    "RingSupports_Th232": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "e000d71d57ab59203dbcfa70f900375f354c66711d46beb8a55406b4929a6b9a",
+        "processed.root": "94399817aef5b7808092aea0795766eb5af99faefaa6fdc21496594458c5af8f",
+        "processing.command.json": "b68517cc6699a5ee7501e4a7570926edfc9b7dad8dc039fdac5e5eb9b0e4c4f2",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "2ea8da83f0e1be0bc810dfd4a6f8a48f21b35e11a98820812080376c8f9748cf",
+        "simulation.command.json": "53cd648898d6ce9b846792decf6c2b9c949c57ab21e751bb0caabd7f45a97009",
+        "simulation.log": "79c33c47561087f60a68c174470b0a09b212be60ab289bef1a144d6bc922c0d5"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 1168,
+      "processed_groups": 10,
+      "status": "failed"
+    },
+    "RingSupports_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "4096d23d88ef2e425077068e1f4edee04584dad8b41fe9da39670a69f5080d3e",
+        "outfiles_V2/raw_t0.root": "9466987b1393860bc4381277715dbd87ce230a4631beb7c5cf625b273c31d919",
+        "run.mac": "1f17a29d192746c87420a97af20bd385958c5f8a276648fbad9cba25bf44ec02",
+        "simulation.command.json": "bf040202b815d15568e9b3d6a741f54db7cfddbad6956173ee8ca1ce7f74cfbe",
+        "simulation.log": "8fa2cb3b933742fb606250b2654afdaa915878fac3b526425fa90d0448582cb7"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Sensors_K40": {
+      "PART122": false,
+      "artifacts_sha256": {
+        "outfiles_V2/raw_t0.root": "841cd5af7c3995725b70bbee6dacb18cdc486388d058909d28d409b957fac2bb",
+        "processed.root": "378f0a918c591f557ef26de0a07c36411204d53b1e54c8a9674dcd5410a06ec9",
+        "processing.command.json": "77a3745bed10081712a1a7e14b153422fb547bf4d0ef20a2db4189745f2f3107",
+        "processing.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.mac": "60ac24f1a12e6d682398e746dce42cd15a06bc3e20bed0f1558b12c2ff6d50a7",
+        "simulation.command.json": "6f5711201acf1abc51a2878e7f6c715c2df720fa76fa8bcb21df3560ee8d58e9",
+        "simulation.log": "29cf9abb863b8e8b9d444b7c621ec3662500bb7779875e00279db4835faa8849"
+      },
+      "attempt": "attempt-0001",
+      "duplicate_ions": [],
+      "generated_primaries": 2,
+      "hit_rows": 0,
+      "processed_groups": 0,
+      "status": "complete"
+    },
+    "Sensors_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "9eab19b5fd1aad8e0fb821d3e7b6285c9811d7ea807018e7302183f4c05e0fd9",
+        "outfiles_V2/raw_t0.root": "af060fd0612d6c53184d0bd56469141c926ad2adaa810b4c62cfd40530c405f0",
+        "run.mac": "d4439c1cd3e433e40d18e776bc252774315ed3a22fa1580c0edacaa71adba6c4",
+        "simulation.command.json": "7fa54c19707dbf3be1ddb1db22981aab09e1804ff1ca930221c02bf6ddb13548",
+        "simulation.log": "32d2d44203df3b4d6b4018fda22b85cad855dee837d6996dbf28d542c0dd87d8"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Th228[57.77300]",
+        "Th228[57.77300]"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Sensors_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "5cef651c9199a42469e8a8e2390fb739fece06eb2dd9977f37a835f1720c37ce",
+        "outfiles_V2/raw_t0.root": "3405c07c9645765627975b9e6060a067c9f31b0b2d3a69b88ff0a2611566c7ef",
+        "run.mac": "c6756a22cf60ee3e71b96e7285d0a2dc31877c1e4e3b5b60b46a7775a6e76bc8",
+        "simulation.command.json": "c4a6dfe2ae5aebaab888b7b6e71f0d82a3f25c69366ee05b6e5a9c931c747498",
+        "simulation.log": "76bb0c5354a3fe0b5ea7e0a9fe8a3b05fa0855f8ba1bb16299f45893d2de4e5e"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Vessel_Th232": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "414b27991db8b8839da5a30725f2c29d75b1a196a311f0a23342c90b9f4c05d3",
+        "outfiles_V2/raw_t0.root": "27d86278d61d636464a0fe9f1680a93214a426a9763f54a5ba8c3190625a14bb",
+        "run.mac": "3b13322014cf01f73fee4f759341e1653152dc30b3022a0007c2b06abbd3286e",
+        "simulation.command.json": "b2ffb85d1dba103d801e62042cb99ef70c9a475770a4380d462eb3629592b75e",
+        "simulation.log": "d7a6bc1e8ad0c1213ae8eef1a51898c5d5e378358d1b6547605c1b27f4ab819d"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "Ra224",
+        "Ra224"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    },
+    "Vessel_U238": {
+      "PART122": true,
+      "artifacts_sha256": {
+        "outfiles_V2/raw.root": "88a885eced2bdbd2c5bd5c83cd6785ed9f90bff6193ac4078003ca55c336b79a",
+        "outfiles_V2/raw_t0.root": "b59349751d222c53d3842a31f8021e00fb312a14adbd72be10efc01ed0b14e8c",
+        "run.mac": "c0b4bd7eb97d1c8b410681a64ce7dd285a043beda108b4d51e28a7fd5c6fc08a",
+        "simulation.command.json": "b6b522b465956d174cb1faa66e2128941553ec9b83ee4766c93c6ac3189a6e68",
+        "simulation.log": "5b09c69ee2c7676c64f54833b63e8356d33f6d772feeef0e357115692b7b5f08"
+      },
+      "attempt": "attempt-0002",
+      "duplicate_ions": [
+        "U234",
+        "U234"
+      ],
+      "generated_primaries": null,
+      "hit_rows": null,
+      "processed_groups": null,
+      "status": "failed"
+    }
+  },
+  "manual": {
+    "accounting": {
+      "AbortedEvents": 0,
+      "GeneratedPrimaries": 2,
+      "ProcessedEvents": 2,
+      "RequestedEvents": 2,
+      "RunID": 0,
+      "chain_validity": "unvalidated",
+      "hit_rows": 0
+    },
+    "processed_groups": 0
+  },
+  "manual_gem_k40": {
+    "accounting": {
+      "AbortedEvents": 0,
+      "GeneratedPrimaries": 2,
+      "ProcessedEvents": 2,
+      "RequestedEvents": 2,
+      "RunID": 0,
+      "chain_validity": "unvalidated",
+      "hit_rows": 352
+    },
+    "processed_groups": 2
+  },
+  "mode": "smoke",
+  "output_relative_to_repository": "../../validation-runs/samuele-final-smoke",
+  "phase6": "a9be61bcc209e403f00275bcfae51787fcadb765",
+  "preflight": {
+    "checks": {
+      "bi212-full": {
+        "PART122": true,
+        "error": "simulation exited -6; see CAMPAIGN/probes/probe-1790092958258365000/decay-preflight/bi212-full/simulation.log",
+        "log": "probes/probe-1790092958258365000/decay-preflight/bi212-full/simulation.log",
+        "requested_primaries": 40,
+        "status": "failed"
+      },
+      "th232-full": {
+        "PART122": true,
+        "error": "simulation exited -6; see CAMPAIGN/probes/probe-1790092958258365000/decay-preflight/th232-full/simulation.log",
+        "log": "probes/probe-1790092958258365000/decay-preflight/th232-full/simulation.log",
+        "requested_primaries": 40,
+        "status": "failed"
+      },
+      "u238-default": {
+        "PART122": false,
+        "environment": {
+          "G4ABLADATA": "G4ABLA3.3",
+          "G4CHANNELINGDATA": "G4CHANNELING2.0",
+          "G4ENSDFSTATEDATA": "G4ENSDFSTATE3.0",
+          "G4INCLDATA": "G4INCL1.3",
+          "G4LEDATA": "G4EMLOW8.8",
+          "G4LEVELGAMMADATA": "PhotonEvaporation6.1.2",
+          "G4NEUTRONHPDATA": "G4NDL4.7.1",
+          "G4PARTICLEXSDATA": "G4PARTICLEXS4.2",
+          "G4PIIDATA": "G4PII1.3",
+          "G4RADIOACTIVEDATA": "RadioactiveDecay6.1.2",
+          "G4REALSURFACEDATA": "RealSurface2.2",
+          "G4SAIDXSDATA": "G4SAIDDATA2.0",
+          "geant4": "$Name: geant4-11-04-patch-02 [MT]$",
+          "geometry_hash": "51481b571cdaa4bd358f3022551cbef1506c2059f150409ee32c99f356c1ded9",
+          "physics": "QGSP_BIC_EMZ+G4RadioactiveDecayPhysics",
+          "radioactive_decay_time_threshold_s": "31536000",
+          "source_hash": "43d53d3f2b21e2c0a5d5a886fd481312b5af81dbe01c344aa45b02e7dbfcc93c"
+        },
+        "log": "probes/probe-1790092958258365000/decay-preflight/u238-default/simulation.log",
+        "requested_primaries": 2,
+        "status": "passed",
+        "th234_daughter_observed": false
+      },
+      "u238-enabled": {
+        "PART122": false,
+        "environment": {
+          "G4ABLADATA": "G4ABLA3.3",
+          "G4CHANNELINGDATA": "G4CHANNELING2.0",
+          "G4ENSDFSTATEDATA": "G4ENSDFSTATE3.0",
+          "G4INCLDATA": "G4INCL1.3",
+          "G4LEDATA": "G4EMLOW8.8",
+          "G4LEVELGAMMADATA": "PhotonEvaporation6.1.2",
+          "G4NEUTRONHPDATA": "G4NDL4.7.1",
+          "G4PARTICLEXSDATA": "G4PARTICLEXS4.2",
+          "G4PIIDATA": "G4PII1.3",
+          "G4RADIOACTIVEDATA": "RadioactiveDecay6.1.2",
+          "G4REALSURFACEDATA": "RealSurface2.2",
+          "G4SAIDXSDATA": "G4SAIDDATA2.0",
+          "geant4": "$Name: geant4-11-04-patch-02 [MT]$",
+          "geometry_hash": "51481b571cdaa4bd358f3022551cbef1506c2059f150409ee32c99f356c1ded9",
+          "physics": "QGSP_BIC_EMZ+G4RadioactiveDecayPhysics",
+          "radioactive_decay_time_threshold_s": "3.1535999999999996e+67",
+          "source_hash": "43d53d3f2b21e2c0a5d5a886fd481312b5af81dbe01c344aa45b02e7dbfcc93c"
+        },
+        "log": "probes/probe-1790092958258365000/decay-preflight/u238-enabled/simulation.log",
+        "requested_primaries": 2,
+        "status": "passed",
+        "th234_daughter_observed": true
+      }
+    },
+    "complete": false,
+    "created_unix": 1790092979.125567,
+    "scope": "environment preflight; not a rate/branching validation"
+  },
+  "recovery_revision": "f82c823144237accdc99b4c351a7ce96b90329d8",
+  "requested_per_job": 2,
+  "resume": {
+    "new_attempts": 0,
+    "retained_failed": 21,
+    "reused": 5
+  },
+  "retry": {
+    "completed_artifacts_unchanged": true,
+    "retried": 21,
+    "reused": 5
+  },
+  "root": "6.40.04",
+  "scientific_status": "incomplete; not a background estimate",
+  "tests": {
+    "baseline": "12/12, 100.83 s",
+    "final_clean_release": "13/13, 105.18 s"
+  },
+  "validation_revision": "113d7132c17b384870c891c5c7e8769160a6b32a",
+  "visualization": {
+    "driver": "TSG_OFFSCREEN",
+    "image_relative_to_repository": "../../validation-runs/samuele-offscreen-view/legacy-25x3.png",
+    "image_sha256": "887b13afa9c1af9c18acf13d5f322769c10be2303dbf5d7a5b5fde883f274b55",
+    "layout": "legacy-25x3"
+  }
+}
