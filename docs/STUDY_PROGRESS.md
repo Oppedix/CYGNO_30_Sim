@@ -31,29 +31,41 @@ and A/B suppression evidence. Original campaigns must not be relabeled or rerun.
 5. Researcher documentation, final tree audit, clean build and complete validation.
 6. Logical local commits and handoff; no merge, push or production-size validation.
 
-## Current checkpoint
+## Completion
 
-Implementation and researcher documentation are complete; final campaign validation
-is next. Fresh Phase 6 baseline: 12/12 tests passed in 100.83 s. Updated full suite:
-13/13 passed in 111.58 s, including actual long-lived U-238 daughters, synthetic
-26-job scheduling, failed-preflight blocking, interrupt/resume/retry, real SIGINT
-child cleanup and figure/table/analysis-only checks. Both layouts' geometry.txt and
-placements.tsv snapshots are byte-identical to the baseline. Internals are unchanged.
+Software finalization is COMPLETE, with a documented external scientific blocker.
+Reference detector/layout/source scope is unchanged. No production-sized campaign,
+merge or push was performed. See [final handoff](FINALIZATION.md) for exact commands,
+full recovery-file list, repository tree and [portable evidence](study-results/finalization.json).
 
-Explicit RDM setting: 1e60 years in macros; observed worker value ~3.1536e67 s.
-Two U-238 primaries yield two Th-234 daughters; the one-year control yields none.
-Th-232 and Bi-212 preflight still fail PART122 on Geant4 11.4.2. The independent
-vacuum-world Bi probe also fails. No verified replacement environment was found;
-complete Th contributions require a separately validated compatible environment.
-No nuclear data, branch ratios or source distributions were changed.
+- Fresh Phase 6 baseline: 12/12 tests, 100.83 s.
+- Final clean out-of-source Release build with UI/vis enabled: 13/13 tests, 105.18 s.
+- Both layouts' geometry and placement snapshots remain byte-identical to Phase 6.
+- Explicit macro threshold 1e60 years observed on the worker (~3.1536e67 s).
+  Two U-238 primaries produce two Th-234 daughters; default control produces none.
+- Full Th-232/Bi-212 and independent vacuum-world Bi preflights fail PART122.
+  The real 26-job smoke broadens this to U/Th chains: five K-40 contributions pass,
+  21 remain incomplete (19 abort; two tiny Th runs excluded by failed preflight).
+- Resume reuses five completed jobs without new attempts; retry retains them and
+  creates 21 new failed attempts. Exact exports remain identical across reports.
+- Actual Ctrl-C exits 130, preserves completed GEMsCore_K40 and resumes Lens_K40
+  into attempt-0002. Synthetic safeguards also test corruption and identity mismatch.
+- Manual GEMsCore_K40: two primaries, 352 Hits rows, two processed groups. All
+  requested ROOT/PNG/PDF/CSV/JSON/text artifacts generated with incomplete labels.
+- Nonempty Geant4 ToolsSG image inspected: 25×3 array visible. Sandboxed Qt fails
+  on macOS services; tested offscreen macro supplies a portable validation path.
+- Final manifest audit embeds constructed quantities plus per-job seeds, counts
+  and state directly in campaign.json, in addition to authoritative job manifests.
+  Targeted runner tests passed after this additive change (19.75 s).
 
-Runner supports smoke/production, configurable counts (production default 1e7),
-explicit macros/list/subsets, sequential progress, immutable attempts, retry,
-Ctrl-C resume, and analysis-only regeneration. Figures use actual bin-width
-densities; tables retain exact windows and published comparisons separately.
-Historical phase reports are retained under docs/history/ with superseded banners.
+Implementation campaign revision: `113d7132c17b384870c891c5c7e8769160a6b32a`.
+Later manifest/reporting documentation must not relabel or force-resume those runs.
+A new campaign requires the final checkout/build; existing validation artifacts
+remain archived at their original identity.
 
-Next exact task: commit this coherent workflow, run the real 26-contribution smoke
-and its unchanged resume/retry/analysis-only paths, validate a manual macro, inspect
-rendered spectra and a nonempty detector view, then record final evidence and tree
-in a documentation-only local commit. No production-sized Monte Carlo, push or merge.
+**Next scientific task:** validate an official matched Geant4/nuclear-data environment
+that executes full U/Th chains without PART122, then run a fresh statistically useful
+campaign. No compatible replacement environment has been verified here. Preserve
+all original attempts; no data edits, branch weights or omitted isotopes are allowed.
+The repository is technically ready for fast-forward integration; this is not a
+claim that the current environment reproduces complete published background rates.

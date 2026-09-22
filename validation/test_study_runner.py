@@ -171,6 +171,10 @@ with patch.object(runner, 'invoke', side_effect=synthetic_invoke), \
     full_report = runner.read(full_args.output/'latest-report.json')
     assert full_report['complete_matrix'] is True and full_report['coverage'] == '26/26'
     assert full_report['scientific_validity'] == 'unvalidated'
+    campaign_manifest = runner.read(full_args.output/'campaign.json')
+    assert campaign_manifest['quantities']['Resistors']['pieces'] == 750
+    assert campaign_manifest['job_records']['GEMsCore_K40']['generated_primaries'] == 2
+    assert len(campaign_manifest['job_records']['GEMsCore_K40']['seeds']) == 2
     report_dir = Path(full_report['path'])
     exported = runner.read(report_dir/'spectra.json')
     assert len(exported['windows']) == 312 and len(exported['categories']) == 84

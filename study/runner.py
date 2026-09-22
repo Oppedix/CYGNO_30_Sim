@@ -289,6 +289,21 @@ def th_chain(row):
     return row['chain_start']['name'] in ('Th232', 'Th228') and row['stop_before'] is None
 
 
+def campaign_job_records(output, matrix):
+    """Embed observed attempt state in the campaign; job files remain authoritative."""
+    result = {}
+    for row in matrix['contributions']:
+        path = output/'jobs'/row['id']/'manifest.json'
+        if path.exists():
+            job = read(path)
+            result[row['id']] = {key: job.get(key) for key in
+                ('status', 'attempt', 'seeds', 'requested_primaries', 'generated_primaries',
+                 'chain_validity', 'error')}
+        else:
+            result[row['id']] = dict(status='not_started')
+    return result
+
+
 def campaign_preflight(build, output):
     from study.preflight import check
     check(build, output)
@@ -380,6 +395,8 @@ def run(args):
         expected['source_hash'] = environment['source_hash']
         quantities = read_quantities(output/'quantities.tsv', layout=config['layout'], model=config['model'],
                                      geometry_hash=expected['geometry_hash'])
+        require(campaign.get('quantities', quantities) == quantities, 'Embedded quantities changed')
+        campaign['quantities'] = quantities
         jobs = {}
         campaign['status'] = 'running'
         save(campaign_path, campaign)
@@ -399,6 +416,7 @@ def run(args):
                                                args.retry_failed and not analysis_only)
                 except KeyboardInterrupt:
                     campaign['status'] = 'interrupted'
+                    campaign['job_records'] = campaign_job_records(output, matrix)
                     save(campaign_path, campaign)
                     raise
                 except (ValueError, RuntimeError, OSError) as error:
@@ -431,8 +449,9 @@ def run(args):
             report['analysis_status'] = 'no_completed_jobs'
         save(report_dir/'summary.json', report)
         save(output/'latest-report.json', dict(path=str(report_dir), **report))
-        campaign['jobs'] = report['jobs']
-        campaign['status'] = 'complete' if len(completed) == 26 else 'incomplete'
+        campaign['job_records'] = campaign_job_records(output, matrix)
+        campaign['jobs'] = {key: value['status'] for key, value in campaign['job_records'].items()}
+        campaign['status'] = 'complete' if all(value == 'complete' for value in campaign['jobs'].values()) else 'incomplete'
         save(campaign_path, campaign)
         for name, status in report['jobs'].items():
             if status not in ('complete', 'not_selected'):
