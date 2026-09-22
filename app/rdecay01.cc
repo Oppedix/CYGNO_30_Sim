@@ -153,9 +153,7 @@ int main(int argc,char** argv) {
   std::cout << "CYGNO_ENV source_hash " << cygno::build::sourceHash << "\n"
             << "CYGNO_ENV geometry_hash " << cygno::build::geometryHash << "\n"
             << "CYGNO_ENV geant4 " << G4Version << "\n"
-            << "CYGNO_ENV physics QGSP_BIC_EMZ+G4RadioactiveDecayPhysics\n"
-            << "CYGNO_ENV radioactive_decay_time_threshold_s " << std::setprecision(17)
-            << decay->GetThresholdForVeryLongDecayTime()/second << "\n";
+            << "CYGNO_ENV physics QGSP_BIC_EMZ+G4RadioactiveDecayPhysics\n";
   for (const auto* key : {"G4NEUTRONHPDATA", "G4LEDATA", "G4LEVELGAMMADATA",
        "G4RADIOACTIVEDATA", "G4PARTICLEXSDATA", "G4PIIDATA", "G4REALSURFACEDATA",
        "G4SAIDXSDATA", "G4ABLADATA", "G4INCLDATA", "G4ENSDFSTATEDATA", "G4CHANNELINGDATA"}) {
@@ -185,6 +183,11 @@ int main(int argc,char** argv) {
     commandStatus=UImanager->ApplyCommand(command+fileName);
   }
   
+  // Observe after the macro: startup precedes user RDM commands. BeginOfRunAction
+  // also records the worker value before transport, including runs that abort.
+  std::cout << "CYGNO_ENV radioactive_decay_time_threshold_s " << std::setprecision(17)
+            << decay->GetThresholdForVeryLongDecayTime()/second << std::endl;
+
   //job termination
   delete visManager;
   delete runManager;

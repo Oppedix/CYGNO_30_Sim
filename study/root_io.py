@@ -1,7 +1,7 @@
 """Small ROOT validation/export adapter; no simulation or physics assumptions."""
 import math
 from pathlib import Path
-from .source_matrix import require
+from .source_matrix import require, LAYOUT_MODULE_COUNTS
 
 
 def root_file(path):
@@ -78,7 +78,7 @@ def inspect_processed(path, expected):
             require(lengths[0] > 0 and len(set(lengths)) == 1, 'Malformed processed vectors')
             require(all(math.isfinite(x) for field in ('EDep_Out', 'X_Vertex', 'Y_Vertex', 'Z_Vertex')
                         for x in getattr(row, field)), 'Nonfinite processed values')
-            require(all(math.isfinite(x) and x == int(x) and 0 <= x < 150 for x in row.VolNnum_Out),
+            require(all(math.isfinite(x) and x == int(x) and 0 <= x < 2*LAYOUT_MODULE_COUNTS[expected['layout']] for x in row.VolNnum_Out),
                     'Invalid processed gas copy')
         return int(tree.GetEntries())
     finally:

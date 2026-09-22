@@ -45,6 +45,10 @@
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 #include <iomanip>
+#include "G4VRadioactiveDecay.hh"
+#include "G4ProcessTable.hh"
+#include "G4GenericIon.hh"
+#include "G4HadronicProcessType.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -95,6 +99,13 @@ void RunAction::BeginOfRunAction(const G4Run*)
 { 
   // keep run condition
   if (fPrimary) { 
+    // Read the actual worker process after UI command propagation. This records
+    // run configuration only; it never changes the decay physics or RNG state.
+    const auto* decay=dynamic_cast<G4VRadioactiveDecay*>(
+      G4ProcessTable::GetProcessTable()->FindProcess(fRadioactiveDecay, G4GenericIon::GenericIon()));
+    if (!decay) G4Exception("RunAction", "CYGNO_RDM", FatalException, "Missing radioactive decay process");
+    G4cout << "CYGNO_RUN radioactive_decay_time_threshold_s " << std::setprecision(17)
+           << decay->GetThresholdForVeryLongDecayTime()/second << G4endl;
     fPrimary->ResetGeneratedCount();
     G4ParticleDefinition* particle 
       = fPrimary->GetParticleGun()->GetParticleDefinition();

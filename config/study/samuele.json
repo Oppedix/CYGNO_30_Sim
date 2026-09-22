@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "mode": "smoke",
-  "layout": "cygno-5x5x3-v1",
+  "mode": "production",
+  "layout": "legacy-25x3",
   "model": "code-compatible",
   "source_policy": "historical",
-  "primaries_per_job": 2,
+  "primaries_per_job": 10000000,
   "seed": 12345,
-  "timeout_seconds": 120,
+  "timeout_seconds": 604800,
   "rdm_threshold_years": 1e+60
 }

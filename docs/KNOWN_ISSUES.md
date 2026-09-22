@@ -70,7 +70,7 @@ still use world Z and the old visible range; outer layers can overflow.
 
 The original masses, contaminations, branching factors and generated-event tables
 have incomplete provenance and remain labeled historical, with exact transcription
-tests. Phase 3 separately transcribes the thesis assays and exports constructed
+tests. The source matrix separately transcribes the thesis assays and exports constructed
 quantities; see [source provenance](STUDY_SOURCES.md). Figure 7.5's exact production
 inputs/revision and actual generated counts remain unresolved. The former vessel mass
 1102.24 kg cannot automatically describe the current approximately 4203.49 kg
@@ -79,7 +79,7 @@ separate layout/model/source metadata, checked by processing and all plotters.
 Archive matching source and configuration, and explicitly identify both layout
 and model for unversioned data before processing; see [analysis](ANALYSIS.md).
 
-## Expected Bi-212 failure
+## Confirmed Geant4 11.4.2 decay-environment blocker
 
 `validation/macros/known_bi212_failure.mac` still aborts with `PART122` registering
 Pb208 (excited Pb208[2614.52200] appears in the failing track report). It reproduced
@@ -89,3 +89,45 @@ analysis. The reproducer is outside the passing CTest suite. No radioactive-deca
 behavior or nuclear data were altered to suppress it. The retained standalone
 `validation/external_decay_probe.cc` offers a separate investigation starting
 point; it is not evidence that the external issue has been resolved.
+
+
+Finalization preflight with explicit `1e60 year` threshold confirms that U-238
+produces transported Th-234 daughters (two primaries, two ground-state daughters),
+where the one-year default produces only primary tracks. Thus the suppression is
+resolved by run configuration, independently of the retained detector geometry.
+
+Forty-primary full-chain Th-232 preflight aborts at event 0 registering
+`Th228[57.77300]`, during a `Th228[968.98400]` RadioactiveDecay track. Direct Bi-212
+also aborts with PART122. The standalone vacuum-world reproducer (no CYGNO geometry,
+sampler or ROOT code) aborts registering Tl208. Different reachable ion collisions
+show that the failure is not restricted to the originally observed Pb208 track.
+The minimal retained reproducer is `validation/external_decay_probe.cc`:
+
+```sh
+cmake --build "$BUILD" --target external_decay_probe
+mkdir -p "$RUNS/external-probe"
+(cd "$RUNS/external-probe" && "$BUILD/validation/external_decay_probe" > simulation.log 2>&1)
+```
+
+In the installed Geant4 source, `G4ParticleTable::Insert` raises PART122 when a
+particle name is already registered. `G4IonTable` formats excited energies to five
+decimal places in keV. This identifies the duplicate-registration failure point;
+it does not by itself establish whether state matching, threading or datasets are
+the underlying cause. No Geant4 or dataset patch was applied. A public-source
+search did not establish a verified fix/version for this exact failure. Only
+11.4.2 was installed for testing; no alternative is claimed to pass.
+
+The observed matched nuclear data include RadioactiveDecay6.1.2,
+PhotonEvaporation6.1.2 and ENSDFSTATE3.0 (all datasets are fingerprinted in campaign
+manifests). See [preflight requirements](BACKGROUND_STUDY.md). A complete published
+figure/table reproduction requires a separately validated compatible environment.
+Affected production contributions are incomplete, excluded from normalization,
+and listed as failures. Partial figure/table artifacts remain useful only as
+software diagnostics. The complete 26-job smoke can reveal further affected chains;
+any abort is a failed contribution, regardless of isotope.
+
+Even with compatible transport, exact published-rate agreement is not established:
+code-compatible dimensions differ from thesis descriptions, historical sampling is
+not uniform bulk, internal overlaps persist, and grouping/fiducialization are
+historical heuristics. Source provenance and actual thesis production revision are
+not fully recovered. Published values must never be used to tune calculated rates.

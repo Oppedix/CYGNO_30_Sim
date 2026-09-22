@@ -81,7 +81,7 @@ void EventAction::EndOfEventAction(const G4Event* evt)
  //
 
  if(evtNb%500==0){
-   G4cout << evtNb << G4endl;
+   G4cout << "CYGNO_PROGRESS completed_events " << evtNb+1 << G4endl;
  }
  
  if (printProgress > 0 && evtNb%printProgress == 0) 

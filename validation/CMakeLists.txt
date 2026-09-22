@@ -20,6 +20,8 @@ add_test(NAME transport COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR
 if(CYGNO_BUILD_ANALYSIS)
   add_test(NAME study_runner COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_study_runner.py ${PROJECT_BINARY_DIR})
   set_tests_properties(study_runner PROPERTIES TIMEOUT 180)
+  add_test(NAME long_lived_decay COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_long_lived.py ${PROJECT_BINARY_DIR})
+  set_tests_properties(long_lived_decay PROPERTIES TIMEOUT 180)
   add_test(NAME source_matrix COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_source_matrix.py ${PROJECT_BINARY_DIR})
   add_test(NAME analysis COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_analysis.py ${PROJECT_BINARY_DIR})
   add_test(NAME layout_analysis COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_layout_analysis.py ${PROJECT_BINARY_DIR})

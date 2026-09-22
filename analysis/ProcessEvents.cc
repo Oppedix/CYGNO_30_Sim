@@ -56,6 +56,7 @@ void ProcessEvents(const std::string& input, const std::string& output,
   const auto text=[&](const char* name){return std::string(static_cast<TLeafC*>(tree->GetLeaf(name))->GetValueString());};
   TFile destination(output.c_str(),"RECREATE");
   if(destination.IsZombie()) throw std::runtime_error("Cannot create " + output);
+  const auto gasCount = 2*geometry::BuildModuleLayout(geometry::ParseLayoutId(identity.layout)).size();
   Group group;
   TTree result("elabHits","elabHits");
   result.Branch("evNumber",&group.event);
@@ -85,7 +86,7 @@ void ProcessEvents(const std::string& input, const std::string& output,
       group.event=event; group.particle=particle; group.nucleus=nucleus; group.process=process;
     }
     const int volume=static_cast<int>(number("VolumeNumber"));
-    if(volume<0 || volume>=150) throw std::runtime_error("Invalid gas copy number");
+    if(volume<0 || static_cast<std::size_t>(volume)>=gasCount) throw std::runtime_error("Invalid gas copy number");
     group.Add(volume,number("EnergyDeposit"),number("x_hits"),number("y_hits"),number("z_hits"));
   }
   flush();

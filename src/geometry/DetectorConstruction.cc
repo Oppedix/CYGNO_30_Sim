@@ -197,7 +197,7 @@ G4VPhysicalVolume* DetectorConstruction::PlaceInModule(
 {
   // All module components remain direct World daughters, with no rotations or
   // extra mother material. This one translation rule applies even to the optics.
-  const G4int copy = localCopy*geo::moduleCount + module.id;
+  const G4int copy = localCopy*fLayoutProfile.expectedModuleCount + module.id;
   const G4String name = namePrefix + "_" + std::to_string(copy);
   auto* physical = new G4PVPlacement(nullptr, InGeant4Units(module.center)+localOffset,
                                     logical, name, fWorldLogical, false, copy);

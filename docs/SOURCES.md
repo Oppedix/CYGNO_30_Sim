@@ -57,10 +57,10 @@ specified ground-state ion; excited states are treated by the existing policy.
 `/rdecay01/timeWindow t1 unit dt unit` controls activity bookkeeping, not a new
 particle transport cut. No physics settings or nuclear data were changed.
 
-The installed physics prints a one-year very-long-decay-time threshold. A U-238
-macro alone does not demonstrate effective transport of all long-lived decays.
-Review effective settings for each production study. Bi-212/Pb-208 `PART122`
-remains a separate expected failure; see [known issues](KNOWN_ISSUES.md).
+Geant4 >=11.2 defaults to a one-year very-long-decay-time threshold. Generated
+study macros explicitly set 1e60 years, and the worker logs its effective value.
+The focused U-238 test now demonstrates daughter transport. Complete Th/Bi chains
+still fail preflight in the tested 11.4.2 environment; see [known issues](KNOWN_ISSUES.md).
 
 ## Published source matrix
 
@@ -68,6 +68,5 @@ remains a separate expected failure; see [known issues](KNOWN_ISSUES.md).
 26 declared contributions, split resistor chains, historical input investigation
 and constructed-quantity provenance. `study/source_matrix.py` validates that
 specification and provides the existing source/isotope/chain commands. It does
-not launch a run or bypass the unresolved lifetime/data preflight. Both A/B use
-the same assays and chain policies; the detector-internal thesis model remains
-separate from these source inputs.
+not launch a run or bypass the unresolved lifetime/data preflight. Both supported layouts use the same assays and chain policies with the
+code-compatible detector model. Other detector models are deferred.

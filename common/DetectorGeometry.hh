@@ -135,7 +135,9 @@ inline std::vector<ModulePlacement> BuildModuleLayout(LayoutId id = LayoutId::Cu
   return layout;
 }
 // side=0 is local +Z, side=1 is local -Z (not necessarily global +/-Z).
-constexpr int GasCopyNumber(int moduleId, int side) { return side*moduleCount+moduleId; }
+constexpr int GasCopyNumber(int moduleId, int side, int count = moduleCount) {
+  return side*count+moduleId;
+}
 inline Point GasCenter(const ModulePlacement& placement, int side) {
   return {placement.center.x, placement.center.y,
           placement.center.z+(side == 0 ? GasOffsetZ() : -GasOffsetZ())};
@@ -177,6 +179,7 @@ struct LayoutProfile {
 };
 inline LayoutProfile BuildLayoutProfile(LayoutId id = LayoutId::Current5x5x3) {
   LayoutProfile profile{id, LayoutName(id), moduleCount, BuildModuleLayout(id), {}, {}, {}};
+  profile.expectedModuleCount = static_cast<int>(profile.modules.size());
   const auto first = profile.modules.front().center;
   Bounds centers{first,first};
   for (const auto& placement : profile.modules) {

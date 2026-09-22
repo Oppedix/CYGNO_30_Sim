@@ -1,11 +1,12 @@
 # Architecture and event lifecycle
 
-Start with `config/cygno/po212-smoke.mac`, then follow this path:
+Start with `config/study/samuele.json` and a generated study macro, then follow this path:
 
 ```text
 macro → PrimaryGeneratorAction configuration → source sampler → primary vertex
       → Geant4 transport/TrackingAction → sensitive gas step → HitOutput
-      → worker Hits ROOT tree → SimpleProcessEvents → elabHits → ROOT spectra
+      → worker Hits ROOT tree → SimpleProcessEvents → elabHits
+      → contribution normalization → seven categories → ROOT spectra / figures / tables
 ```
 
 `app/rdecay01.cc` chooses interactive/batch mode, the Ranecu RNG, the run manager,
@@ -60,7 +61,8 @@ runs synthetic ROOT fixtures. Test output stays in the build tree.
 | `include/cygno/`, `src/` | Matching geometry, source, actions and output classes |
 | `common/` | Library-independent geometry definitions; generated-header template |
 | `config/` | Current example, visualization, historical run and normalization inputs |
-| `analysis/` | ROOT processing and plotting |
+| `analysis/` | ROOT processing and normalization |
+| `study/` | Matrix/config validation, isolated runner, decay preflight, figure/table export |
 | `validation/` | Software regressions and diagnostic macros |
 | `docs/` | Researcher documentation and migration record |
 | `data/` | External Geant4 data examples, reference text and license |
@@ -70,3 +72,15 @@ The active CMake source list is explicit. `PhysicsList` and `HistoManager` in
 `legacy/scaffolding` are not linked. Their behavior must not be mistaken for the
 active reference physics list. The complete original-to-current move mapping is
 [FILE_MOVES.json](FILE_MOVES.json).
+
+## Study entry points
+
+`study/source_matrix.py` validates the Table 7.1 matrix, isotope boundaries and
+kg/piece quantities. `study/runner.py` creates exact macros and seeds, preflights the
+effective environment, verifies actual generation/processing and preserves immutable
+attempts. `study/root_io.py` validates ROOT identity/accounting and exports the
+existing plotter's exact windows. `study/figures.py` formats plots/tables from those
+normalized outputs; it does not simulate, regroup events or renormalize activities.
+`study/preflight.py` tests long-lived daughters and full Th/Bi transport. C++ only
+observes the RDM setting; explicit macros set it. Worker progress is logged every
+500 completed events without changing RNG calls or transport.

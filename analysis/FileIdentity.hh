@@ -24,10 +24,14 @@ inline void ValidateIdentity(const FileIdentity& identity) {
     throw std::runtime_error("Unsupported source policy: " + identity.sourcePolicy);
   // The baseline header predates runtime profiles, but its current layout and
   // internals are numerically identical (Phase 1 regression). No other old hash
-  // is accepted. In particular it can never identify legacy-25x3 data.
+  // is accepted for this baseline. It cannot identify legacy-25x3 data.
   const bool baseline = identity.geometryHash ==
     "d0e9f189266be3f0a608bba332b4fe5e5f17d9c7c2c6ef4bd95f53408f73c039";
-  if (identity.geometryHash != build::geometryHash &&
+  // Phase 1–6 header: count plumbing was generalized without changing either
+  // existing layout, module construction or gas numbering.
+  const bool phase6 = identity.geometryHash ==
+    "af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79e2e3a8156b2";
+  if (identity.geometryHash != build::geometryHash && !phase6 &&
       !(baseline && identity.layout == "cygno-5x5x3-v1"))
     throw std::runtime_error("File geometry fingerprint does not match a supported geometry");
 }

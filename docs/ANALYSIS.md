@@ -14,8 +14,7 @@ Without an explicit output, the processor creates `elab_<basename>` beside the
 input, including when the input has directory components. New raw worker files
 have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
 `DetectorModel` and `SourcePolicy` string leaves. Both `legacy-25x3` and
-`cygno-5x5x3-v1` are supported with `code-compatible` and `historical`. The future
-`thesis-7.3` model is not yet implemented and is rejected.
+`cygno-5x5x3-v1` are supported with `code-compatible` and `historical`. Other detector models are unsupported.
 
 Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
 `CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
@@ -89,14 +88,15 @@ including empty ones, survives in both stacks and individual output keys.
 Additional `Categories/` histograms and stacks sum contributions after individual
 normalization. `NormalizationConfiguration` preserves the full configuration text,
 and `NormalizationConvention` records the scale and counts/bin/year convention.
-No division by bin width is performed.
+No division by bin width is performed in these source histograms. The figure exporter
+clones category histograms and divides every display bin by its actual width.
 
 The old YZ histogram still retains world Z and its old ±550 mm range. Outer layers
 can enter overflow. No axes/cuts were silently redefined.
 
 ## Study configuration
 
-Phase 3 adds explicit quantities/units and category grouping. Use this format for
+The supported matrix uses explicit quantities/units and category grouping. Use this format for
 new source-matrix studies (the format header must precede all data rows):
 
 ```text
@@ -119,7 +119,7 @@ micro-/milli-Bq conversion: the matrix already supplies Bq values.
 Use the 26 contributions in `config/study/thesis-table7.1.json` and the actual
 constructed mass/piece export; see [source provenance](STUDY_SOURCES.md). The
 assay matrix has no layout or detector-model default and launches no simulations.
-The forthcoming runner must attach actual completed generated-primary counts.
+The runner attaches the verified actual generated-primary count for each completed job.
 
 The existing six-column mass-only format remains supported when the format header
 is absent, with its original meaning (kg and Bq/kg) and category equal to component:
@@ -158,7 +158,7 @@ carried into the resized shell automatically. No replacement assay or generated
 count has been invented. Create a separate study file only after resolving those
 inputs. A passing transcription test does not establish their scientific validity.
 
-## Study runner exports (Phase 4)
+## Study runner exports
 
 The main normalized plotter additionally writes `ExactEnergyWindows` with unbinned
 electron/positron group counts and rates for full range, >10 keV, (10,400] keV and
@@ -168,3 +168,87 @@ stale-build detection; this is separate from the geometry compatibility markers.
 See [STUDY_RUNNER.md](STUDY_RUNNER.md) for exact endpoints, density units, manifest
 validation, partial coverage and the distinction between pipeline completion and
 unvalidated decay chains.
+
+## Exact processing contract
+
+The accepted raw branches and required ROOT types are the twelve entries in
+[OUTPUT.md](OUTPUT.md); extra branches are ignored. ParticleID, ParticleTag and
+ParentID are validated for schema compatibility but do not drive grouping.
+Coordinates are world millimetres and step EnergyDeposit is MeV. ProcessType is
+the track's creator process, not the current step process.
+
+The within-event algorithm is inherited from the historical implementation:
+
+1. Any event-number change flushes the previous nonempty group, before checking
+   the row's particle. Events must remain contiguous; do not interleave worker files.
+2. Only e-, e+ and alpha rows are admitted. Ignored gamma/ion rows do not create
+   groups or process transitions, but still trigger event-boundary flushing.
+3. If creator process and Nucleus match the group's initial values and no joined
+   ionization transition has occurred, append the row and update PartName to that
+   row's particle. Otherwise an ionIoni/eIoni row joins the group and marks the
+   ionization transition. Any other transition flushes and starts a fresh group.
+4. Within a group, sum every admitted EnergyDeposit by VolumeNumber, including
+   zero deposits. Save volumes in first-seen order and retain each volume's first
+   admitted row position. Copy numbers must be in the selected layout's gas range.
+5. EOF flushes the final nonempty group. No empty groups are emitted.
+
+The grouped PartName and Nucleus do not certify a single track, parent or physical
+coincidence. Nucleus follows the last transported ion and can persist across events;
+it is retained as a historical label. The grouping itself never crosses events.
+The normalized program selects groups whose final PartName is e- or e+, sums their
+per-volume energies, and converts MeV to keV. Alpha-labeled groups are excluded.
+
+Output `elabHits` schema:
+
+| Branch | Type | Meaning |
+|---|---|---|
+| evNumber | Int_t | Run-local event ID |
+| PartName, Nucleus | std::string | Historical group particle / last-ion label |
+| EDep_Out | vector<double> | Summed energy per first-seen gas volume, MeV |
+| VolNnum_Out | vector<double> | Corresponding integer gas copy IDs, stored as doubles |
+| X_Vertex, Y_Vertex, Z_Vertex | vector<double> | First saved position per volume, world mm |
+
+Every vector in a row has the same length. Metadata is copied and checked, and
+processing/build markers are added. Step multiplicity is not a generated-primary
+denominator. Normalization requires independently completed RunAccounting.
+
+## Annual rates, cuts and exact windows
+
+For each component/chain contribution independently:
+
+```text
+events/year = selected_MC_groups * activity * quantity * 31536000 / generated_primaries
+```
+
+Activity is Table 7.1 Bq/kg with constructed mass in kg, or Bq/piece with constructed
+placement count. All six resistor contributions use 750 pieces in both supported
+layouts. Assays and equilibrium assumptions come from the thesis; quantities come
+from actual code-compatible construction, including its Boolean-solid mass estimate.
+The selected production setting 10^7 comes from the thesis's approximate simulation
+count; it is never substituted for the verified denominator. The implementation uses
+a 365-day year; the thesis rounds it to 3.15e7 seconds in Eq. 7.14.
+
+GEMs = separately normalized GEMsOuter + GEMsCore. Field Cage = separately
+normalized RingStrips + RingSupports. The other categories are Camera Lenses,
+Vessel, Camera Sensors, Cathodes and Resistors. These sums do not change activities
+or add branch weights. Resistor upper/lower segments are separate matrix rows.
+
+The thesis motivates the 20 mm fiducial inset; the exact implementation is the
+inherited first-position predicate: relative to the selected gas center, the first
+saved group position satisfies |x|<=230 mm, |y|<=380 mm and |z|<=230 mm.
+It does not require every step or every crossed volume to lie inside. Gas centers
+retain the code-compatible ±250.25 mm local offset. No reconstruction smearing,
+trigger efficiency, time-coincidence selection or optical response is introduced.
+
+Exact unbinned windows are all finite energies (including flows), E>10 keV,
+10<E<=400 keV, E<0 underflow, 0<=E<2000 regular range, and E>=2000 overflow.
+The 10 keV endpoint is excluded from both threshold windows; 400 is included in
+the finite window; 2000 is overflow. Tables use these counts, not histogram-bin
+approximations. The main spectrum uses 900 bins across 0–2000 keV. ROOT histograms
+store counts/bin/year; PNG/PDF displays divide by each bin's width and label
+counts / keV / year. Flows remain counts/year in JSON and exact tables.
+
+Figure/table export and published comparison values are in
+[BACKGROUND_STUDY.md](BACKGROUND_STUDY.md). Their statistical errors are the
+historical Poisson group-count convention, not an independent-primary covariance
+calculation. A completed smoke pipeline is not a statistically useful reproduction.

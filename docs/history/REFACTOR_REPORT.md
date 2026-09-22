@@ -1,3 +1,5 @@
+> Historical record. The current supported workflow is [BACKGROUND_STUDY.md](../BACKGROUND_STUDY.md).
+
 # Interrupted-refactor recovery — 2026-09-21
 
 ## Starting state and preservation
@@ -38,7 +40,7 @@ data/                   external Geant4 data/reference text
 legacy/                 inactive code, old macros/generators/notes, source copies
 ```
 
-[FILE_MOVES.json](FILE_MOVES.json) lists individual moves. The inactive custom
+[FILE_MOVES.json](../FILE_MOVES.json) lists individual moves. The inactive custom
 physics/histogram classes retain their license headers under legacy/scaffolding.
 Old example macros/reference text and ambiguous source scripts are retained in
 clearly marked locations. The generator moved by the interruption to config was
@@ -95,7 +97,7 @@ The complete suite covers source/RNG/mass checks, geometry, transport and chain
 policies, two-worker ownership, repeated-run output, tiny ROOT grouping fixtures,
 all three normalized stack implementations, historical constants and all four
 ROOT geometry adapters. The final clean-source build and test logs are in the
-recovery directory; see [validation instructions](../validation/README.md).
+recovery directory; see [validation instructions](../../validation/README.md).
 
 Containment diagnostics found 43/1000 GEM-copper and 247/1000 ring-strip samples
 outside their chosen solid; there was no rejection/resampling. Cathode/gas,
@@ -103,7 +105,7 @@ GEM/core and field-cage overlaps remain inherited. Matching baseline geometry
 excludes newly introduced geometry from this refactor; software tests do not
 resolve those scientific/engineering problems. Nucleus ancestry, contamination
 model and normalization provenance remain unresolved. The resized vessel cannot
-automatically use the historical 1102.24 kg mass. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+automatically use the historical 1102.24 kg mass. See [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
 
 Bi-212 still reproduces Pb208 `PART122`, separately from passing tests, on Geant4
 11.4.2 with the same installed datasets, Apple clang 21/macOS 27 arm64. No Geant4

@@ -1,9 +1,11 @@
+> Historical record. The current supported workflow is [BACKGROUND_STUDY.md](../BACKGROUND_STUDY.md).
+
 # Controlled CYGNO background studies: experiment specification
 
 Phase 0 audit, 2026-09-21. This document specifies future work; it does not add
 profiles, change simulation/analysis, or claim to reproduce published rates.
 The code-compatible baseline is `74cc26f`. Progress and local checkpoints are
-tracked in [STUDY_PROGRESS.md](STUDY_PROGRESS.md).
+tracked in [STUDY_PROGRESS.md](../STUDY_PROGRESS.md).
 
 ## Evidence and scope
 
@@ -85,7 +87,7 @@ and `localCopy*75+module_id` convention rather than resurrecting duplicate copie
 Historical component/source-list ordering need not match the modern order;
 historical fixed-seed trajectories are not a required reproduction target.
 
-**cygno-5x5x3-v1:** preserve [common/DetectorGeometry.hh](../common/DetectorGeometry.hh)
+**cygno-5x5x3-v1:** preserve [common/DetectorGeometry.hh](../../common/DetectorGeometry.hh)
 numerically, including arithmetic/placement ordering where it affects regression:
 
 ```text
@@ -158,7 +160,7 @@ Table 7.1; do not add a PMT background contribution to Figure 7.5's matrix.
 
 ### Axis 3: source policy and decay controls
 
-[RadioactiveSourceSampler.cc](../src/source/RadioactiveSourceSampler.cc) currently
+[RadioactiveSourceSampler.cc](../../src/source/RadioactiveSourceSampler.cc) currently
 selects one physical placement uniformly from its ordered component list, calls
 `GetPointOnSurface()`, and moves along the inward normal by a uniform depth up to
 the component's configured width. Translation is added last. This is the
@@ -183,8 +185,8 @@ that names U-238 is not sufficient evidence of a complete equilibrium chain.
 
 ## Processing and normalization audit
 
-Reuse [SimpleProcessEvents.cpp](../analysis/SimpleProcessEvents.cpp) and
-[ProcessEvents.cc](../analysis/ProcessEvents.cc). Current processing validates the
+Reuse [SimpleProcessEvents.cpp](../../analysis/SimpleProcessEvents.cpp) and
+[ProcessEvents.cc](../../analysis/ProcessEvents.cc). Current processing validates the
 12 raw Hits branches, groups charged rows within event/process boundaries,
 flushes at EOF, sums energy per volume, and retains first positions. This grouping
 is a historical heuristic, not a verified ancestry reconstruction. `Nucleus`
@@ -286,14 +288,14 @@ Commands used from the repository root:
 ```sh
 source ../../software/geant4-11.4.2/bin/geant4.sh
 cmake -S . -B ../../build/cygno-study -DCMAKE_BUILD_TYPE=Release \
-  -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE=/opt/homebrew/bin/python3 \
+  -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE=python3 \
   -DWITH_GEANT4_UIVIS=OFF
 cmake --build ../../build/cygno-study --parallel 6
 ctest --test-dir ../../build/cygno-study --output-on-failure
 ```
 
 The known Bi-212 -> excited Pb-208 PART122 failure is documented in
-[KNOWN_ISSUES.md](KNOWN_ISSUES.md); the existing manual reproducer is
+[KNOWN_ISSUES.md](../KNOWN_ISSUES.md); the existing manual reproducer is
 `python3 validation/run_checks.py bi212 ../../build/cygno-study`. It was not
 rerun in Phase 0 and is deliberately outside passing CTest. Phase 9 must record
 the exact effective Geant4/nuclear-data versions and test the complete Th-232

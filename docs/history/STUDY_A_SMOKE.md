@@ -1,3 +1,5 @@
+> Historical record. The current supported workflow is [BACKGROUND_STUDY.md](../BACKGROUND_STUDY.md).
+
 # Study A smoke result
 
 2026-09-22. **Phase 5 is complete as a smoke diagnostic. Physical background
@@ -5,7 +7,7 @@ reproduction is blocked by absent primary decays.** All 26 software jobs finishe
 but none transported decay secondaries. The zero spectra are not a prediction of
 zero radioactive background, an efficiency measurement or agreement with the thesis.
 
-The committed [audit record](study-results/smoke-A.json) retains configuration,
+The committed [audit record](../study-results/smoke-A.json) retains configuration,
 quantities, dataset fingerprints, per-job seeds/counts/checksums and the six raw
 rows. Original raw files, logs, manifests and reports remain outside the repository
 at `../../validation-runs/study-A-smoke` (path relative to the repository root).
@@ -18,7 +20,7 @@ No simulation, analysis or configuration changes were needed. The command was:
 
 ```sh
 source ../../software/geant4-11.4.2/bin/geant4.sh
-/opt/homebrew/bin/python3 study/runner.py \
+python3 study/runner.py \
   --config config/study/smoke-A.json --build ../../build/cygno-study \
   --output ../../validation-runs/study-A-smoke
 ```
@@ -120,7 +122,7 @@ was required. The reusable local audit is saved with a fingerprint in the commit
 record; from the repository root it can be run with:
 
 ```sh
-/opt/homebrew/bin/python3 ../../validation-runs/study-A-smoke/audit/check_smoke_A.py
+python3 ../../validation-runs/study-A-smoke/audit/check_smoke_A.py
 ```
 
 Before any repository edits, the identical runner command was repeated once. It

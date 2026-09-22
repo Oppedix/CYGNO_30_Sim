@@ -111,8 +111,8 @@ component mass map. Output includes layout, model, source policy, geometry hash,
 method and actual material names. `read_quantities()` requires matching identity
 and all nine components. `quantity_for()` selects kg or pieces from the assay unit.
 It does not infer a missing quantity from old tables. The exporter currently
-supports only code-compatible geometry; it must be extended explicitly alongside
-the separate thesis model in Phase 7.
+supports the code-compatible geometry for both runtime layouts. Detector-model
+corrections are deferred and are not a supported configuration.
 
 Phase 3 export on Geant4 11.4.2 (rounded for display; TSV retains 17-digit precision):
 

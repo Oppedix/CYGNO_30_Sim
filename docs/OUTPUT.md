@@ -55,3 +55,13 @@ Run summaries use the actual primary, omit unsupported visible-energy summary
 values, and label terminal-ion global times without interpreting the mean as a
 half-life. The activity estimate is printed only with valid ion mass/lifetime and
 sampled time. It is a Monte Carlo bookkeeping estimate, not an assay table.
+
+## Study logs and run configuration
+
+Study macros explicitly set the RDM long-decay threshold to `1e60 year`.
+`CYGNO_RUN radioactive_decay_time_threshold_s` observes the worker process after
+macro commands and before its first event. `CYGNO_ENV` records Geant4/data/build
+identity and the post-macro threshold. A failed simulation may lack the latter;
+its complete log and pre-transport worker observation are retained. Every 500
+events `CYGNO_PROGRESS completed_events N` records observational progress; only
+RunAccounting establishes the denominator. See [study manifests](BACKGROUND_STUDY.md).

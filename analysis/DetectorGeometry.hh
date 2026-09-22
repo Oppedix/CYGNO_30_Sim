@@ -11,10 +11,11 @@ inline void BuildDetectorMap(std::map<Int_t,TVector3>& centers,
                              cygno::geometry::LayoutId layout)
 {
   centers.clear();
-  for (const auto& module : cygno::geometry::BuildModuleLayout(layout)) {
+  const auto modules = cygno::geometry::BuildModuleLayout(layout);
+  for (const auto& module : modules) {
     for (int side=0; side<2; ++side) {
       const auto center = cygno::geometry::GasCenter(module,side);
-      centers[cygno::geometry::GasCopyNumber(module.id,side)] =
+      centers[cygno::geometry::GasCopyNumber(module.id,side,static_cast<int>(modules.size()))] =
         TVector3(center.x,center.y,center.z);
     }
   }

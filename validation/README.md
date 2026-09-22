@@ -67,7 +67,7 @@ separate Geant4 solid-surface RNG across runs.
 Bi-212 remains an expected `PART122` failure, reported separately by `run_checks.py
 bi212`; an unexpected outcome makes that diagnostic fail for investigation.
 Passing tests establish software properties, **not scientific model validation**.
-See [the recovery report](../docs/REFACTOR_REPORT.md) for artifact locations and
+See [the recovery report](../docs/history/REFACTOR_REPORT.md) for artifact locations and
 [known issues](../docs/KNOWN_ISSUES.md) for unresolved engineering/physics decisions.
 
 `geometry_quantities OUTPUT.tsv LAYOUT` exports the nine constructed source-list
@@ -79,7 +79,7 @@ while sums must match the construction mass map to 1e-12 relative precision.
 No generated-primary counts, assay uncertainties or lifetime completeness are
 inferred by this test; see [source provenance](../docs/STUDY_SOURCES.md).
 
-## Study runner checks (Phase 4)
+## Study runner checks
 
 `ctest -R '^study_runner$'` constructs a no-event environment probe and real
 quantities, then uses synthetic ROOT files with the real processor/main plotter.
@@ -90,3 +90,18 @@ per-piece inputs, exact energy endpoints/flows and density exports in both layou
 Synthetic manifest/data values are labeled and are not Study A/B campaigns.
 The existing transport group additionally checks generated/processed counters,
 worker totals and repeated-run resets with tiny Po-212/Bi-211 fixtures.
+
+
+## Finalization checks
+
+The full CTest suite includes `long_lived_decay`: two actual U-238 primaries with
+the default threshold and two with explicit 1e60 years; transported Th-234 is
+required in the enabled case. No threshold is set globally in C++.
+The runner fixtures now also test production counts, macro settings, interrupted
+attempt resume, real SIGINT child cleanup, failed-preflight blocking, ROOT/PNG/PDF/
+CSV/JSON exports and analysis-only reuse without transport.
+
+The separate `study/preflight.py` exercises full Th-232 and direct Bi-212. It
+returns failure on PART122 and retains every log. This is deliberately not a
+CTest expected-pass that hides an incomplete physical chain. See
+[BACKGROUND_STUDY.md](../docs/BACKGROUND_STUDY.md) for the environment requirement.

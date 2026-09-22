@@ -1,6 +1,6 @@
 # Detector layout profiles
 
-Two runtime profiles use the same **code-compatible** module internals and
+The principal study profile is **legacy-25x3**. Two runtime profiles use the same **code-compatible** module internals and
 historical source sampler. Select a profile before geometry construction:
 
 ```sh
@@ -32,7 +32,7 @@ ID `3*(i+12)+(j+1)`. Thus all 75 cathodes share Z=0; each module contains its
 own positive/negative drift regions. Gas copy `side*75+moduleId` reproduces the
 historical gas counter exactly. Both profiles retain the current unique component
 copy/name scheme. Samuele's repeated cathode copy `i+37` is not reused; see the
-[exact mapping](BACKGROUND_EXPERIMENT.md#axis-1-module-layout) and independent
+[exact mapping](history/BACKGROUND_EXPERIMENT.md#axis-1-module-layout) and independent
 [75-center fixture](../validation/references/legacy-25x3-centers.tsv).
 
 The legacy occupied bounds are (-6298.145,-1204.1275,-1140.65) to
@@ -186,3 +186,19 @@ revision/configuration with every simulation and analysis dataset. Legacy YZ
 position histograms still use world Z and their old range; outer-layer entries
 can fall in overflow. Their interpretation has not been silently changed to
 module-local Z.
+
+## Adding a future layout
+
+No 11x7 profile is implemented here. Add its ID and ordered centers in the shared
+layout provider, keeping a single detector constructor and analysis adapter.
+The profile count is derived from its placements; construction copy strides and
+the ROOT map consume that count. Processing derives the valid gas count from the
+selected profile. Update the Python `LAYOUT_MODULE_COUNTS` validation contract and
+independent layout fixtures at the same time. Both current 75-module profiles keep
+the exact `side*75 + moduleId` numbering. Default no-argument helpers retain the
+75-module compatibility layout. Rotations would require an explicit transform
+contract; do not silently reinterpret centers or copy IDs as orientations.
+
+The Phase 1–6 geometry-header fingerprint remains accepted for either supported
+layout: the finalization changed count plumbing only, with the same placement
+snapshots, geometry, materials and local offsets. Unsupported model IDs are rejected.

@@ -35,3 +35,8 @@ __pycache__/
 *.log
 core
 core.*
+
+# Private research references and local campaign products
+/local_refs/
+/local_context/
+/validation-runs/

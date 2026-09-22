@@ -8,7 +8,9 @@ import json
 import math
 from pathlib import Path
 
-LAYOUTS = {'legacy-25x3', 'cygno-5x5x3-v1'}
+# Counts are the Python file-validation contract; C++ derives placement counts.
+LAYOUT_MODULE_COUNTS = {'legacy-25x3': 75, 'cygno-5x5x3-v1': 75}
+LAYOUTS = set(LAYOUT_MODULE_COUNTS)
 COMPONENTS = {
     'GEMsCore': ('Acrylic', 'GEMs'), 'GEMsOuter': ('EFCu', 'GEMs'),
     'RingSupports': ('Acrylic', 'Field Cage'), 'RingStrips': ('EFCu', 'Field Cage'),

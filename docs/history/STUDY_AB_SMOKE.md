@@ -1,3 +1,5 @@
+> Historical record. The current supported workflow is [BACKGROUND_STUDY.md](../BACKGROUND_STUDY.md).
+
 # Study B smoke and A/B comparison
 
 2026-09-22. **Phase 6 is complete as a smoke diagnostic. Both A and B failed
@@ -5,8 +7,8 @@ physical primary decay transport.** B completed all 26 software jobs, but its
 empty spectra cannot establish a physical layout effect, a background upper limit
 or agreement with the thesis. No A/B rate ratio is defined or reported.
 
-Portable evidence: [B audit](study-results/smoke-B.json) and
-[A/B comparison audit](study-results/smoke-AB.json). The completed
+Portable evidence: [B audit](../study-results/smoke-B.json) and
+[A/B comparison audit](../study-results/smoke-AB.json). The completed
 [A result](STUDY_A_SMOKE.md) remains unchanged. Original B files are outside the
 repository at `../../validation-runs/study-B-smoke`, relative to the repository root.
 
@@ -22,7 +24,7 @@ was necessary. From the repository root:
 ```sh
 source ../../software/geant4-11.4.2/bin/geant4.sh
 cmake --build ../../build/cygno-study --parallel 6
-/opt/homebrew/bin/python3 study/runner.py \
+python3 study/runner.py \
   --config config/study/smoke-B.json --build ../../build/cygno-study \
   --output ../../validation-runs/study-B-smoke
 ```
@@ -62,7 +64,7 @@ code-compatible wall and the existing common-vessel treatment of optics.
 
 B's vessel mass increases by 86.93309874029728 kg, or 2.111791822035447%.
 These are constructed Boolean-solid mass estimates, with the estimator caveat
-already documented in [STUDY_SOURCES.md](STUDY_SOURCES.md), not a newly applied
+already documented in [STUDY_SOURCES.md](../STUDY_SOURCES.md), not a newly applied
 analytic correction. Only `Vessel_U238` and `Vessel_Th232` normalization quantities
 change. All activities, units, categories and generated-primary denominators match;
 the six resistor contributions use pieces. Layout headers and campaign file paths
@@ -129,8 +131,8 @@ portable records. They can inspect these original campaigns after the phase comm
 without altering campaign provenance, from the repository root:
 
 ```sh
-/opt/homebrew/bin/python3 ../../validation-runs/study-B-smoke/audit/check_smoke_B.py
-/opt/homebrew/bin/python3 ../../validation-runs/study-B-smoke/audit/compare_AB.py
+python3 ../../validation-runs/study-B-smoke/audit/check_smoke_B.py
+python3 ../../validation-runs/study-B-smoke/audit/compare_AB.py
 ```
 
 Original campaign manifests remain `unvalidated`; separate audit records classify

@@ -87,9 +87,10 @@ assert inspect_raw(path, identity, 2)['hit_rows'] == 0
 
 # Effective environment comes from a real fresh initialized simulation, no events.
 probe = out/'probe'; probe.mkdir()
-(probe/'probe.mac').write_text('/control/echo phase4-validation-no-transport\n')
+(probe/'probe.mac').write_text(runner.RDM_COMMAND+'\n/control/echo phase4-validation-no-transport\n')
 env_log = runner.invoke([build/'rdecay01', probe/'probe.mac', '1', '--layout', config['layout']], probe, 'probe', 60)
 environment = runner.parse_environment(env_log)
+env_log += f'\nCYGNO_RUN radioactive_decay_time_threshold_s {runner.RDM_SECONDS}\n'
 assert environment['source_hash'] == runner.compiled_source_hash()
 assert float(environment['radioactive_decay_time_threshold_s']) > 0
 assert set(environment) >= set(runner.ENV_KEYS)
@@ -127,7 +128,8 @@ def synthetic_invoke(command, cwd, label, timeout):
 
 
 with patch.object(runner, 'invoke', side_effect=synthetic_invoke), \
-     patch.object(runner, 'dataset_state', return_value={'fixture': 'not a real physics campaign'}):
+     patch.object(runner, 'dataset_state', return_value={'fixture': 'not a real physics campaign'}), \
+     patch.object(runner, 'campaign_preflight', return_value=True):
     assert runner.run(args) == 2
     assert attempted == selected
     jobs_dir = args.output/'jobs'
@@ -174,6 +176,42 @@ with patch.object(runner, 'invoke', side_effect=synthetic_invoke), \
     assert len(exported['windows']) == 312 and len(exported['categories']) == 84
     assert len(exported['density']) == 14
     assert 'Resistors U238 750 piece' in (report_dir/'normalization.tsv').read_text()
+    for name in ('figure7.5.png', 'figure7.5.pdf', 'figure7.6.png', 'figure7.6.pdf', 'table7.2.csv', 'table7.3.csv', 'tables.json'):
+        assert (report_dir/name).stat().st_size > 100
+    before_attempts = list(attempted)
+    assert runner.run(argparse.Namespace(**(vars(full_args) | {'analysis_only': True}))) == 0
+    assert attempted == before_attempts
+
+# Interruption preserves completed jobs and resumes the interrupted attempt into
+# a fresh directory without --retry-failed. No ROOT artifact is overwritten.
+with patch.object(runner, 'invoke', side_effect=KeyboardInterrupt):
+    interrupted_output = out/'interrupted'
+    interrupted_output.mkdir()
+    campaign = dict(fingerprint='fixture', identity=dict(effective_environment=environment), th_chain_preflight_passed=True)
+    try:
+        runner.run_job(interrupted_output, matrix['contributions'][0], config, campaign,
+                       {'simulation': str(build/'rdecay01')}, identity, False)
+    except KeyboardInterrupt:
+        pass
+    else:
+        raise AssertionError('Expected interruption')
+    path = interrupted_output/'jobs'/matrix['contributions'][0]['id']/'manifest.json'
+    assert runner.read(path)['status'] == 'interrupted'
+with patch.object(runner, 'invoke', side_effect=synthetic_invoke):
+    tools = {key: str(build/value) for key, value in runner.TOOLS.items()}
+    restored = runner.run_job(interrupted_output, matrix['contributions'][0], config, campaign,
+                              tools, identity | {'source_hash': environment['source_hash']}, False)
+    assert restored['status'] == 'complete' and restored['attempt'] == 'attempt-0002'
+    assert (path.parent/'attempt-0001/manifest.json').exists()
+
+# A failed full-chain preflight cannot become a complete Th job even if a tiny
+# synthetic transport happened to finish. Production blocks before simulation.
+with patch.object(runner, 'invoke', side_effect=synthetic_invoke):
+    campaign['th_chain_preflight_passed'] = False
+    blocked = runner.run_job(out/'blocked', matrix['contributions'][1], config | {'mode': 'production'},
+                             campaign, tools, identity, False)
+    assert blocked['status'] == 'failed' and blocked['generated_primaries'] is None
+    assert 'preflight failed' in blocked['error']
 
 # Actual process nonzero/timeout receipts and a lock collision.
 commands = out/'commands'; commands.mkdir()
@@ -181,9 +219,20 @@ rejects(lambda: real_invoke([sys.executable, '-c', 'raise SystemExit(7)'], comma
 assert runner.read(commands/'nonzero.command.json')['returncode'] == 7
 rejects(lambda: real_invoke([sys.executable, '-c', 'import time; time.sleep(1)'], commands, 'timeout', .02))
 assert runner.read(commands/'timeout.command.json')['timed_out'] is True
+try:
+    real_invoke([sys.executable, '-c', 'import os,signal,time; time.sleep(.1); os.kill(os.getppid(),signal.SIGINT); time.sleep(30)'], commands, 'interrupt', 40)
+except KeyboardInterrupt:
+    pass
+else:
+    raise AssertionError('SIGINT was not propagated')
+receipt = runner.read(commands/'interrupt.command.json')
+assert receipt['interrupted'] is True and receipt['returncode'] is not None
 with runner.locked(out/'lock-test'):
     rejects(lambda: runner.run(argparse.Namespace(**(vars(args) | {'output': out/'lock-test'}))))
 bad_config = out/'production.json'; bad_config.write_text(json.dumps(config | {'mode': 'production'}))
+assert runner.load_config(bad_config)['mode'] == 'production'
+assert runner.load_config(repo/'config/study/samuele.json')['primaries_per_job'] == 10_000_000
+bad_config.write_text(json.dumps(config | {'primaries_per_job': 1001}))
 rejects(lambda: runner.load_config(bad_config))
 assert runner.seeds_for(12345, selected[0]) == runner.seeds_for(12345, selected[0])
 assert runner.macro_for(matrix['contributions'][0], config) == runner.macro_for(matrix['contributions'][0], config | {'layout': 'cygno-5x5x3-v1'})
