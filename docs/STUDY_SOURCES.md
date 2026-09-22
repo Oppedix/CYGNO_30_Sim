@@ -1,12 +1,18 @@
 # Published source matrix and normalization provenance
 
-Phase 3, 2026-09-21. The executable source specification is
+Transcribed and validated on 2026-09-21 (historical Phase 3).
+The executable source specification is
 [`config/study/thesis-table7.1.json`](../config/study/thesis-table7.1.json).
 It contains 26 component/chain-start contributions, independent of layout and
 of the detector-internal model. It declares assays and chain boundaries; it is
 not a completed simulation campaign or evidence of agreement with published rates.
-A/B use this same matrix with code-compatible internals and the historical sampler.
-The future thesis model remains a separate configuration and is not implemented.
+The canonical study and historical A/B campaigns use this same matrix with
+code-compatible internals and the historical sampler. The `thesis-7.3` work is
+deferred, unsupported, and preserved only on the separate local recovery branch;
+see [recovery provenance](STUDY_PROGRESS.md#recovery-and-baseline).
+The workflow and analysis infrastructure are finalized, but `PART122` in the tested
+Geant4 11.4.2/data environment prevents a complete published U/Th background;
+see [known issues](KNOWN_ISSUES.md).
 
 ## Reference and transcription
 

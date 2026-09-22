@@ -59,8 +59,10 @@ particle transport cut. No physics settings or nuclear data were changed.
 
 Geant4 >=11.2 defaults to a one-year very-long-decay-time threshold. Generated
 study macros explicitly set 1e60 years, and the worker logs its effective value.
-The focused U-238 test now demonstrates daughter transport. Complete Th/Bi chains
-still fail preflight in the tested 11.4.2 environment; see [known issues](KNOWN_ISSUES.md).
+The focused U-238 test demonstrates daughter transport. Full Th/Bi preflights and
+U-chain smoke contributions still fail with `PART122` in the tested Geant4 11.4.2/data
+environment, preventing a complete published U/Th background; see
+[known issues](KNOWN_ISSUES.md).
 
 ## Published source matrix
 
@@ -68,5 +70,6 @@ still fail preflight in the tested 11.4.2 environment; see [known issues](KNOWN_
 26 declared contributions, split resistor chains, historical input investigation
 and constructed-quantity provenance. `study/source_matrix.py` validates that
 specification and provides the existing source/isotope/chain commands. It does
-not launch a run or bypass the unresolved lifetime/data preflight. Both supported layouts use the same assays and chain policies with the
-code-compatible detector model. Other detector models are deferred.
+not launch a run or bypass the unresolved full-chain environment preflight. Both
+supported layouts use the same assays and chain policies with the code-compatible
+detector model. Other detector models are deferred.

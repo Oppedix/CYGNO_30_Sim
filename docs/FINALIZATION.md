@@ -8,14 +8,17 @@ Additive manifest completion: `c7058d0`
 (`fix(study): embed quantities and job accounting in campaign manifests`),
 validated by the runner suite in 19.75 s. It embeds quantities, seeds and verified
 counts directly in the campaign manifest; transport and normalization are unchanged.
-The final documentation/export-macro commit is identified by subject
-`docs(study): record final validation and reproducibility handoff`.
+Original documentation/export-macro handoff:
+`f74ca7c3dea1059279d03b5f0d217206c706d992`
+(`docs(study): record final validation and reproducibility handoff`).
 
 The branch is technically ready for a fast-forward merge into local `main`:
 main is an ancestor, tests pass, and the public tree contains no active deferred
-model. **This does not certify a complete scientific reproduction.** The installed
-11.4.2 environment fails decay-chain preflight and 21 smoke contributions remain
-incomplete. The software correctly refuses to call those spectra complete.
+model. The repository reproduces Samuele's workflow and analysis infrastructure
+using thesis Table 7.1. **This does not certify a complete scientific reproduction.**
+The tested Geant4 11.4.2/data environment cannot produce the complete published
+U/Th background because of `PART122`; 21 smoke contributions remain incomplete.
+The software correctly refuses to call those spectra complete.
 
 ## Supported combinations
 
@@ -24,9 +27,9 @@ incomplete. The software correctly refuses to call those spectra complete.
 | legacy-25x3 | code-compatible | historical | Principal Samuele reference |
 | cygno-5x5x3-v1 | code-compatible | historical | Retained alternative |
 
-Both have 75 modules / 150 cells, unchanged internal geometry. A future 77-module
-layout is not implemented; counts now flow from the profile to placement and
-analysis without duplicated construction. Independent geometry.txt and placements.tsv
+Both have 75 modules / 150 cells, unchanged internal geometry. A future 11x7
+(77-module) layout is not implemented; counts now flow from the profile to
+placement and analysis without duplicated construction. Independent geometry.txt and placements.tsv
 snapshots are byte-identical to Phase 6 for both layouts.
 
 ## Validation evidence
@@ -69,16 +72,19 @@ The final smoke is `../../validation-runs/samuele-final-smoke` and its current
 report is identified by `latest-report.json`. Manual and interruption checks are
 in `samuele-manual-gem-k40`, `samuele-manual-k40`, `samuele-interrupt-check`;
 the tiny production-mode check is `samuele-production-check`. Final CTest evidence
-is in `../../build/cygno-samuele-release/Testing/Temporary/LastTest.log`.
+is summarized in the portable evidence above. The latest CTest invocation writes
+`../../build/cygno-samuele-release/Testing/Temporary/LastTest.log`.
 
 ## Exact local build and commands
 
-From this repository root (local dependency installation shown with relative paths):
+From this repository root, with the Geant4 and ROOT environments loaded as in the
+[README](../README.md). These are the same build/run options; only the external
+build/run directories and local Geant4 discovery path differ:
 
 ```sh
 export REPO="$PWD"
 export BUILD="$REPO/../../build/cygno-samuele-release"
-# Choose a NEW campaign root for the final documentation revision:
+# Choose a NEW campaign root for this checkout revision:
 export RUNS="$REPO/../../validation-runs/samuele-next"
 cmake -S . -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DWITH_GEANT4_UIVIS=ON \
   -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE="$(command -v python3)" \
@@ -137,8 +143,8 @@ RayTracer attempt gave a blank image and is not counted as validated visualizati
 ## Remaining scientific limitations
 
 Explicit long-lived threshold configuration is resolved and tested. Complete
-U/Th-chain transport remains blocked by duplicate-ion registration in the tested
-Geant4/data environment. No verified replacement environment is claimed; a complete
+U/Th-chain transport remains blocked by `PART122` duplicate-ion registration in
+the tested Geant4/data environment. No verified replacement environment is claimed; a complete
 reproduction requires a separately validated matched Geant4/data installation.
 Historical sampling is not uniform bulk; inherited internal overlaps, stopped ion
 recoil, group heuristics and first-position fiducialization remain. Exact thesis
@@ -188,3 +194,17 @@ metadata were removed. Private local references remain excluded and were not
 edited, moved or deleted.
 Final expected status after this handoff commit: clean `study/background-reproduction`.
 No merge or push is performed.
+
+
+## Final documentation audit (2026-09-22)
+
+The active documentation consistently describes finalized workflow/analysis
+infrastructure, the tested environment's PART122 U/Th blocker, and the unsupported,
+deferred model. The 11x7 layout remains future work. README and handoff commands
+agree; external directory choices and local dependency discovery are documented.
+All 56 local links across 15 active Markdown files resolve. The three study
+configurations validate, the matrix contains 26 contributions, and `--list`
+succeeds without transport. Relevant CTest groups `study_runner` and `source_matrix`
+pass (2/2, 31.46 s); `git diff --check` passes. No implementation, configuration or
+test files changed. Branch ancestry confirms that local `main` is an ancestor and
+`recovery/phase7-wip-20260922` is not. No merge or push was performed.

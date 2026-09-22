@@ -5,7 +5,10 @@
 The supported scientific reference is `legacy-25x3` / `code-compatible` /
 `historical`. The alternative `cygno-5x5x3-v1` shares internals and analysis.
 No detector dimensions or source distributions were corrected to match the thesis.
-A future 11x7 layout is outside this task. These three origins must stay distinct:
+The future 11x7 layout is not implemented. This repository reproduces the workflow
+and analysis infrastructure using thesis Table 7.1; the tested Geant4 11.4.2/data
+environment cannot yet produce the complete published U/Th background because of
+`PART122`. These three origins must stay distinct:
 
 | Origin | What it supplies |
 |---|---|
@@ -58,9 +61,11 @@ It is an environment test, not a measurement of branching fractions or convergen
 The standalone `external_decay_probe` target removes CYGNO geometry, sampler and
 ROOT from the Bi test. See [known issues](KNOWN_ISSUES.md) for observed PART122.
 
-The tested 11.4.2 environment fails. Production does not launch the affected full
-Th-232/Th-228 contributions under that failed preflight; their attempt manifests
-say failed/incomplete. Smoke still exercises all 26 scheduled jobs, but even a tiny
+The tested Geant4 11.4.2/data environment fails. The complete 26-job smoke also
+exposes `PART122` in U chains: only five K-40 contributions pass and 21 remain
+incomplete (see [validation evidence](FINALIZATION.md#validation-evidence)).
+Production does not launch the affected full Th-232/Th-228 contributions under
+that failed preflight; their attempt manifests say failed/incomplete. Smoke still exercises all 26 scheduled jobs, but even a tiny
 Th attempt that happens to exit successfully cannot override the failed preflight.
 Resistor upper Th stops before Th-228 and is assessed by its own execution; any
 exception, including one before that boundary, fails the job. No isotope is omitted

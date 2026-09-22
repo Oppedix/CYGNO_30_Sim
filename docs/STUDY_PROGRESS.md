@@ -1,13 +1,16 @@
 # Background-study finalization
 
-Updated: 2026-09-22. Status: IN PROGRESS.
+Updated: 2026-09-22. Status: SOFTWARE FINALIZED — complete published U/Th background blocked by PART122.
 
 ## Supported scope
 
 Reference: `legacy-25x3`, `code-compatible`, `historical` source policy.
 `cygno-5x5x3-v1` remains supported. Detector internals, historical source sampling,
 assays, chain boundaries and datasets are preserved. No 11x7 layout is implemented.
-The former Phase 7–10 detector-correction roadmap is cancelled.
+The former Phase 7–10 detector-correction roadmap is cancelled. The finalized
+scope is Samuele's workflow and analysis infrastructure using thesis Table 7.1;
+the tested Geant4 11.4.2/data environment cannot yet produce the complete published
+U/Th background because of `PART122`.
 
 ## Recovery and baseline
 
@@ -17,17 +20,19 @@ Interrupted Phase 7 was preserved locally as `f82c823` on
 files, smoke-C/D configurations, STUDY_THESIS_MODEL.md and test_thesis_model.py
 (21 files, 481 insertions, 51 deletions). No references, build/run outputs or ROOT
 files were included. The public study branch was restored to clean Phase 6.
-The recovery branch is not part of the intended merge or push.
+The recovery commit is not an ancestor of the public study branch. The deferred
+`thesis-7.3` implementation exists only on that separate local recovery branch,
+which must not be included when publishing.
 
 The [Phase 0–6 ledger](history/PHASE0-6_PROGRESS.md) preserves previous validation
 and A/B suppression evidence. Original campaigns must not be relabeled or rerun.
 
-## Finalization plan
+## Completed finalization scope
 
-1. Fresh baseline build and complete tests; confirm existing architecture.
+1. Fresh baseline build and complete tests confirming the existing architecture.
 2. Explicit long-lived decay macro setting and daughter-production test; Th/Bi preflight.
 3. Minimal smoke/production runner, progress, interruption/resume/retry and macro export.
-4. Reuse normalized analysis; add Figure 7.5/7.6 and Table 7.2/7.3 exports.
+4. Existing normalized analysis with Figure 7.5/7.6 and Table 7.2/7.3 exports.
 5. Researcher documentation, final tree audit, clean build and complete validation.
 6. Logical local commits and handoff; no merge, push or production-size validation.
 

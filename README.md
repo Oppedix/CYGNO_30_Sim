@@ -1,12 +1,14 @@
 # CYGNO internal-radioactivity background study
 
-Reproduce the **workflow** of Samuele Torelli's background study: Geant4 source
-macros → worker Hits ROOT → grouped events → activity normalization → seven
+Reproduce the **workflow and analysis infrastructure** of Samuele Torelli's
+background study using the thesis Table 7.1 source matrix: Geant4 source macros
+→ worker Hits ROOT → grouped events → activity normalization → seven
 component categories → spectra and tables. The reference is **legacy-25x3**,
 **code-compatible** detector internals, **historical** source sampling.
 
-The long-lived decay setting is explicit. **The tested Geant4 11.4.2 environment
-fails the Th/Bi full-chain preflight**; affected contributions remain incomplete.
+The long-lived decay setting is explicit. **The tested Geant4 11.4.2/data environment
+cannot produce the complete published U/Th background because of `PART122`**;
+affected contributions remain incomplete.
 Smoke outputs demonstrate software operation, not a production background estimate.
 See [known issues](docs/KNOWN_ISSUES.md) before interpreting rates.
 
@@ -21,7 +23,7 @@ From the repository root, use directories outside Git:
 export REPO="$PWD"
 export BUILD="$REPO/../cygno-build"
 export RUNS="$REPO/../cygno-runs"
-cmake -S "$REPO" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release \
+cmake -S "$REPO" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DWITH_GEANT4_UIVIS=ON \
   -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE="$(command -v python3)"
 cmake --build "$BUILD" --parallel 6
 ```
@@ -52,13 +54,13 @@ Export all 26 explicit macros without running Geant4, then run one in its own
 new directory (each macro uses output basename `raw`):
 
 ```sh
-python3 study/runner.py --mode smoke --macros-dir "$RUNS/macros-smoke"
-mkdir -p "$RUNS/manual-k40"
-(cd "$RUNS/manual-k40" && "$BUILD/rdecay01" \
-  "$RUNS/macros-smoke/GEMsCore_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
-rootls -t "$RUNS/manual-k40/outfiles_V2/raw_t0.root"
+python3 study/runner.py --mode smoke --macros-dir "$RUNS/macros"
+mkdir -p "$RUNS/manual"
+(cd "$RUNS/manual" && "$BUILD/rdecay01" \
+  "$RUNS/macros/GEMsCore_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
+rootls -t "$RUNS/manual/outfiles_V2/raw_t0.root"
 "$BUILD/analysis/SimpleProcessEvents" \
-  "$RUNS/manual-k40/outfiles_V2/raw_t0.root" "$RUNS/manual-k40/processed.root"
+  "$RUNS/manual/outfiles_V2/raw_t0.root" "$RUNS/manual/processed.root"
 ```
 
 Manual runs need a zero exit, no fatal log errors, and complete `RunAccounting`
