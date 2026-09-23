@@ -11,7 +11,7 @@ file(SHA256 "${PROJECT_SOURCE_DIR}/common/DetectorGeometry.hh" CYGNO_GEOMETRY_HA
 file(GLOB_RECURSE CYGNO_BUILD_INPUTS CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   app/*.cc src/*.cc include/*.hh common/*.hh common/*.in analysis/*.cpp analysis/*.cc analysis/*.hh)
 list(APPEND CYGNO_BUILD_INPUTS CMakeLists.txt analysis/CMakeLists.txt
-  validation/CMakeLists.txt validation/geometry_quantities.cc)
+  validation/CMakeLists.txt)
 list(SORT CYGNO_BUILD_INPUTS)
 set(CYGNO_SOURCE_RECORD "")
 foreach(input IN LISTS CYGNO_BUILD_INPUTS)
@@ -51,6 +51,11 @@ target_compile_definitions(cygno_sim PUBLIC ${Geant4_DEFINITIONS})
 add_executable(rdecay01 app/rdecay01.cc)
 target_link_libraries(rdecay01 PRIVATE cygno_sim)
 
+# Production metadata exporter reuses actual constructed masses and shared layout.
+# Available even with BUILD_TESTING=OFF; it has no CERN ROOT dependency.
+add_executable(geometry_quantities app/geometry_quantities.cc)
+target_link_libraries(geometry_quantities PRIVATE cygno_sim)
+
 # Preserve `cd build && ./rdecay01` while organizing the source macros in config/.
 configure_file(config/vis.mac vis.mac COPYONLY)
 file(COPY config DESTINATION "${PROJECT_BINARY_DIR}")
@@ -63,5 +68,5 @@ include(CTest)
 if(BUILD_TESTING)
   add_subdirectory(validation)
 endif()
-install(TARGETS rdecay01 RUNTIME DESTINATION bin)
+install(TARGETS rdecay01 geometry_quantities RUNTIME DESTINATION bin)
 install(DIRECTORY config DESTINATION share/CYGNO_30_Sim)

@@ -14,7 +14,7 @@
 #include <stdexcept>
 
 int main(int argc, char** argv) try {
-  if (argc!=3) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT");
+  if (argc!=3 && argc!=4) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json]");
   const auto layout=cygno::geometry::ParseLayoutId(argv[2]);
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
@@ -55,5 +55,26 @@ int main(int argc, char** argv) try {
     out << source.first << '\t' << mass/kg << '\t' << source.second.size() << '\t' << material << '\n';
   }
   if (!out) throw std::runtime_error("Failed to write quantities");
+  if (argc==4) {
+    std::ofstream geometry(argv[3]);
+    using namespace cygno::geometry;
+    geometry << std::setprecision(17)
+      << "{\"layout\":\"" << LayoutName(layout)
+      << "\",\"geometry_hash\":\"" << cygno::build::geometryHash
+      << "\",\"source_hash\":\"" << cygno::build::sourceHash
+      << "\",\"gas_size_mm\":[" << module.cathodeX << ',' << module.cathodeY << ',' << module.driftLength
+      << "],\"gas_centers_mm\":{";
+    const auto modules=BuildModuleLayout(layout);
+    bool first=true;
+    for (int side=0; side<2; ++side) for (const auto& placement : modules) {
+      const auto center=GasCenter(placement,side);
+      if (!first) geometry << ',';
+      first=false;
+      geometry << '\"' << GasCopyNumber(placement.id,side,modules.size()) << "\":["
+               << center.x << ',' << center.y << ',' << center.z << ']';
+    }
+    geometry << "}}\n";
+    if (!geometry) throw std::runtime_error("Failed to write geometry metadata");
+  }
   return 0;
 } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

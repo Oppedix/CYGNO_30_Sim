@@ -1,5 +1,11 @@
 # Finalization and reproducibility handoff
 
+> Current workflow: [two-stage simulation/offline analysis](BACKGROUND_STUDY.md).
+> The earlier macOS PART122 results below remain historical evidence. The operator
+> now reports a Linux x86_64 private Geant4 11.3.1 serial environment passing all
+> four preflight cases; this is not a universal Geant4 fix.
+
+
 Branch: `study/background-reproduction`. No merge or push performed.
 Phase 6: `a9be61bcc209e403f00275bcfae51787fcadb765`.
 Implementation: `113d7132c17b384870c891c5c7e8769160a6b32a`

@@ -106,8 +106,8 @@ input ever existed. No scale factor has been chosen to match the published total
 Export from the existing detector construction without transporting particles:
 
 ```sh
-/path/to/build/validation/geometry_quantities /path/to/quantities.tsv legacy-25x3
-/path/to/build/validation/geometry_quantities /path/to/quantities-current.tsv cygno-5x5x3-v1
+/path/to/build/geometry_quantities /path/to/quantities.tsv legacy-25x3
+/path/to/build/geometry_quantities /path/to/quantities-current.tsv cygno-5x5x3-v1
 python3 study/source_matrix.py config/study/thesis-table7.1.json
 ```
 

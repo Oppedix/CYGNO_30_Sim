@@ -1,5 +1,11 @@
 # Analysis and normalization
 
+The normal offline entry point is now `study/analyze.py` (uproot/numpy/matplotlib,
+no CERN ROOT). See [the two-stage contract](BACKGROUND_STUDY.md#stage-b-offline-analysis).
+The C++ programs and PyROOT adapters described below remain the optional reference
+implementation; their grouping/normalization rules are preserved by the Python port.
+
+
 Build the four programs with `-DCYGNO_BUILD_ANALYSIS=ON`. The simulation does not
 link ROOT; these executables do. Run the processor separately for each worker
 file. Run-local event IDs can repeat across runs: do not concatenate unrelated

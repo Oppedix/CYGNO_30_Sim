@@ -79,7 +79,28 @@ separate layout/model/source metadata, checked by processing and all plotters.
 Archive matching source and configuration, and explicitly identify both layout
 and model for unversioned data before processing; see [analysis](ANALYSIS.md).
 
-## Confirmed Geant4 11.4.2 decay-environment blocker
+## Environment-specific PART122 results (updated 2026-09-23)
+
+The operator reports **4/4 passing preflight cases** on Ubuntu 22.04.5 LTS,
+x86_64, GCC 11.4.0, private Geant4 11.3.1 with
+`GEANT4_BUILD_MULTITHREADED=OFF`, installed at
+`/private/SolarNu/MC30/geant4-private/software/geant4-11.3.1-serial`.
+Matching nuclear datasets include PhotonEvaporation6.1, RadioactiveDecay6.1.2,
+and G4ENSDFSTATE3.0. U238-enabled transports Th234; PART122 is absent in all four.
+This external Linux result was supplied by the operator, not rerun from this Mac.
+
+PART122 was independently reproduced on macOS Apple Silicon in CYGNO, a
+geometry-free reproducer, stock Geant4 11.3.1 rdecay01, and a truly non-MT stock
+11.3.1 build. It is not attributed to the CYGNO refactor. The present local
+headless serial 11.3.1 check again passed the two U238 cases and failed Th232/Bi212.
+No particle-table patch, exception suppression, excited-state removal or chain
+alteration has been applied. Linux is the validated execution environment for
+now; this is empirical environment validation, **not proof of a universal fix**.
+
+The following earlier macOS 11.4.2 evidence is retained with its original scope.
+
+## Historical macOS Geant4 11.4.2 decay-environment blocker
+
 
 `validation/macros/known_bi212_failure.mac` still aborts with `PART122` registering
 Pb208 (excited Pb208[2614.52200] appears in the failing track report). It reproduced
@@ -114,8 +135,7 @@ particle name is already registered. `G4IonTable` formats excited energies to fi
 decimal places in keV. This identifies the duplicate-registration failure point;
 it does not by itself establish whether state matching, threading or datasets are
 the underlying cause. No Geant4 or dataset patch was applied. A public-source
-search did not establish a verified fix/version for this exact failure. Only
-11.4.2 was installed for testing; no alternative is claimed to pass.
+search did not establish a verified fix/version for this exact failure. At that earlier handoff only 11.4.2 had been tested; see the updated environment result above.
 
 The observed matched nuclear data include RadioactiveDecay6.1.2,
 PhotonEvaporation6.1.2 and ENSDFSTATE3.0 (all datasets are fingerprinted in campaign

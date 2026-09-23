@@ -64,7 +64,7 @@ also depend on scheduling; exact matching against the baseline worker split is
 not an acceptance condition. Repeated `/random/setSeeds` does not reset the
 separate Geant4 solid-surface RNG across runs.
 
-Bi-212 remains an expected `PART122` failure, reported separately by `run_checks.py
+On the historical macOS environment, Bi-212 was an observed `PART122` failure, reported separately by `run_checks.py
 bi212`; an unexpected outcome makes that diagnostic fail for investigation.
 Passing tests establish software properties, **not scientific model validation**.
 See [the recovery report](../docs/history/REFACTOR_REPORT.md) for artifact locations and
@@ -105,3 +105,23 @@ The separate `study/preflight.py` exercises full Th-232 and direct Bi-212. It
 returns failure on PART122 and retains every log. This is deliberately not a
 CTest expected-pass that hides an incomplete physical chain. See
 [BACKGROUND_STUDY.md](../docs/BACKGROUND_STUDY.md) for the environment requirement.
+
+## Two-stage validation
+
+`python3 -m unittest discover -s tests -p test_simulation.py -v` needs only the
+standard library. Install `study/requirements-analysis.txt` for the full
+`python -m unittest discover -s tests -v` suite. Geant4 and CERN ROOT are not
+required for the synthetic campaign/archive/schema/grouping/report tests.
+`CYGNO_REFERENCE_BUILD=/path/to/build` enables optional real C++/ROOT parity.
+CMake registers `simulation_python`; `-DCYGNO_TEST_PYTHON_ANALYSIS=ON` registers
+`offline_python`, with reference parity enabled when C++ analysis is built.
+
+`geometry_quantities` now lives at the build root and is a production target,
+independent of BUILD_TESTING. The old exact solid-RNG replay tests explicitly skip on Geant4 11.3, which has
+no public surface-RNG seed/reset API. They remain active on 11.4. Actual masses
+and layouts are checked by the exporter and parity tests. No sampler was changed.
+
+The Linux x86_64 private serial 11.3.1 environment is operator-validated 4/4;
+macOS/arm64 PART122 failures remain environment-specific. After rebuilding on
+Linux, repeat 4/4 preflight, 26/26 small smoke, archive/offline validation and
+reference parity before considering 1M primaries/contribution.

@@ -9,7 +9,7 @@ import time
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from study.runner import invoke, parse_environment, save, REPO, RDM_COMMAND, RDM_SECONDS
+from study.runtime import invoke, parse_environment, save, REPO, RDM_COMMAND, RDM_SECONDS, parse_accounting
 from study.source_matrix import require
 
 
@@ -39,6 +39,7 @@ def check(build, output, long_lived_only=False):
                          folder, 'simulation', 120)
             environment = parse_environment(log)
             result['environment'] = environment
+            result['accounting'] = parse_accounting(log, count)
             if enabled:
                 require(math.isclose(float(environment['radioactive_decay_time_threshold_s']),
                                      RDM_SECONDS, rel_tol=1e-12), 'Incorrect effective RDM threshold')
@@ -48,7 +49,9 @@ def check(build, output, long_lived_only=False):
             result['th234_daughter_observed'] = daughter
             if name == 'u238-enabled':
                 require(daughter, 'U238 produced no transported Th234 daughter')
-            if name == 'u238-default' and math.isclose(float(environment['radioactive_decay_time_threshold_s']), 31536000):
+            if name == 'u238-default':
+                require(math.isclose(float(environment['radioactive_decay_time_threshold_s']), 31536000),
+                        'Unexpected default RDM threshold (expected one year)')
                 require(not daughter, 'Unexpected daughter under the one-year default')
             if name in ('th232-full', 'bi212-full'):
                 require(bool(re.search(r'\bBi212\s*:', log)) and bool(re.search(r'\bPb208\s*:', log)),

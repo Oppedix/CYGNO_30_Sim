@@ -65,3 +65,13 @@ identity and the post-macro threshold. A failed simulation may lack the latter;
 its complete log and pre-transport worker observation are retained. Every 500
 events `CYGNO_PROGRESS completed_events N` records observational progress; only
 RunAccounting establishes the denominator. See [study manifests](BACKGROUND_STUDY.md).
+
+## ROOT-free completion receipt
+
+After successful Write/CloseFile, EndOfRun emits `CYGNO_ACCOUNTING` followed by
+JSON with `RunID`, `RequestedEvents`, `GeneratedPrimaries`, `ProcessedEvents`, and
+`AbortedEvents`, using the same counters as the existing ROOT tree. The stage A
+runner requires exactly one record, run ID 0, equal requested/generated/processed
+counts and no aborts. Stage B cross-checks those values against the ROOT tree.
+Serial Geant4 outputs use `raw.root`; single-worker MT outputs use `raw_t0.root`.
+No Hits or RunMetadata fields have changed.

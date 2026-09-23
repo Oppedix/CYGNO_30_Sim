@@ -73,7 +73,7 @@ The active CMake source list is explicit. `PhysicsList` and `HistoManager` in
 active reference physics list. The complete original-to-current move mapping is
 [FILE_MOVES.json](FILE_MOVES.json).
 
-## Study entry points
+## Legacy combined study entry points
 
 `study/source_matrix.py` validates the Table 7.1 matrix, isotope boundaries and
 kg/piece quantities. `study/runner.py` creates exact macros and seeds, preflights the
@@ -84,3 +84,16 @@ normalized outputs; it does not simulate, regroup events or renormalize activiti
 `study/preflight.py` tests long-lived daughters and full Th/Bi transport. C++ only
 observes the RDM setting; explicit macros set it. Worker progress is logged every
 500 completed events without changing RNG calls or transport.
+
+## Two-stage entry points
+
+- `study/simulate.py`: stdlib-only scheduling, accounting and resume.
+- `study/runtime.py`, `campaign.py`, `archive.py`: shared provenance, portable
+  integrity checks and complete-campaign packaging.
+- `app/geometry_quantities.cc`: production metadata exporter, available without tests.
+- `study/analyze.py`, `raw_io.py`, `processing.py`, `spectra.py`, `reporting.py`:
+  chunked ROOT-free offline validation, grouping, normalization and reports.
+- `tests/`: pure-Python fixtures and optional C++ reference parity.
+
+The older combined `study/runner.py` and its PyROOT adapters remain a legacy
+comparison path. Use the [two-stage workflow](BACKGROUND_STUDY.md) for new campaigns.

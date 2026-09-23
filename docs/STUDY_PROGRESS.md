@@ -1,5 +1,11 @@
 # Background-study finalization
 
+> Current workflow: [two-stage simulation/offline analysis](BACKGROUND_STUDY.md).
+> The earlier macOS PART122 results below remain historical evidence. The operator
+> now reports a Linux x86_64 private Geant4 11.3.1 serial environment passing all
+> four preflight cases; this is not a universal Geant4 fix.
+
+
 Updated: 2026-09-22. Status: SOFTWARE FINALIZED — complete published U/Th background blocked by PART122.
 
 ## Supported scope
@@ -70,7 +76,7 @@ remain archived at their original identity.
 
 **Next scientific task:** validate an official matched Geant4/nuclear-data environment
 that executes full U/Th chains without PART122, then run a fresh statistically useful
-campaign. No compatible replacement environment has been verified here. Preserve
+campaign. At that historical handoff, no compatible replacement environment had been verified. Preserve
 all original attempts; no data edits, branch weights or omitted isotopes are allowed.
 The repository is technically ready for fast-forward integration; this is not a
 claim that the current environment reproduces complete published background rates.

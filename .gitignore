@@ -40,3 +40,6 @@ core.*
 /local_refs/
 /local_context/
 /validation-runs/
+
+# Local offline Python environments
+/.venv*/

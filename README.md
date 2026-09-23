@@ -1,118 +1,143 @@
 # CYGNO internal-radioactivity background study
 
-Reproduce the **workflow and analysis infrastructure** of Samuele Torelli's
-background study using the thesis Table 7.1 source matrix: Geant4 source macros
-→ worker Hits ROOT → grouped events → activity normalization → seven
-component categories → spectra and tables. The reference is **legacy-25x3**,
-**code-compatible** detector internals, **historical** source sampling.
+Two stages reproduce the **workflow and analysis infrastructure** of Samuele
+Torelli's study: Geant4 generates raw ROOT files; Python analyzes them offline.
+The canonical identity remains **legacy-25x3 / code-compatible / historical**,
+with exactly the 26 contributions in [Table 7.1](config/study/thesis-table7.1.json).
+Physics remains `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`.
 
-The long-lived decay setting is explicit. **The tested Geant4 11.4.2/data environment
-cannot produce the complete published U/Th background because of `PART122`**;
-affected contributions remain incomplete.
-Smoke outputs demonstrate software operation, not a production background estimate.
-See [known issues](docs/KNOWN_ISSUES.md) before interpreting rates.
+The privately installed **Linux x86_64 Geant4 11.3.1 serial environment** has passed
+the four-case decay preflight (operator-reported). PART122 remains reproducible in
+the tested macOS/arm64 environments, including stock Geant4 examples and a serial
+build. This is empirical environment validation, **not a universal Geant4 fix**.
+See [environment evidence and limitations](docs/KNOWN_ISSUES.md).
 
-## Prerequisites and build
+## Cluster: build and simulate
 
-CMake ≥3.16, C++17 compiler, Geant4 11 with its matching datasets, CERN ROOT 6,
-and Python ≥3.11 with PyROOT. Qt/OpenGL support is needed for the interactive
-viewer. Source your Geant4 installation's `bin/geant4.sh` and ROOT environment.
-From the repository root, use directories outside Git:
-
-```sh
-export REPO="$PWD"
-export BUILD="$REPO/../cygno-build"
-export RUNS="$REPO/../cygno-runs"
-cmake -S "$REPO" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DWITH_GEANT4_UIVIS=ON \
-  -DCYGNO_BUILD_ANALYSIS=ON -DPython3_EXECUTABLE="$(command -v python3)"
-cmake --build "$BUILD" --parallel 6
-```
-
-For a headless build add `-DWITH_GEANT4_UIVIS=OFF`. If discovery needs help, supply
-`-DGeant4_DIR=/path/to/geant4/lib/cmake/Geant4` and `-DROOT_DIR=/path/to/root/cmake`.
-Simulation writes ROOT through Geant4; the separate analysis links CERN ROOT.
-
-## Visualization and detector
+Requirements: CMake ≥3.16, C++17 compiler, Geant4 11 and matching datasets, Python
+≥3.10 standard library. **No CERN ROOT, PyROOT, Qt, OpenGL, or analysis packages are
+required.** Geant4 itself writes ROOT format. Start from the private environment:
 
 ```sh
-(cd "$BUILD" && ./rdecay01 --layout legacy-25x3)
+bash --noprofile --norc
+export G4LAB="/private/SolarNu/MC30/geant4-private"
+source "$G4LAB/activate.sh"
+export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
+export CYGNO_BUILD="$G4LAB/build/cygno-g4-11.3.1-linux"
+export CYGNO_RUNS="$G4LAB/runs/g4-11.3.1-linux"
+cd "$CYGNO_SRC"
+
+cmake -S . -B "$CYGNO_BUILD" \
+  -DCMAKE_BUILD_TYPE=Release -DWITH_GEANT4_UIVIS=OFF \
+  -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
+  -DGeant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
+cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities --parallel
+
+python3 study/preflight.py --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/preflight-NEW"
+python3 study/simulate.py --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/smoke" --mode smoke --primaries 2
 ```
 
-A tested headless image-export alternative is documented in
-[the validation handoff](docs/FINALIZATION.md#visualization).
+The exporter `geometry_quantities` uses actual constructed component masses,
+placement counts and the common gas layout; it is available with tests disabled.
+Both executables are ROOT-free. Each campaign also retains its own four-case
+preflight and refuses simulation if any case fails, independent of statistics.
 
-`legacy-25x3` retains 75 modules / 150 gas cells, centers `(504*i,804*j,0)` mm,
-`i=-12..12`, `j=-1..1`, and gas copies `side*75 + 3*(i+12)+(j+1)`.
-`cygno-5x5x3-v1` also remains supported and is the executable's compatibility
-default; the canonical study explicitly selects legacy. Both share the same
-numerically preserved detector and sampler. No 11x7 layout is implemented.
-See [layout and copy numbers](docs/LAYOUT.md).
-
-## Run one macro; inspect and process ROOT
-
-Export all 26 explicit macros without running Geant4, then run one in its own
-new directory (each macro uses output basename `raw`):
+After the Linux smoke/archive/offline/parity gates, the first statistics check is:
 
 ```sh
-python3 study/runner.py --mode smoke --macros-dir "$RUNS/macros"
-mkdir -p "$RUNS/manual"
-(cd "$RUNS/manual" && "$BUILD/rdecay01" \
-  "$RUNS/macros/GEMsCore_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
-rootls -t "$RUNS/manual/outfiles_V2/raw_t0.root"
-"$BUILD/analysis/SimpleProcessEvents" \
-  "$RUNS/manual/outfiles_V2/raw_t0.root" "$RUNS/manual/processed.root"
+python3 study/simulate.py --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/samuele-1M" --primaries 1000000 --archive
 ```
 
-Manual runs need a zero exit, no fatal log errors, and complete `RunAccounting`
-before normalization. Do not reuse a run directory or overwrite valid results.
-See [raw schema](docs/OUTPUT.md) and [processing/normalization](docs/ANALYSIS.md).
+`--primaries N` is the normal event-count control. The canonical default in
+[samuele.json](config/study/samuele.json) remains **10,000,000 per contribution**;
+1,000,000 is an explicit override, not a redefinition of production. Every job
+keeps the explicit `1.0e+60 year` radioactive-decay threshold and full-chain/split
+boundary commands from the authoritative matrix.
 
-## Smoke, matrix, production and resume
+Repeat an identical command to resume (`--resume` is optional). Complete jobs are
+verified and reused. Interrupted jobs get new attempts; `--retry-failed` retries
+failed jobs. Valid previous attempts are never overwritten. `--only Lens_K40
+Sensors_K40` selects diagnostics; coverage remains partial and exits 2. Config,
+source, build or dataset changes require a **new campaign directory**.
+
+## Archive and offline analysis
+
+`--archive` creates `samuele-1M.tar.gz` and `samuele-1M.tar.gz.sha256`, retaining the
+unpacked campaign. Complete archives contain raw files, manifests, exact macros,
+logs/receipts, preflight, config/matrix/geometry/quantity snapshots, the actual
+source snapshot (including dirty edits), and `SHA256SUMS.json`. Partial campaigns
+cannot be packaged as complete. To package separately:
 
 ```sh
-# Inspect all jobs and exact macros; launches no Geant4:
-python3 study/runner.py --list
-# Full 26-job smoke (2 primaries per job):
-python3 study/runner.py --mode smoke --build "$BUILD" --output "$RUNS/smoke"
-# Independent environment preflight; directory must be new:
-python3 study/preflight.py --build "$BUILD" --output "$RUNS/preflight"
-# Production setting: 10^7 primaries per contribution, sequential:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production"
-# Resume after Ctrl-C: exactly the same command:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production"
-# Retry failed contributions in new attempt directories:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production" --retry-failed
-# Regenerate ROOT spectra, PNG/PDF figures and CSV/JSON/text tables, no Geant4:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production" --analysis-only
+python3 -m study.archive --input "$CYGNO_RUNS/samuele-1M"
 ```
 
-Canonical configuration: [samuele.json](config/study/samuele.json). `--primaries N`
-overrides counts; use the identical override on resume. `--only Lens_K40 Sensors_K40`
-selects a subset. Without `--output`, campaigns go to `~/cygno-runs/samuele-MODE`.
-Production automatically preflights the environment and blocks affected full Th
-contributions if it fails. Reports display missing coverage explicitly. Exit 2
-means incomplete/failed work, not a complete spectrum. Changing source, build,
-configuration or data requires a new campaign directory.
-
-Outputs are in the directory named by `latest-report.json`: `NormalizedHisto.root`,
-`figure7.5.png/.pdf`, `figure7.6.png/.pdf`, `table7.2.csv`, `table7.3.csv`,
-`tables.json`, `tables.txt` and `spectra.json`. Plot density is **counts / keV / year**;
-ROOT source histograms remain counts/bin/year. Published table values are reference
-comparisons only. Smoke regeneration uses the same command plus `--mode smoke`.
-
-## Tests and detailed guides
+Copy the archive and checksum to the workstation. Analysis needs Python ≥3.10,
+uproot, awkward, numpy and matplotlib, **not CERN ROOT or Geant4**:
 
 ```sh
-ctest --test-dir "$BUILD" --output-on-failure
+python3 -m venv .venv-analysis
+. .venv-analysis/bin/activate
+python -m pip install -r study/requirements-analysis.txt
+python study/analyze.py --input /path/to/samuele-1M.tar.gz \
+  --output /path/to/analysis-samuele-1M
+# An unpacked campaign is also accepted:
+python study/analyze.py --input /path/to/samuele-1M \
+  --output /path/to/analysis-samuele-1M-directory
 ```
 
-Tests include actual fast-isotope and long-lived U-238 transport, both layouts,
-ROOT processing, normalization, and synthetic interruption/resume/retry cases.
-Th/Bi failure is a separate preflight, never hidden inside a passing transport test.
+The report includes `spectra.json`, `tables.json`, `tables.txt`, `table7.2.csv`,
+`table7.3.csv`, `figure7.5.png/.pdf`, `figure7.6.png/.pdf`, `campaign.json` and
+`analysis-manifest.json`. It validates every raw tree and provenance record,
+streams Hits in chunks, and uses actual generated-primary accounting.
+`--allow-partial` explicitly permits labeled diagnostic reports (exit 2).
+See [the workflow contract](docs/BACKGROUND_STUDY.md) for integrity and disk needs.
 
-[Complete study workflow](docs/BACKGROUND_STUDY.md) ·
+## Development and reference analysis
+
+`WITH_GEANT4_UIVIS=ON` retains interactive local visualization:
+`(cd "$CYGNO_BUILD" && ./rdecay01 --layout legacy-25x3)`.
+`CYGNO_BUILD_ANALYSIS=ON` optionally builds the existing CERN ROOT/C++ reference
+executables in `analysis/`; `study/runner.py` is the legacy combined workflow.
+Neither is used by the two-stage workflow.
+
+```sh
+# Standard-library-only simulation tests:
+python3 -m unittest discover -s tests -p test_simulation.py -v
+# Synthetic ROOT fixtures; no Geant4 or CERN ROOT required:
+python -m unittest discover -s tests -v
+# Optional parity with freshly built C++/ROOT reference executables:
+CYGNO_REFERENCE_BUILD=/path/to/reference-build \
+  python -m unittest discover -s tests -p test_parity.py -v
+```
+
+To build that optional reference (on a machine with Geant4 and CERN ROOT):
+
+```sh
+export REFERENCE_BUILD=/path/to/reference-build
+cmake -S . -B "$REFERENCE_BUILD" -DWITH_GEANT4_UIVIS=OFF \
+  -DCYGNO_BUILD_ANALYSIS=ON -DBUILD_TESTING=OFF \
+  -DGeant4_DIR=/path/to/geant4/lib/cmake/Geant4
+cmake --build "$REFERENCE_BUILD" --target SimpleProcessEvents \
+  PlotNormalizedSpectra geometry_quantities --parallel
+```
+
+The parity test uses both layouts, all 26 scales/categories, grouping, chunk/EOF
+boundaries, exact windows, histogram edges/flows and MC variances. Linux still
+needs a fresh 4/4 preflight and 26/26 smoke after this refactor, followed by
+archive/offline validation and a controlled reference comparison before 1M jobs.
+No large production is launched by tests. See the [executed checks and remaining gates](docs/TWO_STAGE_VALIDATION.md).
+
+Historical limitations remain: inherited geometry overlaps and source sampling,
+process/nucleus grouping, and first-position fiducialization. **Nucleus is the most
+recently tracked ion label, not guaranteed per-hit ancestry.** Published tables
+are comparisons only, never normalization targets. Software-complete output does
+not establish a validated physical background estimate.
+
 [Code guide](docs/CODE_GUIDE.md) · [Layout](docs/LAYOUT.md) ·
 [Sources](docs/SOURCES.md) · [Table 7.1 provenance](docs/STUDY_SOURCES.md) ·
-[Output](docs/OUTPUT.md) · [Analysis](docs/ANALYSIS.md) ·
-[Known issues](docs/KNOWN_ISSUES.md) · [Validation](validation/README.md) ·
-[Progress and recovery](docs/STUDY_PROGRESS.md) · [License/provenance](legacy/README.md).
+[Raw output](docs/OUTPUT.md) · [Analysis/reference semantics](docs/ANALYSIS.md) ·
+[Validation](validation/README.md) · [License/history](legacy/README.md).

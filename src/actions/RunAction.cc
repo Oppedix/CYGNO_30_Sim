@@ -156,7 +156,14 @@ void RunAction::EndOfRunAction(const G4Run* run)
  }
  if (!analysisManager->Write() || !analysisManager->CloseFile())
    G4Exception("RunAction::EndOfRunAction", "CYGNO_OUTPUT", FatalException, "Cannot finish output file");
-  //} 
+ // Emit only after successful write/close, using the same counters as tree 2.
+ if (fPrimary) {
+   G4cout << "CYGNO_ACCOUNTING {\"RunID\":" << run->GetRunID()
+          << ",\"RequestedEvents\":" << run->GetNumberOfEventToBeProcessed()
+          << ",\"GeneratedPrimaries\":" << fPrimary->GetGeneratedCount()
+          << ",\"ProcessedEvents\":" << run->GetNumberOfEvent()
+          << ",\"AbortedEvents\":" << fRun->GetAbortedEvents() << "}" << G4endl;
+ }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

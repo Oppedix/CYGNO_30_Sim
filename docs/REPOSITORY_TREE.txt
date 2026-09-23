@@ -1,4 +1,4 @@
-# Final public files (private refs/builds/run outputs excluded)
+# Public files (private refs/builds/run outputs excluded)
 .gitignore
 CMakeLists.txt
 LICENSE
@@ -15,6 +15,7 @@ analysis/PlotNormalizedSpectra_single.cpp
 analysis/PlotSpectrum.C
 analysis/ProcessEvents.cc
 analysis/SimpleProcessEvents.cpp
+app/geometry_quantities.cc
 app/rdecay01.cc
 common/BuildInfo.hh.in
 common/DetectorGeometry.hh
@@ -74,6 +75,7 @@ docs/SOURCES.md
 docs/STUDY_PROGRESS.md
 docs/STUDY_RUNNER.md
 docs/STUDY_SOURCES.md
+docs/TWO_STAGE_VALIDATION.md
 docs/history/BACKGROUND_EXPERIMENT.md
 docs/history/PHASE0-6_PROGRESS.md
 docs/history/REFACTOR_REPORT.md
@@ -176,11 +178,26 @@ src/output/HitOutput.cc
 src/output/SensitiveDetector.cc
 src/source/PrimaryGeneratorAction.cc
 src/source/RadioactiveSourceSampler.cc
+study/analyze.py
+study/archive.py
+study/campaign.py
 study/figures.py
 study/preflight.py
+study/processing.py
+study/raw_io.py
+study/reporting.py
+study/requirements-analysis.txt
 study/root_io.py
 study/runner.py
+study/runtime.py
+study/simulate.py
 study/source_matrix.py
+study/spectra.py
+tests/fixtures.py
+tests/test_offline.py
+tests/test_parity.py
+tests/test_simulation.py
+tests/test_workflow.py
 validation/CMakeLists.txt
 validation/README.md
 validation/analysis_geometry.cc
@@ -191,7 +208,6 @@ validation/check_hits.py
 validation/compare_hits.py
 validation/external_decay_probe.cc
 validation/geometry_audit.cc
-validation/geometry_quantities.cc
 validation/geometry_snapshot.cc
 validation/layout_profiles.cc
 validation/macros/chain.mac
