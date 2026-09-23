@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Stage A: standard-library-only, resumable Table 7.1 raw simulation campaigns."""
 import argparse
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 import hashlib
 import math
 import os
 from pathlib import Path
 import platform
 import shutil
+import signal
 import sys
+import threading
 import time
 
 if __package__ in (None, ''):
@@ -16,7 +19,14 @@ from study import runtime as rt
 from study.source_matrix import read_matrix, read_quantities, require
 
 
-def run_job(output, row, config, campaign, simulation, retry=False):
+def needs_attempt(previous, retry):
+    return (previous is None or previous['status'] in ('running', 'interrupted') or
+            (previous['status'] != 'complete' and retry))
+
+
+def run_job(output, row, config, campaign, simulation, retry=False, cancel=None):
+    if cancel is not None and cancel.is_set():
+        raise rt.InvocationCancelled('Campaign interrupted before contribution started')
     directory = output/'jobs'/row['id']
     directory.mkdir(parents=True, exist_ok=True)
     path = directory/'manifest.json'
@@ -28,10 +38,8 @@ def run_job(output, row, config, campaign, simulation, retry=False):
         if previous['status'] == 'complete':
             from study.campaign import validate_job
             validate_job(output, row, campaign)
-            print('REUSE '+row['id'], flush=True)
             return previous
-        if previous['status'] not in ('running', 'interrupted') and not retry:
-            print('RETAIN '+row['id']+' (use --retry-failed)', flush=True)
+        if not needs_attempt(previous, retry):
             return previous
     # Max rather than count tolerates gaps without ever overwriting an attempt.
     number = max([int(p.name[8:]) for p in directory.glob('attempt-*')] or [0])+1
@@ -45,9 +53,11 @@ def run_job(output, row, config, campaign, simulation, retry=False):
                     previous_attempt=previous['attempt'] if previous else None)
     rt.save(path, manifest)
     try:
+        rt.console('[START] '+row['id'])
         (attempt/'run.mac').write_text(macro)
         log = rt.invoke([simulation, attempt/'run.mac', '1', '--layout', config['layout']],
-                        attempt, 'simulation', config['timeout_seconds'])
+                        attempt, 'simulation', config['timeout_seconds'], cancel=cancel,
+                        contribution=row['id'], primaries=config['primaries_per_job'])
         manifest['accounting'] = rt.validate_simulation_log(
             log, campaign['identity']['effective_environment'], config['primaries_per_job'])
         roots = list((attempt/'outfiles_V2').glob('*.root'))
@@ -58,13 +68,14 @@ def run_job(output, row, config, campaign, simulation, retry=False):
     except KeyboardInterrupt:
         manifest.update(status='interrupted', error='Interrupted; repeat command to resume')
         raise
+    except rt.InvocationCancelled:
+        manifest.update(status='interrupted', error='Interrupted; repeat command to resume')
     except (ValueError, RuntimeError, OSError) as error:
         manifest.update(status='failed', error=str(error), chain_validity='incomplete')
     finally:
         manifest['artifacts'] = rt.artifacts(attempt)
         rt.save(attempt/'manifest.json', manifest)
         rt.save(path, manifest)
-    print(manifest['status'].upper()+' '+row['id']+(': '+manifest['error'] if 'error' in manifest else ''), flush=True)
     return manifest
 
 
@@ -79,6 +90,71 @@ def update_campaign(output, campaign, matrix):
                     scientific_validity='raw-accounting-complete; offline-validation-required' if completed == 26
                     else 'incomplete; not a full-matrix result')
     rt.save(output/'campaign.json', campaign)
+
+
+def schedule_jobs(output, rows, config, campaign, matrix, simulation, jobs=1, retry=False):
+    """Run on the main thread under the campaign lock; workers own job directories."""
+    completed = 0
+
+    def report(row, job, reused=False):
+        nonlocal completed
+        if job['status'] == 'complete':
+            completed += 1
+            label = 'REUSE' if reused else 'DONE'
+            rt.console(f"[{label} {completed}/{len(rows)}] {row['id']}")
+        else:
+            label = 'RETAIN' if reused else job['status'].upper()
+            detail = ' (use --retry-failed)' if reused else ': '+job.get('error', '')
+            rt.console(f"[{label}] {row['id']}{detail} ({completed}/{len(rows)} complete)")
+        update_campaign(output, campaign, matrix)
+
+    rt.console(f"Campaign: {len(rows)} contributions, jobs={jobs}, primaries={config['primaries_per_job']}")
+    pending = []
+    for row in rows:
+        path = output/'jobs'/row['id']/'manifest.json'
+        previous = rt.read(path) if path.exists() else None
+        if needs_attempt(previous, retry):
+            pending.append(row)
+        else:
+            # Validate/reuse on the main thread before launching any new work.
+            report(row, run_job(output, row, config, campaign, simulation, retry), reused=True)
+    if not pending:
+        return
+
+    cancel = threading.Event()
+    limit = min(jobs, len(pending))
+    pool = ThreadPoolExecutor(max_workers=limit)
+    active = {}
+    remaining = iter(pending)
+    try:
+        while True:
+            # Submit only enough to fill free slots, never the entire matrix.
+            while len(active) < limit and not cancel.is_set():
+                row = next(remaining, None)
+                if row is None:
+                    break
+                future = pool.submit(run_job, output, row, config, campaign, simulation, retry, cancel)
+                active[future] = row
+            if not active:
+                break
+            done, _ = wait(active, return_when=FIRST_COMPLETED)
+            for future in done:
+                row = active.pop(future)
+                report(row, future.result())
+    finally:
+        # KeyboardInterrupt reaches this thread, not invoke() in pool threads.
+        # Set the event BEFORE joining, and keep the campaign lock until all
+        # process groups are reaped and all attempt manifests are durable.
+        cancel.set()
+        # A second Ctrl-C must not interrupt thread joins and abandon children.
+        handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            pool.shutdown(wait=True, cancel_futures=True)
+            for future, row in active.items():
+                if not future.cancelled() and future.exception() is None:
+                    report(row, future.result())
+        finally:
+            signal.signal(signal.SIGINT, handler)
 
 
 def run(args):
@@ -174,9 +250,8 @@ def run(args):
             rt.save(path, campaign)
             raise
         try:
-            for row in matrix['contributions']:
-                if row['id'] in selected:
-                    run_job(output, row, config, campaign, tools['simulation'], args.retry_failed)
+            schedule_jobs(output, [r for r in matrix['contributions'] if r['id'] in selected],
+                          config, campaign, matrix, tools['simulation'], args.jobs, args.retry_failed)
         finally:
             update_campaign(output, campaign, matrix)
         from study.campaign import validate_campaign
@@ -188,6 +263,16 @@ def run(args):
         return 0 if len(jobs) == 26 else 2
 
 
+def positive_integer(value):
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError('must be a positive integer') from None
+    if number < 1:
+        raise argparse.ArgumentTypeError('must be a positive integer')
+    return number
+
+
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config', type=Path, default=rt.REPO/'config/study/samuele.json')
@@ -195,6 +280,8 @@ def parser():
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')
+    p.add_argument('--jobs', type=positive_integer, default=1,
+                   help='Maximum concurrent contributions (default: 1); each Geant4 process uses one worker')
     p.add_argument('--mode', choices=('smoke', 'production'), help='Optional label/default count; --primaries overrides count')
     p.add_argument('--only', nargs='+', help='Contribution IDs; partial coverage exits 2')
     p.add_argument('--resume', action='store_true', help='Explicit spelling of the default safe resume behavior')

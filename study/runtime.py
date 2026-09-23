@@ -12,6 +12,7 @@ import re
 import signal
 import subprocess
 import sys
+import threading
 import time
 
 if __package__ in (None, ''):
@@ -108,23 +109,44 @@ def macro_for(row, config):
                       *decay_commands(row), f"/run/beamOn {config['primaries_per_job']}", ''])
 
 
-def invoke(command, cwd, label, timeout):
+_console_lock = threading.Lock()
+
+
+def console(message):
+    """Keep each campaign/progress line intact across invocation threads."""
+    with _console_lock:
+        print(message, flush=True)
+
+
+class InvocationCancelled(RuntimeError):
+    """The campaign requested that this invocation stop."""
+
+
+def invoke(command, cwd, label, timeout, *, cancel=None, contribution=None, primaries=None):
     """Durable receipts and child cleanup on Ctrl-C/timeout; never launch a shell."""
     record = dict(command=list(map(str, command)), cwd=str(cwd), started_unix=time.time())
     save(cwd/(label+'.command.json'), record)
     process = None
     try:
         with (cwd/(label+'.log')).open('w') as log:
+            if cancel is not None and cancel.is_set():
+                raise InvocationCancelled('Campaign interrupted')
             process = subprocess.Popen(record['command'], cwd=cwd, stdout=log,
                                        stderr=subprocess.STDOUT, start_new_session=True)
             last_progress = None
             offset = 0
             with (cwd/(label+'.log')).open() as reader:
                 while True:
+                    if cancel is not None and cancel.is_set():
+                        raise InvocationCancelled('Campaign interrupted')
                     try:
                         process.wait(timeout=min(1., timeout))
+                        if cancel is not None and cancel.is_set():
+                            raise InvocationCancelled('Campaign interrupted')
                         break
                     except subprocess.TimeoutExpired:
+                        if cancel is not None and cancel.is_set():
+                            raise InvocationCancelled('Campaign interrupted')
                         if time.time()-record['started_unix'] >= timeout:
                             record['timed_out'] = True
                             raise RuntimeError(f'{label} timed out; retained {cwd}') from None
@@ -133,7 +155,10 @@ def invoke(command, cwd, label, timeout):
                         events = re.findall(r'CYGNO_PROGRESS completed_events (\d+)', tail)
                         if events and events[-1] != last_progress:
                             last_progress = events[-1]
-                            print(f"  {cwd.parent.name}: {last_progress} events completed", flush=True)
+                            count = (f'{last_progress}/{primaries} events '
+                                     f'({100*int(last_progress)/primaries:.1f}%)'
+                                     if primaries else f'{last_progress} events completed')
+                            console(f'[{contribution or cwd.name}] {count}')
             record['returncode'] = process.returncode
         text = (cwd/(label+'.log')).read_text(errors='replace')
         require(process.returncode == 0, f'{label} exited {process.returncode}; see {cwd/(label+".log")}')
@@ -143,16 +168,22 @@ def invoke(command, cwd, label, timeout):
         require(not re.search(r'\b(?:run|event)\b[^\n]*\babort(?:ed|ing)\b', text, re.I),
                 f'{label} reported an aborted run/event')
         return text
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, InvocationCancelled):
         record['interrupted'] = True
         raise
     finally:
         if process is not None and process.poll() is None:
-            os.killpg(process.pid, signal.SIGTERM)
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass  # The child may have exited between poll and killpg.
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
                 process.wait()
             record['returncode'] = process.returncode
         record['finished_unix'] = time.time()

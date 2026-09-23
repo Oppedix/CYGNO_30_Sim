@@ -29,7 +29,7 @@ class WorkflowTests(unittest.TestCase):
                 (build/name).write_text('test fixture')
             env=environment()
             calls=[]
-            def invoke(command,cwd,label,timeout):
+            def invoke(command,cwd,label,timeout,**options):
                 calls.append(label)
                 if label=='environment':
                     return '\n'.join('CYGNO_ENV '+k+' '+v for k,v in env.items())
@@ -37,7 +37,7 @@ class WorkflowTests(unittest.TestCase):
                     Path(command[1]).write_bytes((fixture/'quantities.tsv').read_bytes())
                     Path(command[3]).write_bytes((fixture/'geometry.json').read_bytes())
                     return ''
-                return fake_invoke(command,cwd,label,timeout)
+                return fake_invoke(command,cwd,label,timeout,**options)
             def preflight(build,output):
                 output.mkdir()
                 rt.save(output/'preflight.json',rt.read(fixture/'preflight/preflight.json'))

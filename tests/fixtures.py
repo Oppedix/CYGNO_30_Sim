@@ -73,7 +73,7 @@ def campaign_fixture(root):
     return cfg, matrix, campaign
 
 
-def fake_invoke(command, cwd, label, timeout):
+def fake_invoke(command, cwd, label, timeout, **options):
     cfg = rt.read(cwd.parents[2]/'config.json')
     env = environment()
     expected = dict(layout=cfg['layout'],model=cfg['model'],source_policy=cfg['source_policy'],geometry_hash=env['geometry_hash'])

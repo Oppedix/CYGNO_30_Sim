@@ -28,6 +28,29 @@ exports actual component masses/piece counts plus gas centers/dimensions. It is
 built with `BUILD_TESTING=OFF`, without CERN ROOT discovery. Python never retypes
 detector dimensions or reconstructs module positions from guesses.
 
+Campaign-level parallel execution uses a positive `--jobs` limit (default `1`):
+
+```sh
+python3 study/simulate.py \
+  --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/samuele-100k" \
+  --primaries 100000 \
+  --jobs 16
+```
+
+This parallelizes independent Table 7.1 contributions. Every `rdecay01` invocation
+still receives worker count `1`, and individual manifests still record `workers=1`.
+CPU, RAM and I/O requirements grow with `--jobs`; the effective limit is capped by
+the number of selected runnable contributions. `--only` can be combined with
+`--jobs`. Contribution-tagged progress retains the simulation's existing 500-event
+markers, with completed-job counts printed as results arrive.
+
+One Python process holds the campaign lock throughout probing, preflight,
+scheduling, validation and optional packaging. A standard-library thread pool
+waits on isolated Geant4 subprocesses; each thread writes only its contribution's
+directory. The main thread alone refreshes `campaign.json` through
+`update_campaign()`. No Geant4 multithreading or analysis dependencies are added.
+
 Every job macro uses:
 
 ```text
@@ -74,6 +97,23 @@ jobs are rejected, never overwritten. `--only` is a scheduling subset, not a
 campaign identity change; later invocations can fill the remaining matrix.
 Any partial coverage exits 2. All four preflight failures block new work and
 require a new campaign after the environment has been corrected.
+
+Changing `--jobs` on resume is allowed, including from `1` to `16`: scheduling
+concurrency is absent from config and campaign/job fingerprints. Completed
+contributions are verified and reused. As in sequential execution, an individual
+job failure is recorded while the remaining selected contributions continue;
+`--retry-failed` is still required to retry failures. Full 26/26 coverage exits 0;
+runner, configuration and preflight errors exit 1.
+
+Ctrl-C stops new submissions and signals all active invocations to cancel. At
+the next process poll (about one second), each invocation sends SIGTERM to its
+process group, waits up to five seconds, then uses SIGKILL if necessary and reaps
+the child. Further Ctrl-C signals are ignored during this cleanup so they cannot
+abandon children. Active attempts are recorded as `interrupted`, completed jobs
+remain intact, and pending contributions remain `not_started`. The main thread
+waits for durable attempt manifests and refreshes campaign state before releasing
+the lock; interruption exits 130. Repeat the command to resume in new immutable
+attempt directories without overwriting previous attempts.
 
 Campaign identity includes Git revision/branch/dirty status and file hashes,
 compiled source and geometry hashes, both executable checksums, CMake cache,

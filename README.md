@@ -44,6 +44,22 @@ placement counts and the common gas layout; it is available with tests disabled.
 Both executables are ROOT-free. Each campaign also retains its own four-case
 preflight and refuses simulation if any case fails, independent of statistics.
 
+To run up to 16 independent Table 7.1 contributions concurrently:
+
+```sh
+python3 study/simulate.py \
+  --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/samuele-100k" \
+  --primaries 100000 \
+  --jobs 16
+```
+
+`--jobs` is a positive integer, defaulting to `1` (sequential execution). It
+parallelizes independent contributions; **each Geant4 process remains
+single-worker**, with its own output directory. CPU, RAM and I/O requirements
+grow with `--jobs`; choose a limit that fits the resources allocated to you.
+Only as many jobs as selected runnable contributions are launched.
+
 After the Linux smoke/archive/offline/parity gates, the first statistics check is:
 
 ```sh
@@ -62,6 +78,12 @@ verified and reused. Interrupted jobs get new attempts; `--retry-failed` retries
 failed jobs. Valid previous attempts are never overwritten. `--only Lens_K40
 Sensors_K40` selects diagnostics; coverage remains partial and exits 2. Config,
 source, build or dataset changes require a **new campaign directory**.
+Changing `--jobs` when resuming is allowed: it does not change scientific identity,
+macros, seeds or fingerprints. Ctrl-C stops scheduling, terminates active simulation
+process groups and preserves interrupted attempts; repeat the command to resume.
+Completed contributions remain reusable, and queued contributions remain unstarted.
+Individual job failures do not stop the remaining selected contributions; they
+are retained until explicitly retried with `--retry-failed`.
 
 ## Archive and offline analysis
 
