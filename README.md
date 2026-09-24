@@ -1,7 +1,7 @@
 # CYGNO internal-radioactivity background study
 
 Two stages reproduce the **workflow and analysis infrastructure** of Samuele
-Torelli's study: Geant4 generates raw ROOT files; Python analyzes them offline.
+Torelli's study: Geant4 generates raw or compact ROOT files; Python analyzes canonical groups offline.
 The canonical identity remains **legacy-25x3 / code-compatible / historical**,
 with exactly the 26 contributions in [Table 7.1](config/study/thesis-table7.1.json).
 Physics remains `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`.
@@ -85,10 +85,45 @@ Completed contributions remain reusable, and queued contributions remain unstart
 Individual job failures do not stop the remaining selected contributions; they
 are retained until explicitly retried with `--retry-failed`.
 
+## Output modes and canonical analysis
+
+Raw remains the default. Compact removes repeated sensitive-step rows while
+retaining exact historical groups, per-volume first positions/times, and track
+provenance. Both writes both representations from the same Geant4 transport.
+
+```sh
+# canonical raw
+python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/raw-NEW" --primaries 1000 --output-mode raw
+# production compact, after parity validation
+python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/compact-NEW" --primaries 100000 --output-mode compact --jobs 16
+# parity validation
+python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/both-NEW" --primaries 1000 --output-mode both
+# common analysis (automatically dispatches; verifies parity for both)
+python3 study/analyze.py --input "$CYGNO_RUNS/compact-NEW" --output "$CYGNO_RUNS/compact-analysis-NEW"
+```
+
+Output mode is part of campaign identity: changing it requires a new directory.
+`--jobs` still changes scheduling only. New campaign/job schema 3 records
+`output_mode`, `output_schema_version`, `data_path`, generated accounting and
+checksums. Archived schema-2 raw campaigns remain readable by Stage B.
+
+```text
+                    ┌─ raw Hits ── raw preprocessing ─┐
+Geant4 StepRecord ───┤                                 ├─ canonical groups ─ shared analysis
+                    └─ compact trees ─ compact reader ┘                    └─ spectra/tables/figures
+```
+
+`GlobalTime_ns` / `FirstHitTime_ns` are pre-step Geant4 event-relative time in ns.
+They support future intra-event studies, do not link independent primaries in
+absolute time, and are **inactive in canonical analysis**. Legacy raw timing is
+unavailable (`None`). See [schemas and timing](docs/OUTPUT.md),
+[analysis architecture and notebooks](analysis/README.md), and
+[validation evidence](docs/TWO_STAGE_VALIDATION.md).
+
 ## Archive and offline analysis
 
 `--archive` creates `samuele-1M.tar.gz` and `samuele-1M.tar.gz.sha256`, retaining the
-unpacked campaign. Complete archives contain raw files, manifests, exact macros,
+unpacked campaign. Complete archives contain selected data files, manifests, exact macros,
 logs/receipts, preflight, config/matrix/geometry/quantity snapshots, the actual
 source snapshot (including dirty edits), and `SHA256SUMS.json`. Partial campaigns
 cannot be packaged as complete. To package separately:
@@ -113,8 +148,8 @@ python study/analyze.py --input /path/to/samuele-1M \
 
 The report includes `spectra.json`, `tables.json`, `tables.txt`, `table7.2.csv`,
 `table7.3.csv`, `figure7.5.png/.pdf`, `figure7.6.png/.pdf`, `campaign.json` and
-`analysis-manifest.json`. It validates every raw tree and provenance record,
-streams Hits in chunks, and uses actual generated-primary accounting.
+`analysis-manifest.json`. It validates the selected trees and provenance records,
+reconstructs canonical groups, and uses actual generated-primary accounting.
 `--allow-partial` explicitly permits labeled diagnostic reports (exit 2).
 See [the workflow contract](docs/BACKGROUND_STUDY.md) for integrity and disk needs.
 
@@ -123,7 +158,7 @@ See [the workflow contract](docs/BACKGROUND_STUDY.md) for integrity and disk nee
 `WITH_GEANT4_UIVIS=ON` retains interactive local visualization:
 `(cd "$CYGNO_BUILD" && ./rdecay01 --layout legacy-25x3)`.
 `CYGNO_BUILD_ANALYSIS=ON` optionally builds the existing CERN ROOT/C++ reference
-executables in `analysis/`; `study/runner.py` is the legacy combined workflow.
+executables from `analysis/reference_cpp/`; `legacy/study/combined/runner.py` is the legacy combined workflow.
 Neither is used by the two-stage workflow.
 
 ```sh

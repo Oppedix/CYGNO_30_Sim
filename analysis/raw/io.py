@@ -1,4 +1,4 @@
-"""Chunked uproot validation of unchanged Geant4 TTrees (no CERN ROOT)."""
+"""Chunked uproot validation of explicit legacy/timed raw schemas (no CERN ROOT)."""
 import numpy as np
 import uproot
 from study.runtime import ACCOUNTING_FIELDS, validate_accounting
@@ -8,29 +8,16 @@ HITS_SCHEMA = dict(EventNumber='int32', ParticleName='string', ParticleID='int32
                    ParticleTag='int32', ParentID='int32', x_hits='float64', y_hits='float64',
                    z_hits='float64', EnergyDeposit='float64', VolumeNumber='int32',
                    Nucleus='string', ProcessType='string')
-METADATA = dict(GeometryHash='geometry_hash', Layout='layout', DetectorModel='model', SourcePolicy='source_policy')
-TYPES = {'int32': {'int32_t', 'int'}, 'float64': {'double'}, 'string': {'char*'}}
-
-
-def tree(file, name, schema, one=False):
-    require(name in file and file[name].classname == 'TTree', 'Missing/non-TTree '+name)
-    result = file[name]
-    require(set(result.keys()) == set(schema), 'Invalid '+name+' field names')
-    for key, kind in schema.items():
-        require(result[key].typename in TYPES[kind], f'Invalid {name}.{key} type: {result[key].typename}')
-    if one:
-        require(result.num_entries == 1, 'Need exactly one '+name+' row')
-    return result
+from analysis.common.io import tree, scientific_header, output_metadata, METADATA
+LEGACY_HITS_SCHEMA = HITS_SCHEMA.copy()
+HITS_SCHEMA = HITS_SCHEMA | {'GlobalTime_ns':'float64'}
 
 
 def header(file, expected, requested):
-    metadata = tree(file, 'RunMetadata', dict.fromkeys(METADATA, 'string'), one=True).arrays(library='np')
-    for field, key in METADATA.items():
-        require(metadata[field][0] == expected[key], 'Raw identity mismatch: '+field)
-    accounting_tree = tree(file, 'RunAccounting', dict.fromkeys(ACCOUNTING_FIELDS, 'int32'), one=True)
-    accounting = {name: int(values[0]) for name, values in accounting_tree.arrays(library='np').items()}
-    validate_accounting(accounting, requested)
-    hits = tree(file, 'Hits', HITS_SCHEMA)
+    accounting = scientific_header(file, expected, requested)
+    metadata = output_metadata(file)
+    require(metadata['OutputFormat'] in ('raw','both'), 'Raw representation unavailable')
+    hits = tree(file, 'Hits', HITS_SCHEMA if metadata['OutputSchemaVersion'] else LEGACY_HITS_SCHEMA)
     return accounting, hits
 
 
@@ -43,8 +30,10 @@ def hit_chunks(hits, requested, layout, step_size='64 MB'):
         require(np.all((events >= 0) & (events < requested)), 'Invalid event ID')
         require(events[0] >= last_event and np.all(events[1:] >= events[:-1]), 'Out-of-order single-worker events')
         last_event = int(events[-1])
-        for field in ('x_hits', 'y_hits', 'z_hits', 'EnergyDeposit'):
+        for field in ('x_hits', 'y_hits', 'z_hits', 'EnergyDeposit', *(['GlobalTime_ns'] if 'GlobalTime_ns' in chunk else [])):
             require(np.all(np.isfinite(chunk[field])), 'Nonfinite Hits '+field)
+        require(np.all(chunk['ParticleID'] > 0) and np.all(chunk['ParentID'] >= 0) and
+                np.all(chunk['ParticleID'] != chunk['ParentID']), 'Invalid track identity')
         volumes = chunk['VolumeNumber']
         require(np.all((volumes >= 0) & (volumes < 2*LAYOUT_MODULE_COUNTS[layout])), 'Invalid gas copy')
         yield chunk

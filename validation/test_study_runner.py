@@ -19,8 +19,8 @@ from check_hits import SCHEMA
 ROOT.gROOT.SetBatch(True)
 repo = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo))
-from study import runner
-from study.root_io import inspect_raw, export_spectra
+from legacy.study.combined import runner
+from legacy.study.combined.root_io import inspect_raw, export_spectra
 from study.source_matrix import read_matrix
 build = Path(sys.argv[1]).resolve()
 out = Path(tempfile.mkdtemp(prefix='study-runner-', dir=build/'validation-results'))

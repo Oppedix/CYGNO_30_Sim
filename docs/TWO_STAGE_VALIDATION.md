@@ -1,4 +1,85 @@
-# Two-stage refactor validation — 2026-09-23
+# Raw/compact refactor validation — 2026-09-24
+
+Baseline `main`: **60823eca4bd10c5f27cdc38e76f8d447c7ac050f**, verified against
+freshly fetched origin/main. Work remains in the existing working tree, uncommitted;
+no push, merge, large campaign or scientific-model change was performed.
+
+## Final executed checks
+
+- Current Python suite: **44 tests discovered, 43 passed, 1 optional transport
+  test skipped**. That transport test was separately enabled and passed in the
+  earlier 44/44 run, and standalone 30-primary checks passed on both serial
+  Geant4 11.3.1 and single-worker MT Geant4 11.4.2. The last Python run rechecked
+  campaign/schema compatibility and saved notebook source hashes after final edits.
+- Includes old schema-2 archive analysis, new schema-3 raw/compact/both 26-job
+  **synthetic** archive/analysis round trips, exact normalized spectra/tables,
+  resume/identity/retry/cancellation/parallel scheduling, strict schemas and
+  malformed relationships, first positions/times, pure C++ accumulator replay,
+  explicit event-end versus inferred boundary/EOF, and timing independence.
+- Active C++/ROOT reference parity passes for both layouts, all 26 scales and
+  categories, every 900-bin edge and adjacent floats, exact windows/flows,
+  rates and group-Poisson variances. Same-transport raw/compact comparisons are
+  exact; no floating-point tolerance is used for representation parity.
+- Serial reference-build CTest: **12 passed, 2 documented skips, no failures**.
+  Skips are the existing Geant4-11.3 surface-RNG replay limitations. Geometry,
+  layout, chain boundaries, long-lived checks, old combined workflow, source
+  matrix, C++ analysis and transport regressions pass.
+- After the final transport-regression extension, the directly affected test
+  passes again on **serial and MT** builds. All three output modes execute two
+  successive runs: correct filenames/trees/metadata, exact first-run parity,
+  reset event/group/track keys and second-run accounting, no stale rows.
+- A freshly built unmodified baseline at 60823ec and the refactored raw output
+  agree exactly in all **12 historical fields and 1,888 rows**, scientific
+  metadata and accounting for the same 30-primary K40 macro/seeds. Timing is
+  the sole added raw field.
+- All three notebooks execute top-to-bottom using the lightweight plain-Python
+  cell runner. Saved outputs include implementation hashes; tests reject stale
+  saved outputs after production changes. Both generated example PNGs were
+  visually inspected. A full interactive Jupyter frontend/kernel was not used;
+  no new notebook framework dependency was added.
+- Active compiled-source provenance matches CMake's generated hash. All file-move
+  destinations exist. Whitespace checks pass. No generated ROOT/log/object/image
+  artifacts are present in the public working-tree file inventory; intentional
+  saved notebook outputs are retained. Scientific geometry, source sampler,
+  TrackingAction, source matrix and canonical config have no diff.
+
+## Measured storage (30 primaries, unchanged GEMsCore_K40 contribution)
+
+| Environment | Raw rows | Groups | Group volumes | Tracks | Raw bytes | Compact bytes | Reduction |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Serial Geant4 11.3.1 | 1,888 | 11 | 16 | 218 | 126,447 | 43,742 | 65.4%, 2.89× smaller |
+| MT Geant4 11.4.2, one worker | 2,201 | 13 | 13 | 273 | 141,651 | 44,624 | 68.5%, 3.17× smaller |
+
+These are separately measured raw and compact files. In each environment, raw-only
+and both-mode raw physics/accounting rows are identical. Raw and compact groups,
+first times, tracks, cuts, windows and bins match exactly. Different Geant4 builds
+are not claimed to generate the same transport. Compression is diagnostic, not a
+scientific pass threshold. Large U238 storage performance is not measured here.
+
+## Limits and remaining production gates
+
+Full-chain GEMsCore_U238 tests hit the documented macOS **PART122** failure in
+both installed Geant4 environments. No workaround, isotope substitution inside
+that contribution, gate bypass, or decay-physics change was made. The successful
+local storage example uses the separately named, unchanged K40 matrix contribution.
+
+A real full 26/26 compact campaign/archive on the validated Linux environment
+remains an operator qualification step: rebuild, pass all four preflights, run
+small both-mode parity, complete a small matrix campaign, and analyze its archive.
+The existing campaign preflight still refuses production when any gate fails.
+Synthetic archive checks and local K40 parity do not establish physical rates or
+full-chain production qualification. Compact retains the specified historical
+analysis information, not arbitrary step trajectories for future reconstructions.
+
+[Implementation and file inventory](COMPACT_REFACTOR_REPORT.md) ·
+[ROOT schema and timing](OUTPUT.md) · [Analysis modules/notebooks](../analysis/README.md)
+
+---
+
+The following section records the earlier two-stage refactor only. Statements
+about unchanged raw schemas there refer to that earlier revision.
+
+# Historical validation: two-stage refactor — 2026-09-23
 
 These are software checks on the local macOS/arm64 workstation, not a Linux
 production qualification or a background-rate estimate. Starting repository
@@ -110,16 +191,16 @@ New and modified files retained for review:
 - `study/analyze.py`
 - `study/archive.py`
 - `study/campaign.py`
-- `study/figures.py`
+- `legacy/study/combined/figures.py`
 - `study/preflight.py`
-- `study/processing.py`
-- `study/raw_io.py`
-- `study/reporting.py`
+- `analysis/raw/preprocess.py`
+- `analysis/raw/io.py`
+- `analysis/common/reporting.py`
 - `study/requirements-analysis.txt`
-- `study/runner.py`
+- `legacy/study/combined/runner.py`
 - `study/runtime.py`
 - `study/simulate.py`
-- `study/spectra.py`
+- `analysis/common/spectra.py`
 - `tests/fixtures.py`
 - `tests/test_offline.py`
 - `tests/test_parity.py`

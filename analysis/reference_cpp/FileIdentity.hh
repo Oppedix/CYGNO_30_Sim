@@ -3,7 +3,7 @@
 // Shared by the compiled analysis and ROOT macro. For interpreted ROOT, add
 // <build>/generated to the include path before loading PlotSpectrum.C.
 #include "BuildInfo.hh"
-#include "../common/DetectorGeometry.hh"
+#include "../../common/DetectorGeometry.hh"
 #include "TFile.h"
 #include "TLeafC.h"
 #include "TNamed.h"

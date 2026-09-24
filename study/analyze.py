@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage B: validate and analyze a raw campaign using uproot, without CERN ROOT."""
+"""Stage B: validate and analyze a raw/compact/both campaign using uproot, without CERN ROOT."""
 import argparse
 import importlib.metadata
 from pathlib import Path
@@ -19,7 +19,7 @@ def analysis_source_state():
     """An archived source snapshot is executable without installing Git."""
     if (rt.REPO/'.git').exists():
         return rt.source_state()
-    paths = sorted((rt.REPO/'study').glob('*.py'))
+    paths = sorted((rt.REPO/'study').glob('*.py')) + sorted((rt.REPO/'analysis').rglob('*.py'))
     requirements = rt.REPO/'study/requirements-analysis.txt'
     if requirements.exists():
         paths.append(requirements)
@@ -29,10 +29,9 @@ def analysis_source_state():
 
 def analyze(root, output, allow_partial=False, step_size='64 MB'):
     import uproot
-    from study.raw_io import header, hit_chunks
-    from study.processing import groups
-    from study.spectra import accumulate, scale_for, summarize
-    from study.reporting import render
+    from analysis.common.inputs import canonical_input
+    from analysis.common.spectra import accumulate, scale_for, summarize
+    from analysis.common.reporting import render
     output = output.resolve()
     require(not output.exists(), 'Analysis output must be a new directory; previous results are never overwritten')
     require(not output.is_relative_to(root.resolve()), 'Analysis output must be outside the campaign')
@@ -45,21 +44,25 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
     expected['geometry_hash'] = env['geometry_hash']
     geometry = rt.read(root/'geometry.json')
     matrix = read_matrix(root/'matrix.json')
-    results, inputs = [], {}
+    results, inputs, raw_reference = [], {}, []
     for row in matrix['contributions']:
         if row['id'] not in jobs:
             continue
-        job, raw = jobs[row['id']]
-        checksum = rt.digest(raw)
-        with uproot.open(raw, array_cache=None) as file:
-            accounting, hits = header(file, expected, job['requested_primaries'])
-            require(accounting == job['accounting'], 'Raw/manifest accounting mismatch')
-            counts, histogram, processed = accumulate(
-                groups(hit_chunks(hits, accounting['RequestedEvents'], config['layout'], step_size)), geometry)
-            inputs[row['id']] = dict(path=str(raw.relative_to(root)), sha256=checksum,
-                accounting=accounting, hit_rows=int(hits.num_entries), processed_groups=processed)
-        require(rt.digest(raw) == checksum, 'Raw file changed during analysis')
-        results.append((row, scale_for(row, campaign['quantities'], accounting['GeneratedPrimaries']), counts, histogram))
+        job, data_path = jobs[row['id']]
+        checksum = rt.digest(data_path)
+        reference = []
+        with uproot.open(data_path, array_cache=None) as file:
+            accounting, stream, provenance = canonical_input(file, expected, job['requested_primaries'],
+                geometry, step_size, job.get('output_mode','raw'), job.get('output_schema_version',0), reference.append)
+            require(accounting == job['accounting'], 'ROOT/manifest accounting mismatch')
+            counts, histogram, processed = accumulate(stream, geometry)
+            inputs[row['id']] = dict(path=str(data_path.relative_to(root)), sha256=checksum,
+                accounting=accounting, processed_groups=processed, **provenance)
+        require(rt.digest(data_path) == checksum, 'Data file changed during analysis')
+        scale = scale_for(row, campaign['quantities'], accounting['GeneratedPrimaries'])
+        results.append((row, scale, counts, histogram))
+        if reference:
+            raw_reference.append((row, scale, reference[0][0], reference[0][1]))
         print(f"Validated and processed {row['id']}: {processed} groups", flush=True)
     complete = len(jobs) == 26
     summary = dict(schema_version=1, stage='analysis', campaign_fingerprint=campaign['fingerprint'],
@@ -75,6 +78,12 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
         packages={name: importlib.metadata.version(name) for name in ('uproot','awkward','numpy','matplotlib')},
         step_size=step_size, processing_version='event-boundaries-and-eof-v2')
     spectra = summarize(results)
+    if raw_reference:
+        require(len(raw_reference)==len(results), 'Mixed both-mode parity coverage')
+        require(summarize(raw_reference)==spectra, 'Normalized raw/compact campaign mismatch')
+        summary['normalized_parity'] = dict(status='passed', comparison='exact',
+            checks=['contribution counts/rates/variances', 'category sums/densities/flows',
+                    'Table 7.2 total inputs', 'Table 7.3 category inputs'])
     output.parent.mkdir(parents=True, exist_ok=True)
     # Publish only a fully written report; failures never leave plausible final output.
     with tempfile.TemporaryDirectory(prefix='.cygno-analysis-', dir=output.parent) as directory:

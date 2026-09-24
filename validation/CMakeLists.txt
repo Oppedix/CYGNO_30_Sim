@@ -1,4 +1,5 @@
 # Validation reuses the same compiled simulation classes as the application.
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/multithreaded.txt" "${Geant4_multithreaded_FOUND}")
 foreach(tool geometry_snapshot geometry_audit chain_boundaries)
   add_executable(${tool} ${tool}.cc)
   target_link_libraries(${tool} PRIVATE cygno_sim)
@@ -45,3 +46,12 @@ set_tests_properties(source_and_mass source_and_mass_legacy layout_profiles layo
 # Optional manual external reproducer, deliberately not a passing test.
 add_executable(external_decay_probe EXCLUDE_FROM_ALL external_decay_probe.cc)
 target_link_libraries(external_decay_probe PRIVATE ${Geant4_LIBRARIES})
+
+# Optional small transport parity; never enabled implicitly for a production campaign.
+option(CYGNO_TEST_COMPACT_TRANSPORT "Run 30-primary raw/compact/both parity" OFF)
+if(CYGNO_TEST_COMPACT_TRANSPORT)
+  add_test(NAME compact_transport COMMAND ${Python3_EXECUTABLE} -m unittest discover
+    -s tests -p test_compact.py -k TransportTests -v)
+  set_tests_properties(compact_transport PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    ENVIRONMENT "CYGNO_TRANSPORT_BUILD=${PROJECT_BINARY_DIR}" TIMEOUT 600)
+endif()

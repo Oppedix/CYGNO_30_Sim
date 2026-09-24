@@ -43,7 +43,8 @@ add_library(cygno_sim
   src/actions/Run.cc
   src/actions/RunAction.cc
   src/output/SensitiveDetector.cc
-  src/output/HitOutput.cc)
+  src/output/HitOutput.cc
+  src/output/CompactOutput.cc)
 target_compile_features(cygno_sim PUBLIC cxx_std_17)
 target_include_directories(cygno_sim PUBLIC include "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}/generated")
 target_link_libraries(cygno_sim PUBLIC ${Geant4_LIBRARIES})

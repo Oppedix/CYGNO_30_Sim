@@ -105,7 +105,7 @@ def macro_for(row, config):
     seeds = seeds_for(config['seed'], row['id'])
     return '\n'.join([f"# {row['id']}: {config['mode']}; code-compatible / historical",
                       RDM_COMMAND, '/run/printProgress 10000', '/run/verbose 0', '/event/verbose 0', '/tracking/verbose 0',
-                      '/random/setSeeds '+' '.join(map(str, seeds)), '/output/OutFile raw',
+                      '/random/setSeeds '+' '.join(map(str, seeds)), '/output/OutFile '+config.get('output_mode','raw'),
                       *decay_commands(row), f"/run/beamOn {config['primaries_per_job']}", ''])
 
 

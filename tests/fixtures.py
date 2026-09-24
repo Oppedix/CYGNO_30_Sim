@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import uproot
 from study import runtime as rt
-from study.raw_io import HITS_SCHEMA, METADATA
+from analysis.raw.io import LEGACY_HITS_SCHEMA as HITS_SCHEMA, METADATA
 from study.source_matrix import COMPONENTS, read_matrix
 
 
@@ -77,7 +77,13 @@ def fake_invoke(command, cwd, label, timeout, **options):
     cfg = rt.read(cwd.parents[2]/'config.json')
     env = environment()
     expected = dict(layout=cfg['layout'],model=cfg['model'],source_policy=cfg['source_policy'],geometry_hash=env['geometry_hash'])
-    raw_fixture(cwd/'outfiles_V2/raw.root', expected, [dict(EnergyDeposit=.02), dict(EventNumber=1,EnergyDeposit=.4)], cfg['primaries_per_job'])
+    records=[dict(EnergyDeposit=.02), dict(EventNumber=1,EnergyDeposit=.4)]
+    if 'output_mode' in cfg:
+        from compact_fixtures import fixture
+        fixture(cwd/'outfiles_V2'/f"{cfg['output_mode']}.root", expected, records=records,
+                requested=cfg['primaries_per_job'], mode=cfg['output_mode'])
+    else:
+        raw_fixture(cwd/'outfiles_V2/raw.root', expected, records, cfg['primaries_per_job'])
     log = log_for(env, cfg['primaries_per_job'])
     (cwd/(label+'.log')).write_text(log)
     rt.save(cwd/(label+'.command.json'), dict(command=list(map(str,command)), returncode=0))

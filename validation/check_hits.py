@@ -32,14 +32,23 @@ def check(placements, events, paths):
         assert source and not source.IsZombie(), path
         tree = source.Get("Hits")
         assert tree, f"Missing Hits: {path}"
+        schema = SCHEMA.copy()
+        metadata = source.Get('OutputMetadata')
+        if metadata:
+            assert metadata.GetEntries() == 1
+            metadata.GetEntry(0)
+            assert metadata.GetLeaf('OutputSchemaVersion').GetValue() == 1
+            assert metadata.GetLeaf('OutputFormat').GetValueString() in ('raw','both')
+            schema += [('GlobalTime_ns','Double_t')]
         leaves = list(tree.GetListOfLeaves())
-        assert [(l.GetName(), l.GetTypeName()) for l in leaves] == SCHEMA
-        assert [b.GetName() for b in tree.GetListOfBranches()] == [n for n, _ in SCHEMA]
+        assert [(l.GetName(), l.GetTypeName()) for l in leaves] == schema
+        assert [b.GetName() for b in tree.GetListOfBranches()] == [n for n, _ in schema]
         file_events, volumes, nuclei = set(), set(), Counter()
         for index in range(tree.GetEntries()):
             tree.GetEntry(index)
             row = {l.GetName(): l.GetValueString() if kind == "Char_t" else l.GetValue()
-                   for l, (_, kind) in zip(leaves, SCHEMA)}
+                   for l, (_, kind) in zip(leaves, schema)}
+            if 'GlobalTime_ns' in row: assert math.isfinite(row['GlobalTime_ns'])
             event, volume = int(row["EventNumber"]), int(row["VolumeNumber"])
             assert 0 <= event < events and volume in gas, (path, index, row)
             assert row["ParticleID"] >= 1 and row["ParentID"] >= 0
@@ -64,7 +73,7 @@ def check(placements, events, paths):
               f"{len(volumes)} gas IDs, nuclei={dict(nuclei)}")
         source.Close()
     assert total_rows > 0 and positive_deposits > 0 and radioactive_rows > 0
-    print(f"PASS: 12 unchanged branches; {total_rows} rows inside their gas cells; "
+    print(f"PASS: historical fields plus versioned optional timing; {total_rows} rows inside their gas cells; "
           f"{positive_deposits} positive deposits, {radioactive_rows} radioactive-decay rows")
 
 

@@ -79,8 +79,9 @@ This is **environment-specific empirical validation**, not a universal release f
 
 Each contribution has `jobs/ID/manifest.json` pointing to an immutable
 `attempt-NNNN/` with `run.mac`, `simulation.log`, `simulation.command.json`, raw
-ROOT output and its own manifest. A serial job writes `outfiles_V2/raw.root`; a
-single MT worker can write `raw_t0.root`. Exactly one nonempty raw file is required.
+ROOT output and its own manifest. A serial job writes `outfiles_V2/MODE.root`; a
+single MT worker can write `MODE_t0.root`, where MODE is raw, compact or both.
+Exactly one nonempty data file is required; compact needs no raw file.
 
 After successful ROOT write/close, C++ emits one `CYGNO_ACCOUNTING` JSON object
 with the same five integer counters as `RunAccounting`. Requested, generated and
@@ -88,7 +89,8 @@ processed must equal the chosen count; run ID and aborted count must be zero.
 Exit status must be zero, fatal/command/abort errors and PART122 absent, and all
 environment/threshold checks must pass. Raw contents are structurally checked
 later by uproot; Stage A completeness is explicitly **raw accounting completeness**.
-`Hits`, `RunMetadata`, and `RunAccounting` schemas are unchanged.
+`RunMetadata` and `RunAccounting` remain unchanged. OutputMetadata versions the
+storage contract; raw Hits adds GlobalTime_ns. Compact omits Hits entirely.
 
 An advisory lock prevents concurrent simulation/packaging. Repeat the same command
 to verify and reuse completed jobs, and restart interrupted/running jobs in new
@@ -145,21 +147,21 @@ creating another uncompressed copy. SHA256 detects corruption, not source authen
 
 `study/analyze.py` accepts a directory or archive and writes a **new** output
 directory. Install `study/requirements-analysis.txt`; no Geant4/CERN ROOT needed.
-`study/raw_io.py` validates TTree schemas, single metadata/accounting rows, identity,
+`analysis/raw/io.py` validates TTree schemas, single metadata/accounting rows, identity,
 actual counts, finite numerical hits, valid gas copies and ordered valid event IDs.
 Campaign/job/macro/receipt/raw checksums and accounting must agree. Mixed campaigns
 are rejected before results are published.
 
-`study/processing.py` ports `analysis/ProcessEvents.cc` literally. Only e-, e+ and
+`analysis/raw/preprocess.py` ports `analysis/reference_cpp/ProcessEvents.cc` literally. Only e-, e+ and
 alpha rows enter groups. Event boundaries flush even when the next row is ignored;
 EOF flushes the last group. Matching creator process/nucleus before ionization
 updates the inherited particle label; ionization otherwise sets `ionizationSeen`;
 other changes flush. The initial row does **not** set that flag. Energies aggregate
 per gas volume in first-encounter order; each volume keeps its first x/y/z. Chunk
-boundaries do nothing to group state. Memory is bounded by one uproot chunk,
-one group (at most 150 volumes) and fixed-size histograms.
+boundaries do nothing to group state. Raw memory is bounded by one uproot chunk, one group and fixed-size histograms.
+Compact reconstruction additionally retains one event of groups and track metadata.
 
-`study/spectra.py` ports the main `PlotNormalizedSpectra` path: electron/positron
+`analysis/common/spectra.py` ports the main `PlotNormalizedSpectra` path: electron/positron
 labeled groups only, sum each volume's MeV energy times 1000, and use only the first
 volume/position for the inclusive 20 mm cut (`abs(position-center) <= size/2-20`).
 Geometry metadata comes from the compiled exporter. Histogram bins remain 900 over
@@ -176,7 +178,7 @@ The denominator is verified ROOT accounting, never a requested-only substitution
 Variance is selected group count times scale squared, summed across contributions.
 It is a group-Poisson convention, not primary-level or assay/model uncertainty.
 
-`study/reporting.py` shares table reference transcriptions with the legacy renderer
+`analysis/common/reporting.py` shares table reference transcriptions with the legacy renderer
 and draws matplotlib PNG/PDF spectra in counts/keV/year. Outputs include spectra,
 CSV/JSON/text tables, figures, copied campaign identity, dependency versions, raw
 checksums, analysis source provenance and explicit coverage/scientific validity.
@@ -188,8 +190,8 @@ and exits 2. Default analysis rejects incomplete campaigns.
 
 ## Reference implementation and scientific limits
 
-The C++ analysis stays in `analysis/` behind `CYGNO_BUILD_ANALYSIS=ON`.
-`study/runner.py`, `study/root_io.py` and `study/figures.py` retain the previous
+The C++ analysis stays in `analysis/reference_cpp/` behind `CYGNO_BUILD_ANALYSIS=ON`.
+`legacy/study/combined/runner.py`, `legacy/study/combined/root_io.py` and `legacy/study/combined/figures.py` retain the previous
 combined PyROOT/C++ workflow for historical comparisons; they are not imported by
 the new entry points. Old campaign schemas are not silently migrated/relabelled.
 
@@ -205,3 +207,32 @@ first-position cuts and source/revision uncertainties remain documented in
 proven ancestry. Published Tables 7.2/7.3 are comparison data only. Neither 4/4
 preflight nor software parity proves absolute physical correctness or agreement
 with Samuele's production numbers.
+
+## Versioned storage and Stage B dispatch
+
+Campaign/job schema 3 adds output_mode and output_schema_version=1; data_path
+replaces raw_path. Output mode enters config and therefore both campaign/job
+fingerprints. Scheduling jobs, --only and retry flags remain outside scientific
+identity. The runtime passes --output-mode before Geant4 constructs its workers.
+The macro basename follows mode, while seeds and all transport commands remain
+identical. Worker count remains 1.
+
+Stage B supports archived campaign schema 2 with raw_path and explicit legacy
+output schema 0. New data must agree with schema-3 manifest mode/version. The
+shared input adapter dispatches raw to historical preprocessing, compact to strict
+reconstruction, and both to exact parity followed by compact reconstruction.
+Every branch then feeds the same canonical Group, spectra, normalization and report.
+The final analysis schema remains 1; input provenance now includes output metadata
+and parity results, plus the active analysis Python files and dependency hashes.
+
+A both job records parity_status=pending-stage-b: Stage A remains standard-library
+only and claims accounting completeness, not ROOT structural/parity validation.
+Stage B records exact group/bin and normalized campaign parity in its immutable
+analysis manifest. Archives preserve both representations and their format/pending
+parity metadata; successful Stage B evidence belongs to the separately retained
+analysis report. Completed attempts are never mutated to insert later analysis.
+
+Compact archives contain the selected compact file, not an assumed raw path.
+Checksums, archive traversal defenses, immutable attempts, cancellation and
+retry semantics are unchanged. [OUTPUT.md](OUTPUT.md) specifies timing, schemas,
+track relationships, and standalone validation/benchmark commands.

@@ -3,10 +3,15 @@
 Start with `config/study/samuele.json` and a generated study macro, then follow this path:
 
 ```text
-macro → PrimaryGeneratorAction configuration → source sampler → primary vertex
-      → Geant4 transport/TrackingAction → sensitive gas step → HitOutput
-      → worker Hits ROOT tree → SimpleProcessEvents → elabHits
-      → contribution normalization → seven categories → ROOT spectra / figures / tables
+macro → primary sampler → Geant4 transport/TrackingAction → sensitive gas StepRecord
+  ├─ raw Hits → analysis.raw.preprocess ───────────────┐
+  └─ compact accumulator → trees → compact reader ───┤
+                                                     ▼
+                                              canonical groups
+                                                     ▼
+                              common spectra/normalization/reporting
+                                                     ▼
+                                          spectra / tables / figures
 ```
 
 `app/rdecay01.cc` chooses interactive/batch mode, the Ranecu RNG, the run manager,
@@ -27,7 +32,7 @@ list, picks a placement and samples its surface/depth model. It does not own or
 modify detector solids. Invalid source lists fail explicitly.
 
 For each run, `RunAction` creates a new `Run` accumulator and opens an output file.
-The worker analysis manager books `Hits` once during action construction; closing
+The worker analysis manager books the selected output trees once during action construction; closing
 a run resets rows while preserving the booking. Give successive runs distinct
 `/output/OutFile` basenames to retain both files. The master merges worker run
 statistics; ROOT worker files remain separate.
@@ -42,13 +47,15 @@ at event end. It no longer selects or samples the source.
 detector's last-ion label. It records actual track-1 primary metadata, fixing the
 former first-run geantino summary. During transport every gas step calls
 `SensitiveDetector::ProcessHits`, which delegates to `src/output/HitOutput.cc`.
-The latter centrally defines the 12 columns and writes rows directly; there is
-no separate `G4VHit` collection or energy filter.
+The latter extracts one StepRecord, including pre-step global time/ns. Enabled
+raw and compact sinks consume that same record. Raw remains unfiltered; compact
+uses the historical state machine and flushes at sensitive-detector EndOfEvent.
+No output code calls an RNG or changes transport.
 
-`analysis/` is a separate CERN ROOT target group. `ProcessEvents.cc` implements
+`analysis/reference_cpp/` is the optional CERN ROOT reference target group. `ProcessEvents.cc` implements
 grouping, and the short `SimpleProcessEvents.cpp` handles paths/options. Plotters
-share `analysis/DetectorGeometry.hh`, an adapter over the selected numerical layout,
-and `analysis/FileIdentity.hh`, the raw/processed layout and model guard. RunAction
+share `analysis/reference_cpp/DetectorGeometry.hh`, an adapter over the selected numerical layout,
+and `analysis/reference_cpp/FileIdentity.hh`, the raw/processed layout and model guard. RunAction
 records a separate one-row identity ntuple per worker file without altering Hits.
 `validation/` links the actual simulation library, builds diagnostic tools and
 runs synthetic ROOT fixtures. Test output stays in the build tree.
@@ -61,7 +68,7 @@ runs synthetic ROOT fixtures. Test output stays in the build tree.
 | `include/cygno/`, `src/` | Matching geometry, source, actions and output classes |
 | `common/` | Library-independent geometry definitions; generated-header template |
 | `config/` | Current example, visualization, historical run and normalization inputs |
-| `analysis/` | ROOT processing and normalization |
+| `analysis/` | Canonical Python model, raw/compact readers, common analysis, active C++ references |
 | `study/` | Matrix/config validation, isolated runner, decay preflight, figure/table export |
 | `validation/` | Software regressions and diagnostic macros |
 | `docs/` | Researcher documentation and migration record |
@@ -76,10 +83,10 @@ active reference physics list. The complete original-to-current move mapping is
 ## Legacy combined study entry points
 
 `study/source_matrix.py` validates the Table 7.1 matrix, isotope boundaries and
-kg/piece quantities. `study/runner.py` creates exact macros and seeds, preflights the
+kg/piece quantities. `legacy/study/combined/runner.py` creates exact macros and seeds, preflights the
 effective environment, verifies actual generation/processing and preserves immutable
-attempts. `study/root_io.py` validates ROOT identity/accounting and exports the
-existing plotter's exact windows. `study/figures.py` formats plots/tables from those
+attempts. `legacy/study/combined/root_io.py` validates ROOT identity/accounting and exports the
+existing plotter's exact windows. `legacy/study/combined/figures.py` formats plots/tables from those
 normalized outputs; it does not simulate, regroup events or renormalize activities.
 `study/preflight.py` tests long-lived daughters and full Th/Bi transport. C++ only
 observes the RDM setting; explicit macros set it. Worker progress is logged every
@@ -91,9 +98,28 @@ observes the RDM setting; explicit macros set it. Worker progress is logged ever
 - `study/runtime.py`, `campaign.py`, `archive.py`: shared provenance, portable
   integrity checks and complete-campaign packaging.
 - `app/geometry_quantities.cc`: production metadata exporter, available without tests.
-- `study/analyze.py`, `raw_io.py`, `processing.py`, `spectra.py`, `reporting.py`:
+- `study/analyze.py` and the modules under `analysis/raw`, `analysis/compact`, `analysis/common`:
   chunked ROOT-free offline validation, grouping, normalization and reports.
 - `tests/`: pure-Python fixtures and optional C++ reference parity.
 
-The older combined `study/runner.py` and its PyROOT adapters remain a legacy
+The older combined `legacy/study/combined/runner.py` and its PyROOT adapters remain a legacy
 comparison path. Use the [two-stage workflow](BACKGROUND_STUDY.md) for new campaigns.
+
+## Output ownership and keys
+
+`StepRecord.hh` is independent of Geant4. `HitOutput::ExtractStep` is the only
+step extractor. The pure `CompactAccumulator.hh` owns group state and event-local
+track metadata. `CompactOutput.cc` books/fills Groups, GroupVolumes, Tracks and
+TrackGroups. The sensitive detector owns its accumulator; no state is shared
+between workers. EndOfEvent emits the last group and clears tracks. Repeated
+flushes are safe; subsequent runs reuse booking after ROOT row reset.
+
+`analysis/common/model.py` is the sole canonical Python Group/GroupVolume model.
+Raw preprocessing ports the historical state machine; compact preprocessing only
+validates/reconstructs its persisted result. Explicit TrackGroups supports a
+track contributing to multiple groups. Diagnostic IDs/times never drive spectra.
+
+All specialized C++ plotters and PlotSpectrum.C were audited: existing validation
+and CMake still use them, so they remain active references. Only the superseded
+combined Python workflow moved to `legacy/study/combined/`; its intentional
+regression tests still import it. No file was quarantined based on age alone.

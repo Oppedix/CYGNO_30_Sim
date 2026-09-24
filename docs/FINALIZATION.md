@@ -99,24 +99,24 @@ cmake --build "$BUILD" --parallel 6
 ctest --test-dir "$BUILD" --output-on-failure
 
 # Generate explicit manual macros; no Geant4:
-python3 study/runner.py --mode smoke --macros-dir "$RUNS/macros"
+python3 legacy/study/combined/runner.py --mode smoke --macros-dir "$RUNS/macros"
 mkdir -p "$RUNS/manual"
 (cd "$RUNS/manual" && "$BUILD/rdecay01" "$RUNS/macros/GEMsCore_K40.mac" 1 --layout legacy-25x3 > simulation.log 2>&1)
 "$BUILD/analysis/SimpleProcessEvents" "$RUNS/manual/outfiles_V2/raw_t0.root" "$RUNS/manual/processed.root"
 
 # Matrix; full smoke; independent full-chain preflight:
-python3 study/runner.py --list
-python3 study/runner.py --mode smoke --build "$BUILD" --output "$RUNS/smoke"
+python3 legacy/study/combined/runner.py --list
+python3 legacy/study/combined/runner.py --mode smoke --build "$BUILD" --output "$RUNS/smoke"
 python3 study/preflight.py --build "$BUILD" --output "$RUNS/preflight"
 
 # Production (default 10^7); repeat unchanged to resume:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production"
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production"
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production" --retry-failed
+python3 legacy/study/combined/runner.py --build "$BUILD" --output "$RUNS/production"
+python3 legacy/study/combined/runner.py --build "$BUILD" --output "$RUNS/production"
+python3 legacy/study/combined/runner.py --build "$BUILD" --output "$RUNS/production" --retry-failed
 
 # ROOT/PNG/PDF/CSV/JSON/text regeneration, no Geant4:
-python3 study/runner.py --build "$BUILD" --output "$RUNS/production" --analysis-only
-python3 study/runner.py --mode smoke --build "$BUILD" --output "$RUNS/smoke" --analysis-only
+python3 legacy/study/combined/runner.py --build "$BUILD" --output "$RUNS/production" --analysis-only
+python3 legacy/study/combined/runner.py --mode smoke --build "$BUILD" --output "$RUNS/smoke" --analysis-only
 ```
 
 No 26×10^7 production campaign was launched. `--primaries N` must be repeated on
@@ -163,13 +163,13 @@ Local recovery branch `recovery/phase7-wip-20260922`, commit
 `f82c823144237accdc99b4c351a7ce96b90329d8`; 21 files, 481 insertions and 51 deletions.
 Only the following work was preserved; no references, build/run outputs or ROOT:
 
-- `analysis/DetectorGeometry.hh`
-- `analysis/FileIdentity.hh`
-- `analysis/PlotNormalizedSpectra.cpp`
-- `analysis/PlotNormalizedSpectra_GEMchain.cpp`
-- `analysis/PlotNormalizedSpectra_single.cpp`
-- `analysis/PlotSpectrum.C`
-- `analysis/SimpleProcessEvents.cpp`
+- `analysis/reference_cpp/DetectorGeometry.hh`
+- `analysis/reference_cpp/FileIdentity.hh`
+- `analysis/reference_cpp/PlotNormalizedSpectra.cpp`
+- `analysis/reference_cpp/PlotNormalizedSpectra_GEMchain.cpp`
+- `analysis/reference_cpp/PlotNormalizedSpectra_single.cpp`
+- `analysis/reference_cpp/PlotSpectrum.C`
+- `analysis/reference_cpp/SimpleProcessEvents.cpp`
 - `app/rdecay01.cc`
 - `common/DetectorGeometry.hh`
 - `config/study/smoke-C.json`
@@ -178,7 +178,7 @@ Only the following work was preserved; no references, build/run outputs or ROOT:
 - `include/cygno/geometry/DetectorConstruction.hh`
 - `src/actions/RunAction.cc`
 - `src/geometry/DetectorConstruction.cc`
-- `study/runner.py`
+- `legacy/study/combined/runner.py`
 - `study/source_matrix.py`
 - `validation/geometry_audit.cc`
 - `validation/geometry_quantities.cc`

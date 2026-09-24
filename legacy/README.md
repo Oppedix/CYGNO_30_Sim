@@ -22,3 +22,12 @@ headers were retained; see [LICENSE](../LICENSE) and the identical external copy
 `data/references/rdecay01/` are historical text, not binaries to execute or current
 regression expectations. Generated executables, ROOT files, editor backups and
 CMake products were removed from Git tracking, not restored for the build.
+
+
+`study/combined/` retains runner.py, root_io.py and figures.py from the superseded
+combined PyROOT/C++ workflow. Active Stage A/B imports were audited before moving:
+only its dedicated regression path still uses them, and that test now imports
+this explicit legacy package. The renderer shares canonical table transcription.
+These files were moved, not deleted. New campaigns use study/simulate.py and
+study/analyze.py. All currently tested C++ reference tools, including specialized
+plotters/macros, remain in analysis/reference_cpp rather than legacy.

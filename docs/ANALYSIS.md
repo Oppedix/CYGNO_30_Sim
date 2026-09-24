@@ -77,7 +77,7 @@ For interpreted ROOT, make the matching build header visible before loading:
 
 ```cpp
 gInterpreter->AddIncludePath("/absolute/path/to/build/generated");
-.L /absolute/path/to/repository/analysis/PlotSpectrum.C
+.L /absolute/path/to/repository/analysis/reference_cpp/PlotSpectrum.C
 PlotSpectra("processed.root");
 ```
 
@@ -177,8 +177,9 @@ unvalidated decay chains.
 
 ## Exact processing contract
 
-The accepted raw branches and required ROOT types are the twelve entries in
-[OUTPUT.md](OUTPUT.md); extra branches are ignored. ParticleID, ParticleTag and
+The accepted raw branches and required ROOT types are specified in
+[OUTPUT.md](OUTPUT.md): twelve legacy fields plus timing in schema 1. The Python
+reader enforces the explicit versioned schema; the C++ reference ignores extra branches. ParticleID, ParticleTag and
 ParentID are validated for schema compatibility but do not drive grouping.
 Coordinates are world millimetres and step EnergyDeposit is MeV. ProcessType is
 the track's creator process, not the current step process.
@@ -258,3 +259,34 @@ Figure/table export and published comparison values are in
 [BACKGROUND_STUDY.md](BACKGROUND_STUDY.md). Their statistical errors are the
 historical Poisson group-count convention, not an independent-primary covariance
 calculation. A completed smoke pipeline is not a statistically useful reproduction.
+
+## Shared canonical representation and timing
+
+The active Python packages are `analysis/raw`, `analysis/compact`, and
+`analysis/common`. The canonical model has Group identity/labels/counts and an
+ordered volume dictionary of GroupVolume energy, first position and optional
+first_hit_time_ns. Raw legacy times are None. New raw times and compact first
+hit times refer to the same pre-step event-relative global time/ns.
+
+Raw implements the historical state machine above; compact **does not regroup**.
+It validates and reconstructs stored groups. `study/analyze.py` dispatches using
+validated manifests and OutputMetadata. Both files require exact parity before
+compact groups enter the common spectrum functions. A second campaign summary
+from raw counts verifies normalized rates/variances, categories, flows and all
+Table 7.2/7.3 inputs against the compact result. No tolerance is used between
+same-transport raw and compact; C++/ROOT reference comparisons retain their
+existing narrowly scoped rounding tolerance for separately computed scaled sums.
+
+Timing, track identities and diagnostic relationships have no effect on the
+canonical results. They enable future separately versioned intra-event studies;
+they are not an absolute clock across independent primary events. TrackGroups
+preserves multiple historical group memberships instead of inventing an ancestry
+partition. The first position and first time always belong to the same first
+admitted step, including zero-energy steps.
+
+The three notebooks under raw/, compact/ and common/ show production function
+source and call it. The common notebook retains the detailed energy/cut/window,
+normalization, category and thesis-table explanations. Its synthetic default and
+optional campaign path share the same functions. Lightweight execution tests
+compare cell-derived counts with production, check category sums/flows and prove
+timing independence. Alternative timing cuts are discussed but never enabled.

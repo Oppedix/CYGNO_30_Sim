@@ -6,7 +6,7 @@ histograms remain counts/bin/year; only cloned display histograms become density
 from pathlib import Path
 from .root_io import root_file
 
-from .reporting import CATEGORIES, REFERENCE_72, REFERENCE_73, write_table, write_tables
+from analysis.common.reporting import CATEGORIES, REFERENCE_72, REFERENCE_73, write_table, write_tables
 
 
 def render(directory, spectra, summary):

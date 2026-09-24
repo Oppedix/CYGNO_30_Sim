@@ -83,7 +83,7 @@ maps from commented material. Scope is the available public history through
 
 The main `.cpp` SHA-256 at each of the last three revisions is
 `6e78305154ec5aa3c363bdff24e61863b547faf255f7c75a4af4242bae5bd2d1`.
-For reproducibility, inspect `git show REVISION:analysis/PlotNormalizedSpectra.cpp`
+For reproducibility, inspect `git show REVISION:analysis/reference_cpp/PlotNormalizedSpectra.cpp`
 and the corresponding `_single.cpp` / `_GEMchain.cpp` objects.
 
 Concrete mismatches in the active main map include vessel U/Th/K activities

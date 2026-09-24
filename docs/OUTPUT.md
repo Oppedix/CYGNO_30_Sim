@@ -1,77 +1,116 @@
-# Raw output and run bookkeeping
+# Simulation storage contract
 
-`RunAction` opens `outfiles_V2/<OutFile>.root` relative to the process working
-directory, creating the directory. Default basename is `outfiles_V2`.
-Geant4 adds `_tN` for worker N. No ntuple merging is enabled. Files with the same
-basename can be overwritten: use separate directories or names per run.
+Select `--output-mode raw|compact|both` on `study/simulate.py` or `rdecay01`.
+Raw remains the default/reference/debugging product. Compact is recommended for
+large production after same-transport parity validation. Both writes the two
+representations from the **same transport**, in one worker ROOT file.
+No output code calls an RNG. Physics, sampling, seeds and decay policy are unchanged.
 
-`HitOutput.cc` books/fills exactly this `Hits` schema, in this order:
+## Common metadata
 
-| Column | ROOT type | Meaning |
+Every worker file retains the unchanged one-row scientific `RunMetadata` tree:
+`GeometryHash`, `Layout`, `DetectorModel`, `SourcePolicy` (strings).
+`RunAccounting` retains five int32 fields: `RunID`, `RequestedEvents`,
+`GeneratedPrimaries`, `ProcessedEvents`, `AbortedEvents`. Successful campaign
+accounting requires run ID 0, requested=generated=processed, aborted=0.
+
+The separate one-row `OutputMetadata` TTree contains:
+
+| Field | Type | Schema 1 value |
 |---|---|---|
-| EventNumber | Int_t | Run-local Geant4 event ID |
-| ParticleName | Char_t | Track's particle name |
-| ParticleID | Int_t | Event-local track ID, not PDG code |
-| ParticleTag | Int_t | e−:0, e+:1, gamma:2, alpha:3, other:−1 |
-| ParentID | Int_t | Event-local parent track ID |
-| x_hits | Double_t | Pre-step world X in mm |
-| y_hits | Double_t | Pre-step world Y in mm |
-| z_hits | Double_t | Pre-step world Z in mm |
-| EnergyDeposit | Double_t | Step energy deposited in MeV |
-| VolumeNumber | Int_t | Sensitive gas copy number, 0–149 |
-| Nucleus | Char_t | Most recently tracked ion label |
-| ProcessType | Char_t | Track creator process, empty for a primary |
+| OutputFormat | string | raw, compact, or both |
+| OutputSchemaVersion | int32 | 1 |
+| TimingDefinition | string | pre-step global time / ns; Geant4 event-relative, not inter-event time |
+| CompactProcessingVersion | string | event-boundaries-and-eof-v2 |
 
-Every sensitive gas step is written, including zero-deposit steps. An event with
-no gas steps contributes no rows. `Nucleus` is **not guaranteed ancestry** and is
-not reset at event boundaries; assigning a different meaning requires a separate
-scientific decision. `ProcessType` is not the process responsible for the step.
-The raw Hits tree has no added columns. A separate `RunMetadata` tree contains one
-row per worker/run output with four string leaves: `GeometryHash`, `Layout`,
-`DetectorModel` and `SourcePolicy`. It is filled without sampling randomness and
-is reset between runs. The MT master does not write a metadata-only file. This
-record establishes geometry identity, not run completeness or generated counts.
+Missing OutputMetadata explicitly means legacy schema-0 **raw only**, requiring
+the historical 12-column schema and no compact trees. Missing metadata never
+implies compact format. Unsupported versions, malformed metadata, extra/missing
+columns or disagreement with the campaign are rejected.
 
-New outputs also contain one `RunAccounting` row, filled at end of run with five
-integer fields: `RunID`, `RequestedEvents`, `GeneratedPrimaries`, `ProcessedEvents`
-and `AbortedEvents`. Generated primaries count particles actually created by the
-gun; processed/aborted events come from event bookkeeping. Counters reset for each
-run. Worker counts can be summed for multiworker diagnostics; the study runner
-requires one worker and one run. A crash can leave no usable accounting record.
-The record and successful file closure establish software accounting only, never
-full radioactive-chain transport. The Hits schema and random draws are unchanged.
+## Raw Hits
 
-Archive
-source, macro, seeds, build/library/data versions, requested/generated event
-counts and worker count alongside raw output.
+Every sensitive-gas step is written, with no energy or particle filter.
 
-Bookkeeping corrections use the matching GEM-core and resistor logical masses,
-and `RingSupports`/`Resistors` keys consistently. These change printed masses,
-not solids, materials or hit energy. Masses are construction totals, not automatic
-assay/contamination normalization. The current-layout vessel construction mass is about
-4203.49 kg (legacy layout about 4116.56 kg); adopting it for a study still requires matching the contamination model.
+| Fields | Type | Meaning |
+|---|---|---|
+| EventNumber | int32 | Run/worker-local event ID |
+| ParticleID | int32 | Event-local track ID, not PDG code |
+| ParticleTag | int32 | e-:0, e+:1, gamma:2, alpha:3, otherwise -1 |
+| ParentID | int32 | Parent track, which need not enter sensitive gas |
+| ParticleName | string | Geant4 particle name |
+| x_hits, y_hits, z_hits | float64 | Pre-step WORLD coordinates in mm |
+| EnergyDeposit | float64 | Step deposit in MeV, including zero |
+| VolumeNumber | int32 | Sensitive-gas copy in the selected layout |
+| Nucleus | string | Most recently tracked ion, not guaranteed ancestry |
+| ProcessType | string | Track creator process, not current step process |
+| GlobalTime_ns | float64 | Pre-step global time explicitly divided by ns |
 
-Run summaries use the actual primary, omit unsupported visible-energy summary
-values, and label terminal-ion global times without interpreting the mean as a
-half-life. The activity estimate is printed only with valid ion mass/lifetime and
-sampled time. It is a Monte Carlo bookkeeping estimate, not an assay table.
+GlobalTime_ns is the only extension to raw rows. Legacy files without it remain
+analyzable: canonical times are `None`, never invented zeros. All other fields
+retain their former extraction and units. The last-ion label remains intentionally
+unreset across events, following existing TrackingAction semantics.
 
-## Study logs and run configuration
+## Compact trees
 
-Study macros explicitly set the RDM long-decay threshold to `1e60 year`.
-`CYGNO_RUN radioactive_decay_time_threshold_s` observes the worker process after
-macro commands and before its first event. `CYGNO_ENV` records Geant4/data/build
-identity and the post-macro threshold. A failed simulation may lack the latter;
-its complete log and pre-transport worker observation are retained. Every 500
-events `CYGNO_PROGRESS completed_events N` records observational progress; only
-RunAccounting establishes the denominator. See [study manifests](BACKGROUND_STUDY.md).
+Compact output has **no Hits tree**. Both output contains Hits and these tables.
+All IDs/counts are int32 with event-local GroupIndex; all energies, coordinates
+and times are float64. Strings are ROOT string leaves as in raw output.
 
-## ROOT-free completion receipt
+| Tree | Fields |
+|---|---|
+| Groups | EventNumber, GroupIndex, ParticleName, Nucleus, ProcessType, StepCount, TrackCount, VolumeCount |
+| GroupVolumes | EventNumber, GroupIndex, VolumeOrder, VolumeNumber, EnergyDeposit, x_first, y_first, z_first, FirstHitTime_ns |
+| Tracks | EventNumber, ParticleID, ParticleTag, ParentID, ParticleName, Nucleus, ProcessType, GroupIndex |
+| TrackGroups | EventNumber, ParticleID, GroupIndex |
 
-After successful Write/CloseFile, EndOfRun emits `CYGNO_ACCOUNTING` followed by
-JSON with `RunID`, `RequestedEvents`, `GeneratedPrimaries`, `ProcessedEvents`, and
-`AbortedEvents`, using the same counters as the existing ROOT tree. The stage A
-runner requires exactly one record, run ID 0, equal requested/generated/processed
-counts and no aborts. Stage B cross-checks those values against the ROOT tree.
-Serial Geant4 outputs use `raw.root`; single-worker MT outputs use `raw_t0.root`.
-No Hits or RunMetadata fields have changed.
+Groups are written in historical order with zero-based GroupIndex reset per event.
+StepCount counts admitted e-/e+/alpha steps; TrackCount counts distinct contributing
+tracks. GroupVolumes has one row per group/gas copy, in consecutive zero-based
+VolumeOrder. Energy adds exactly the same steps in exactly the same order as raw
+preprocessing. First position and FirstHitTime_ns belong to the **same first step**,
+even if it deposits zero energy. They are not energy-weighted or minimum-time values.
+
+Tracks has one row per event-local track entering sensitive gas (including ignored
+particles), sorted by ID within each event. Labels are from its first sensitive
+step; in particular, Nucleus is diagnostic last-ion context, not reconstructed ancestry.
+GroupIndex is -1 for no historical group, the index for one group, or -2 for multiple
+groups. TrackGroups records every membership, sorted by track then group.
+
+The historical state machine is not a track partition. A resumed non-ionization
+track following an ionization continuation can enter another group. The explicit
+relationship avoids silently selecting just one group and is tested by replay.
+ParentID need not refer to a stored track. Keys must always include EventNumber.
+Compact readers reject duplicate/orphan keys, invalid order or identities, incorrect
+counts and inconsistent sentinels before exposing an event to analysis.
+
+## Lifetime and timing
+
+SensitiveDetector constructs one StepRecord from G4Step and feeds enabled sinks.
+The compact state machine holds the current group plus per-event track provenance
+and membership. It emits finished groups immediately, flushes the final group in
+EndOfEvent, writes tracks, then clears event bookkeeping. No run-sized step buffer
+is kept. RunAction writes/closes all trees after the event lifecycle completes.
+The Python compact reader uses bounded chunks and one event of reconstructed data.
+
+`GlobalTime_ns` and `FirstHitTime_ns` describe time **within a Geant4 event**. They
+permit future intra-event timing/coincidence studies. They do not provide an
+absolute relation between independently simulated primary events. The canonical
+Samuele analysis never reads them for selection, energy, normalization or tables.
+
+## Validation and storage measurement
+
+```sh
+python -m analysis.compact.parity --input both.root --geometry geometry.json
+python validation/compact_transport.py --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/compact-check-NEW" --primaries 30
+python -m analysis.compact.benchmark --raw raw.root --compact compact.root
+```
+
+The small integration defaults to the unchanged GEMsCore_K40 matrix contribution;
+`--contribution GEMsCore_U238` selects the chain on a validated environment.
+It compares raw-only against both-mode raw rows and accounting, then checks both
+representations and standalone compact spectra. Benchmark bytes are separately
+measured files, not estimated per-tree compressed bytes. Compression ratio is a
+storage diagnostic, never a scientific acceptance criterion. No ROOT fixture is
+committed. Full campaign preflight requirements remain in force.

@@ -32,6 +32,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "G4Types.hh"
+#include "cygno/output/StepRecord.hh"
 
 #include "G4RunManagerFactory.hh"
 #include "G4UImanager.hh"
@@ -66,15 +67,20 @@ int main(int argc,char** argv) {
   auto layout = cygno::geometry::LayoutId::Current5x5x3;
   std::vector<std::string> positional;
   bool layoutSpecified = false;
+  bool outputSpecified = false;
   int workers = 1;
   try {
     for (int i=1; i<argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "Usage: rdecay01 [macro [workers]] [--layout legacy-25x3|cygno-5x5x3-v1]\n";
+        std::cout << "Usage: rdecay01 [macro [workers]] [--layout legacy-25x3|cygno-5x5x3-v1] [--output-mode raw|compact|both]\n";
         return 0;
       }
-      if (arg == "--layout") {
+      if (arg == "--output-mode") {
+        if (outputSpecified || i+1==argc) throw std::invalid_argument("Specify --output-mode exactly once");
+        cygno::output::SetMode(argv[++i]);
+        outputSpecified=true;
+      } else if (arg == "--layout") {
         if (layoutSpecified || i+1 == argc)
           throw std::invalid_argument("Specify --layout exactly once with a profile name");
         layout = cygno::geometry::ParseLayoutId(argv[++i]);

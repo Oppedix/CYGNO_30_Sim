@@ -3,7 +3,7 @@
 
 // ROOT adapter for the SAME layout used by DetectorConstruction. Positions and
 // hit coordinates are millimetres. Select only after validating file identity.
-#include "../common/DetectorGeometry.hh"
+#include "../../common/DetectorGeometry.hh"
 #include "TVector3.h"
 #include <map>
 

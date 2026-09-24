@@ -1,7 +1,8 @@
 """Historical main plotter: 900 bins, first-position cut, exact unbinned windows."""
 import math
 import numpy as np
-from study.source_matrix import quantity_for, require
+from study.source_matrix import require
+from analysis.common.normalization import scale_for
 
 WINDOWS = ('all', 'gt10', 'gt10_le400', 'underflow', 'in_range', 'overflow')
 BOUNDARIES = dict(all='all finite energies, including underflow and overflow',
@@ -17,15 +18,10 @@ def window_flags(energy):
 
 
 def fiducial(group, geometry):
-    volume, (_, x, y, z) = next(iter(group.volumes.items()))
+    volume, first = next(iter(group.volumes.items()))
+    x, y, z = first.x, first.y, first.z
     center = geometry['gas_centers_mm'][str(volume)]
     return all(abs(pos-c) <= size/2-20 for pos, c, size in zip((x,y,z), center, geometry['gas_size_mm']))
-
-
-def scale_for(row, quantities, generated):
-    require(type(generated) is int and generated > 0, 'Invalid actual generated count')
-    # Preserve C++ multiplication order, including the 365-day year.
-    return row['activity']*quantity_for(row, quantities)*60*60*24*365/generated
 
 
 def histogram_bin(energy):
@@ -40,6 +36,13 @@ def histogram_bin(energy):
     return 1+approximate-int(energy < width*approximate)+int(width*(approximate+1) <= energy)
 
 
+def group_energy(group):
+    energy = 0.
+    for volume in group.volumes.values():
+        energy += volume.energy*1000
+    return energy
+
+
 def accumulate(groups, geometry):
     counts = np.zeros((2, 6), dtype=np.int64)
     histograms = np.zeros((2, BINS+2), dtype=np.int64)
@@ -49,9 +52,7 @@ def accumulate(groups, geometry):
         if group.particle not in ('e-', 'e+'):
             continue
         # C++ multiplies EACH volume energy by 1000 before summation.
-        energy = 0.
-        for values in group.volumes.values():
-            energy += values[0]*1000
+        energy = group_energy(group)
         flags = window_flags(energy)
         cut = fiducial(group, geometry)
         index = histogram_bin(energy)

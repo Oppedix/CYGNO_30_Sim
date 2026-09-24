@@ -55,6 +55,11 @@ class WorkflowTests(unittest.TestCase):
                 campaign=rt.read(args.output/'campaign.json')
                 self.assertEqual(campaign['coverage'],'1/26')
                 self.assertEqual(campaign['identity']['config']['primaries_per_job'],1_000_000)
+                args.primaries=1000000
+                for mode in ('compact','both'):
+                    args.output_mode=mode
+                    with self.assertRaisesRegex(ValueError,'identity changed'): simulate.run(args)
+                args.output_mode='raw'
                 args.primaries=2
                 with self.assertRaisesRegex(ValueError,'identity changed'): simulate.run(args)
                 args.output=base/'failed-preflight'

@@ -1,13 +1,13 @@
-#ifndef CYGNO_HIT_OUTPUT_HH
-#define CYGNO_HIT_OUTPUT_HH
-// The raw Hits interface: column IDs, names and types belong to one schema.
+#pragma once
 #include "globals.hh"
+#include "cygno/output/StepRecord.hh"
 class G4Step;
 namespace cygno::hits {
+// IDs 1/2 remain scientific metadata/accounting in every mode.
 constexpr G4int ntupleId = 0;
 enum Column { EventNumber, ParticleName, ParticleID, ParticleTag, ParentID,
-              X, Y, Z, EnergyDeposit, VolumeNumber, Nucleus, ProcessType, Count };
+              X, Y, Z, EnergyDeposit, VolumeNumber, Nucleus, ProcessType, GlobalTime, Count };
 void Book();
-void WriteStep(const G4Step* step, const G4String& lastIon);
+cygno::output::StepRecord ExtractStep(const G4Step* step, const G4String& lastIon);
+void Write(const cygno::output::StepRecord& step);
 }
-#endif

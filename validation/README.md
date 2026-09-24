@@ -125,3 +125,29 @@ The Linux x86_64 private serial 11.3.1 environment is operator-validated 4/4;
 macOS/arm64 PART122 failures remain environment-specific. After rebuilding on
 Linux, repeat 4/4 preflight, 26/26 small smoke, archive/offline validation and
 reference parity before considering 1M primaries/contribution.
+
+
+## Compact representation regressions
+
+The raw transport regression now detects serial versus MT builds from configured
+Geant4 capabilities, using `name.root` or `name_t0.root` respectively. It verifies
+versioned timing/OutputMetadata and repeats two runs in **each** output mode.
+First-run rows/groups match fresh transport; second-run keys, rows and accounting
+are reset. The multi-worker case is skipped explicitly on serial installations.
+
+The Python suite covers malformed relationships, synthetic C++ StepRecord replay,
+raw/compact exact parity, all-mode archive/analysis round trips, and notebook
+execution/source-hash freshness. Set CYGNO_REFERENCE_BUILD to exercise the active
+C++/ROOT reference. Set CYGNO_TRANSPORT_BUILD to enable the separate 30-primary
+K40 same-seed raw/compact/both check, or configure CYGNO_TEST_COMPACT_TRANSPORT=ON
+with a Python interpreter containing the analysis dependencies.
+
+```sh
+python validation/compact_transport.py --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/compact-parity-NEW" --primaries 30
+python -m analysis.compact.parity --input both.root --geometry geometry.json
+```
+
+These local representation checks do not bypass four-case campaign preflight.
+macOS PART122 remains a failure, not a waived validation gate. See
+[the current evidence](../docs/TWO_STAGE_VALIDATION.md).

@@ -10,9 +10,9 @@ from unittest.mock import patch
 import numpy as np
 import uproot
 from study import runtime as rt, simulate
-from study.raw_io import inspect_raw, HITS_SCHEMA
-from study.processing import groups
-from study.spectra import accumulate, fiducial, scale_for, summarize, window_flags
+from analysis.raw.io import inspect_raw, LEGACY_HITS_SCHEMA as HITS_SCHEMA
+from analysis.raw.preprocess import groups
+from analysis.common.spectra import accumulate, fiducial, scale_for, summarize, window_flags
 from study.campaign import validate_campaign
 from study.archive import extract, package, open_campaign
 from study.analyze import analyze
@@ -69,7 +69,7 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(len(expected), 4)
         self.assertEqual(expected[0].particle, 'alpha')  # inherited label, despite following e+
         self.assertEqual(list(expected[0].volumes), [0,1])
-        self.assertEqual(expected[0].volumes[0][1], 0)  # first position retained
+        self.assertEqual(expected[0].volumes[0].x, 0)  # first position retained
         self.assertEqual(expected[-1].particle, 'e+')
         for split in range(len(rows)+1):
             self.assertEqual(list(groups([chunk(rows[:split]),chunk(rows[split:])])), expected)
@@ -80,7 +80,7 @@ class ProcessingTests(unittest.TestCase):
         geometry = dict(gas_size_mm=[100,120,140],gas_centers_mm={'0':[5,6,7]})
         g = next(groups([chunk([dict(x_hits=35,y_hits=46,z_hits=57)])]))
         self.assertTrue(fiducial(g, geometry))
-        g.volumes[0][1] = math.nextafter(35, math.inf)
+        g.volumes[0].x = math.nextafter(35, math.inf)
         self.assertFalse(fiducial(g, geometry))
         energies = [-1,0,10,math.nextafter(10,math.inf),400,math.nextafter(400,math.inf),1999,2000,2200]
         for e in energies:

@@ -79,7 +79,7 @@ for name in ('PlotNormalizedSpectra','PlotNormalizedSpectra_single','PlotNormali
     # The quarantined main is not executed; explicitly bind its old no-argument
     # geometry call in this constants-only probe, without editing the reference.
     probe.write_text('#include <iomanip>\n#include "DetectorGeometry.hh"\nvoid BuildDetectorMap(std::map<Int_t,TVector3>& centers){BuildDetectorMap(centers,cygno::geometry::LayoutId::Current5x5x3);}\n#define main historical_main\n#include "'+str(repo/'legacy/analysis/05a2b92'/f'{name}.cpp')+'"\n#undef main\nint main(){std::cout<<std::setprecision(17);for(const auto& c:ElementMass)for(const auto& a:Contaminant[c.first])std::cout<<c.first<<" "<<a.first<<" "<<c.second<<" "<<a.second<<" "<<NEvents[c.first][a.first]<<"\\n";}\n')
-    subprocess.run(['c++','-std=c++17','-I'+str(repo/'analysis'),str(probe),'-o',str(exe),*flags],check=True,stderr=subprocess.DEVNULL)
+    subprocess.run(['c++','-std=c++17','-I'+str(repo/'analysis/reference_cpp'),str(probe),'-o',str(exe),*flags],check=True,stderr=subprocess.DEVNULL)
     expected={tuple(x[:2]):tuple(map(float,x[2:])) for line in subprocess.check_output([str(exe)],text=True).splitlines() if (x:=line.split())}
     actual={tuple(x[:2]):tuple(map(float,x[2:5])) for line in (repo/'config/normalization'/f'{name}.historical.tsv').read_text().splitlines() if not line.startswith('#') and (x:=line.split())}
     assert actual==expected,(name,actual,expected)

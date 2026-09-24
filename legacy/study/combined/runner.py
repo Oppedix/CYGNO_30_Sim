@@ -11,9 +11,9 @@ import sys
 import time
 
 if __package__ in (None, ''):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from study.source_matrix import read_matrix, read_quantities, quantity_for, decay_commands, require, LAYOUTS
-from study.root_io import inspect_raw, inspect_processed, export_spectra
+from legacy.study.combined.root_io import inspect_raw, inspect_processed, export_spectra
 
 from study.runtime import (REPO, ENV_KEYS, RDM_COMMAND, RDM_SECONDS, LIMITATIONS,
     digest, object_digest, save, read, compiled_source_hash, source_state, load_config,
@@ -256,7 +256,7 @@ def run(args):
             try:
                 invoke([tools['plotter'], norm], report_dir, 'plotting', config['timeout_seconds'])
                 save(report_dir/'spectra.json', export_spectra(report_dir/'NormalizedHisto.root', completed, environment['source_hash']))
-                from study.figures import render
+                from legacy.study.combined.figures import render
                 render(report_dir, read(report_dir/'spectra.json'), report)
                 report['analysis_status'] = 'complete'
             except (ValueError, RuntimeError, OSError) as error:

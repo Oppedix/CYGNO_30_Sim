@@ -1,4 +1,4 @@
-// Book/fill the unchanged 12-column step ntuple. Units are mm and MeV.
+// Raw output consumes the same extracted record as compact accumulation.
 #include "cygno/output/HitOutput.hh"
 #include "G4AnalysisManager.hh"
 #include "G4Exception.hh"
@@ -6,6 +6,18 @@
 #include "G4Step.hh"
 #include "G4Track.hh"
 #include <array>
+#include "G4SystemOfUnits.hh"
+#include <stdexcept>
+namespace cygno::output {
+namespace { std::string mode = "raw"; }
+void SetMode(const std::string& value) {
+  if (value!="raw" && value!="compact" && value!="both") throw std::invalid_argument("Invalid output mode: " + value);
+  mode=value;
+}
+const std::string& Mode() { return mode; }
+bool RawEnabled() { return mode!="compact"; }
+bool CompactEnabled() { return mode!="raw"; }
+}
 namespace cygno::hits {
 void Book() {
   enum Type { Integer, String, Double };
@@ -16,7 +28,7 @@ void Book() {
     {ParentID,"ParentID",Integer}, {X,"x_hits",Double}, {Y,"y_hits",Double},
     {Z,"z_hits",Double}, {EnergyDeposit,"EnergyDeposit",Double},
     {VolumeNumber,"VolumeNumber",Integer}, {Nucleus,"Nucleus",String},
-    {ProcessType,"ProcessType",String}
+    {ProcessType,"ProcessType",String}, {GlobalTime,"GlobalTime_ns",Double}
   }};
   auto* manager=G4AnalysisManager::Instance();
   const auto id=manager->CreateNtuple("Hits","Hits");
@@ -32,69 +44,33 @@ void Book() {
   }
   manager->FinishNtuple(id);
 }
-void WriteStep(const G4Step* aStep, const G4String& lastIon) {
-  G4Track* track = aStep->GetTrack();
-
-  G4StepPoint* preStepPoint = aStep->GetPreStepPoint();
-
-  // Pre-step WORLD coordinates, in Geant4 internal length units (mm).
-  G4ThreeVector posParticle = preStepPoint->GetPosition();
-
-  G4String particleName = track->GetParticleDefinition()->GetParticleName();
-  // ParticleID is the event-local track ID, not a PDG particle code.
-  G4int particleID = track->GetTrackID();
-  G4double EdepStep = aStep->GetTotalEnergyDeposit();
-  // Gas copy number: 0..74 on local +Z, 75..149 on local -Z.
-  // Module order follows RunMetadata.Layout; see common/DetectorGeometry.hh.
-  G4int VolumeCopyNumber = track->GetVolume()->GetCopyNo();
-  G4int particleParentID = track->GetParentID();
-
-  // Nucleus is the most recently tracked ion label, not an ancestry lookup.
-  // ProcessType is the track CREATOR process, not the process for this step.
-  G4String DecayElement = lastIon;
-  G4String creatorProcess = "";
-  
-  if(track->GetCreatorProcess()){
-    creatorProcess= track->GetCreatorProcess()->GetProcessName();
-  } 
-    
-  G4int particleTag=-1;
-
-  if(particleName == "e-"){
-    particleTag=0;
-  } else if(particleName == "e+"){
-    particleTag=1;
-  } else if(particleName == "gamma"){
-    particleTag=2;
-  } else if(particleName == "alpha"){
-    particleTag=3;
-  } else {
-    particleTag=-1;
-  }
-  
-  //G4cout << "position of: " << particleName <<" " << track->GetTrackID() << "  is:  "<< posParticle << " Energy deposited:  " << EdepStep << "  in volume:  " << VolumeCopyNumber << " ParentID: "  << track->GetParentID()<< " lastdecay: " << DecayElement << "  Process: " << ProcessType << G4endl;
-
-  G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
-  
-  
-  G4AnalysisManager* AnalysisManager = G4AnalysisManager::Instance(); 
-
-  // Column order must match RunAction::BeginOfRunAction. EnergyDeposit is in
-  // internal energy units (MeV); coordinates/energy are stored without conversion.
-  AnalysisManager->FillNtupleIColumn(ntupleId, EventNumber,evt);
-  AnalysisManager->FillNtupleSColumn(ntupleId, ParticleName,particleName);
-  AnalysisManager->FillNtupleIColumn(ntupleId, ParticleID,particleID);
-  AnalysisManager->FillNtupleIColumn(ntupleId, ParticleTag,particleTag);
-  AnalysisManager->FillNtupleIColumn(ntupleId, ParentID,particleParentID);
-  AnalysisManager->FillNtupleDColumn(ntupleId, X,posParticle[0]);
-  AnalysisManager->FillNtupleDColumn(ntupleId, Y,posParticle[1]);
-  AnalysisManager->FillNtupleDColumn(ntupleId, Z,posParticle[2]);
-  AnalysisManager->FillNtupleDColumn(ntupleId, EnergyDeposit,EdepStep);
-  AnalysisManager->FillNtupleIColumn(ntupleId, VolumeNumber,VolumeCopyNumber);
-  AnalysisManager->FillNtupleSColumn(ntupleId, Nucleus,DecayElement);
-  AnalysisManager->FillNtupleSColumn(ntupleId, ProcessType,creatorProcess);
-  
-  AnalysisManager->AddNtupleRow(ntupleId);
-
+cygno::output::StepRecord ExtractStep(const G4Step* step, const G4String& lastIon) {
+  const auto* track=step->GetTrack();
+  const auto* pre=step->GetPreStepPoint();
+  const auto pos=pre->GetPosition();
+  const auto name=track->GetParticleDefinition()->GetParticleName();
+  const int tag=name=="e-" ? 0 : name=="e+" ? 1 : name=="gamma" ? 2 : name=="alpha" ? 3 : -1;
+  // Nucleus is last tracked ion; ProcessType is CREATOR, not step process.
+  return {G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID(),
+    track->GetTrackID(), tag, track->GetParentID(), track->GetVolume()->GetCopyNo(),
+    name, lastIon, track->GetCreatorProcess() ? track->GetCreatorProcess()->GetProcessName() : "",
+    pos.x(), pos.y(), pos.z(), step->GetTotalEnergyDeposit(), pre->GetGlobalTime()/ns};
+}
+void Write(const cygno::output::StepRecord& s) {
+  auto* m=G4AnalysisManager::Instance();
+  m->FillNtupleIColumn(ntupleId,EventNumber,s.eventNumber);
+  m->FillNtupleSColumn(ntupleId,ParticleName,s.particleName);
+  m->FillNtupleIColumn(ntupleId,ParticleID,s.particleID);
+  m->FillNtupleIColumn(ntupleId,ParticleTag,s.particleTag);
+  m->FillNtupleIColumn(ntupleId,ParentID,s.parentID);
+  m->FillNtupleDColumn(ntupleId,X,s.x);
+  m->FillNtupleDColumn(ntupleId,Y,s.y);
+  m->FillNtupleDColumn(ntupleId,Z,s.z);
+  m->FillNtupleDColumn(ntupleId,EnergyDeposit,s.energyDeposit);
+  m->FillNtupleIColumn(ntupleId,VolumeNumber,s.volumeNumber);
+  m->FillNtupleSColumn(ntupleId,Nucleus,s.nucleus);
+  m->FillNtupleSColumn(ntupleId,ProcessType,s.processType);
+  m->FillNtupleDColumn(ntupleId,GlobalTime,s.globalTimeNs);
+  m->AddNtupleRow(ntupleId);
 }
 }

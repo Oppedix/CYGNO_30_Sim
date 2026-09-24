@@ -7,9 +7,9 @@ import unittest
 import numpy as np
 import uproot
 from study import runtime as rt
-from study.processing import groups
-from study.raw_io import header, hit_chunks
-from study.spectra import accumulate, scale_for, WINDOWS
+from analysis.raw.preprocess import groups
+from analysis.raw.io import header, hit_chunks
+from analysis.common.spectra import accumulate, scale_for, WINDOWS
 from study.source_matrix import read_matrix, read_quantities
 from fixtures import raw_fixture
 
@@ -43,6 +43,16 @@ class ReferenceParity(unittest.TestCase):
                     x_hits=center[0]+geometry['gas_size_mm'][0]/2-20))
                 rows.append(row(EventNumber=len(energies)+3,EnergyDeposit=.02,
                     x_hits=center[0]+geometry['gas_size_mm'][0]/2-20+.01))
+                # Unique diagnostic identities for synthetic tracks; grouping never uses IDs.
+                for track_id, record in enumerate(rows, 1):
+                    record['ParticleID'] = track_id
+                    record['ParticleTag'] = {'e-':0,'e+':1,'gamma':2,'alpha':3}.get(record.get('ParticleName','e-'),-1)
+                from compact_fixtures import fixture
+                from analysis.compact.parity import validate
+                both=folder/'both.root'
+                fixture(both,expected,records=rows,requested=len(energies)+4)
+                with uproot.open(both) as f:
+                    validate(f,expected,len(energies)+4,geometry,step_size=3)
                 raw=folder/'raw.root';processed=folder/'processed.root'
                 raw_fixture(raw,expected,rows,requested=len(energies)+4)
                 subprocess.run([build/'analysis/SimpleProcessEvents',raw,processed],check=True,stdout=subprocess.DEVNULL)
@@ -56,7 +66,7 @@ class ReferenceParity(unittest.TestCase):
                         self.assertEqual((c.evNumber,c.PartName,c.Nucleus),(p.event,p.particle,p.nucleus))
                         self.assertEqual(list(c.VolNnum_Out),list(p.volumes))
                         for index,field in enumerate(('EDep_Out','X_Vertex','Y_Vertex','Z_Vertex')):
-                            np.testing.assert_array_equal(list(c[field]),[v[index] for v in p.volumes.values()])
+                            np.testing.assert_array_equal(list(c[field]),[getattr(v, ("energy","x","y","z")[index]) for v in p.volumes.values()])
                 counts,hist,_=accumulate(py,geometry)
                 matrix=read_matrix(rt.REPO/'config/study/thesis-table7.1.json')
                 quantities=read_quantities(folder/'quantities.tsv',layout=layout,model='code-compatible',geometry_hash=geometry['geometry_hash'])

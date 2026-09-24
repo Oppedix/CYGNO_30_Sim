@@ -143,7 +143,7 @@ for label,layout,inputs,kwargs in [
         run([plotter,study],ok=False);assert sentinel.read_bytes()==b'preserve-existing-spectrum'
 # ROOT macro is also compiled/executed, with positive and mismatch cases.
 probe=out/'macro.cc';executable=out/'macro'
-probe.write_text('#include "TROOT.h"\n#include "'+str(repo/'analysis/PlotSpectrum.C')+'"\n'
+probe.write_text('#include "TROOT.h"\n#include "'+str(repo/'analysis/reference_cpp/PlotSpectrum.C')+'"\n'
                  'int main(int argc,char**argv) {gROOT->SetBatch(true);try {PlotSpectra(argv[1],argc>2?argv[2]:"",argc>3?argv[3]:"");return 0;}catch(const std::exception& e){std::cerr<<e.what();return 1;}}\n')
 flags=shlex.split(subprocess.check_output(['root-config','--cflags','--libs'],text=True))
 run(['c++','-std=c++17','-I'+str(build/'generated'),probe,'-o',executable,*flags])

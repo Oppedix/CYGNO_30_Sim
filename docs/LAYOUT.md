@@ -162,7 +162,7 @@ same normalization formula with an explicitly approved mass for that study.
 
 ## Shared analysis geometry and future changes
 
-`analysis/DetectorGeometry.hh` converts `BuildModuleLayout(layout)` / `GasCenter()` to
+`analysis/reference_cpp/DetectorGeometry.hh` converts `BuildModuleLayout(layout)` / `GasCenter()` to
 ROOT vectors. All four plotting sources use that adapter, including the exact
 0.25 mm cathode offset. There is no separate 3 mm detector-gap parameter anymore.
 The original 20 mm fiducial inset and all other cuts are unchanged.

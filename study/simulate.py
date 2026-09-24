@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage A: standard-library-only, resumable Table 7.1 raw simulation campaigns."""
+"""Stage A: standard-library-only, resumable Table 7.1 simulation campaigns."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 import hashlib
@@ -45,26 +45,31 @@ def run_job(output, row, config, campaign, simulation, retry=False, cancel=None)
     number = max([int(p.name[8:]) for p in directory.glob('attempt-*')] or [0])+1
     attempt = directory/f'attempt-{number:04d}'
     attempt.mkdir()
-    manifest = dict(schema_version=2, fingerprint=fingerprint, contribution=row['id'],
+    manifest = dict(schema_version=campaign.get('schema_version',3), fingerprint=fingerprint, contribution=row['id'],
                     campaign_fingerprint=campaign['fingerprint'], attempt=attempt.name, status='running',
                     seeds=rt.seeds_for(config['seed'], row['id']), workers=1,
                     requested_primaries=config['primaries_per_job'], generated_primaries=None,
                     macro_sha256=hashlib.sha256(macro.encode()).hexdigest(), chain_validity='environment-preflight-passed',
                     previous_attempt=previous['attempt'] if previous else None)
+    if campaign.get('schema_version',3) >= 3:
+        manifest.update(output_mode=config.get('output_mode','raw'), output_schema_version=1,
+                        data_path=None, parity_status='pending-stage-b' if config.get('output_mode')=='both' else 'not-applicable')
     rt.save(path, manifest)
     try:
         rt.console('[START] '+row['id'])
         (attempt/'run.mac').write_text(macro)
-        log = rt.invoke([simulation, attempt/'run.mac', '1', '--layout', config['layout']],
+        log = rt.invoke([simulation, attempt/'run.mac', '1', '--layout', config['layout'],
+                         '--output-mode', config.get('output_mode','raw')],
                         attempt, 'simulation', config['timeout_seconds'], cancel=cancel,
                         contribution=row['id'], primaries=config['primaries_per_job'])
         manifest['accounting'] = rt.validate_simulation_log(
             log, campaign['identity']['effective_environment'], config['primaries_per_job'])
         roots = list((attempt/'outfiles_V2').glob('*.root'))
-        require(len(roots) == 1 and roots[0].name in ('raw.root', 'raw_t0.root') and
-                roots[0].stat().st_size > 0, 'Expected one nonempty serial/single-worker raw file')
-        manifest.update(raw_path=str(roots[0].relative_to(attempt)),
-                        generated_primaries=manifest['accounting']['GeneratedPrimaries'], status='complete')
+        mode = config.get('output_mode','raw')
+        require(len(roots) == 1 and roots[0].name in (mode+'.root', mode+'_t0.root') and
+                roots[0].stat().st_size > 0, 'Expected one nonempty serial/single-worker output file')
+        manifest['data_path' if manifest['schema_version']>=3 else 'raw_path'] = str(roots[0].relative_to(attempt))
+        manifest.update(generated_primaries=manifest['accounting']['GeneratedPrimaries'], status='complete')
     except KeyboardInterrupt:
         manifest.update(status='interrupted', error='Interrupted; repeat command to resume')
         raise
@@ -159,6 +164,7 @@ def schedule_jobs(output, rows, config, campaign, matrix, simulation, jobs=1, re
 
 def run(args):
     config = rt.load_config(args.config)
+    config.update(output_mode=args.output_mode, output_schema_version=1)
     if args.mode:
         config.update(mode=args.mode, primaries_per_job=2 if args.mode == 'smoke' else 10_000_000)
     if args.primaries is not None:
@@ -205,7 +211,7 @@ def run(args):
         path = output/'campaign.json'
         if path.exists():
             campaign = rt.read(path)
-            require(campaign['schema_version'] == 2 and campaign['fingerprint'] == fingerprint and
+            require(campaign['schema_version'] == 3 and campaign['fingerprint'] == fingerprint and
                     campaign['identity'] == identity, 'Campaign identity changed; use a new output directory')
         else:
             require(not (output/'jobs').exists(), 'Orphan jobs without campaign manifest')
@@ -225,7 +231,7 @@ def run(args):
                     destination = output/'source'/name
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(rt.REPO/name, destination)
-            campaign = dict(schema_version=2, stage='simulation', fingerprint=fingerprint, identity=identity,
+            campaign = dict(schema_version=3, stage='simulation', fingerprint=fingerprint, identity=identity,
                             quantities=quantities, created_unix=time.time(), limitations=rt.LIMITATIONS,
                             status='preflight', coverage='0/26', scientific_validity='unvalidated',
                             job_records={r['id']: dict(status='not_started') for r in matrix['contributions']},
@@ -256,7 +262,7 @@ def run(args):
             update_campaign(output, campaign, matrix)
         from study.campaign import validate_campaign
         jobs = validate_campaign(output, allow_partial=True)
-        print(f"Raw campaign coverage {campaign['coverage']}; offline structural validation still required")
+        print(f"Campaign coverage {campaign['coverage']}; offline structural validation still required")
         if args.archive:
             from study.archive import package
             print('Archive: '+str(package(output)))
@@ -280,6 +286,8 @@ def parser():
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')
+    p.add_argument('--output-mode', choices=('raw','compact','both'), default='raw',
+                   help='Stored representation; changing mode requires a new campaign')
     p.add_argument('--jobs', type=positive_integer, default=1,
                    help='Maximum concurrent contributions (default: 1); each Geant4 process uses one worker')
     p.add_argument('--mode', choices=('smoke', 'production'), help='Optional label/default count; --primaries overrides count')

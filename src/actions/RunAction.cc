@@ -39,6 +39,7 @@
 #include "cygno/geometry/DetectorConstruction.hh"
 #include "BuildInfo.hh"
 #include "cygno/output/HitOutput.hh"
+#include "cygno/output/CompactOutput.hh"
 #include "G4Exception.hh"
 #include <filesystem>
 #include "G4UnitsTable.hh"
@@ -63,8 +64,10 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
   // /output/OutFile supplies a basename, not a directory. The fixed output
   // directory is created relative to the process working directory.
   fOutFileName="outfiles_V2";
-  cygno::hits::Book(); // once per analysis manager; CloseFile resets rows, not booking
-  // Keep Hits unchanged. Each worker file carries one independent identity row.
+  // Book once per analysis manager; CloseFile resets rows, not booking.
+  if (cygno::output::RawEnabled()) cygno::hits::Book();
+  else G4AnalysisManager::Instance()->SetFirstNtupleId(1);
+  // Each worker file carries one independent scientific identity row.
   // The MT master has no events/output; do not create a metadata-only master file.
   if (fPrimary) {
     auto* manager=G4AnalysisManager::Instance();
@@ -78,6 +81,14 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
     for (const auto* name : {"RunID", "RequestedEvents", "GeneratedPrimaries", "ProcessedEvents", "AbortedEvents"})
       manager->CreateNtupleIColumn(accounting,name);
     manager->FinishNtuple(accounting);
+    const auto format=manager->CreateNtuple("OutputMetadata", "Storage contract, separate from scientific identity");
+    if (format!=3) G4Exception("RunAction", "CYGNO_SCHEMA", FatalException, "Unexpected output metadata ID");
+    manager->CreateNtupleSColumn(format,"OutputFormat");
+    manager->CreateNtupleIColumn(format,"OutputSchemaVersion");
+    manager->CreateNtupleSColumn(format,"TimingDefinition");
+    manager->CreateNtupleSColumn(format,"CompactProcessingVersion");
+    manager->FinishNtuple(format);
+    if (cygno::output::CompactEnabled()) cygno::output::BookCompact();
   }
 }
 
@@ -130,6 +141,11 @@ void RunAction::BeginOfRunAction(const G4Run*)
     analysisManager->FillNtupleSColumn(1,2,"code-compatible");
     analysisManager->FillNtupleSColumn(1,3,"historical");
     analysisManager->AddNtupleRow(1);
+    analysisManager->FillNtupleSColumn(3,0,cygno::output::Mode());
+    analysisManager->FillNtupleIColumn(3,1,cygno::output::schemaVersion);
+    analysisManager->FillNtupleSColumn(3,2,cygno::output::timingDefinition);
+    analysisManager->FillNtupleSColumn(3,3,cygno::output::processingVersion);
+    analysisManager->AddNtupleRow(3);
   }
 
 

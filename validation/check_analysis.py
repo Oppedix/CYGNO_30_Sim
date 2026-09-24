@@ -17,7 +17,7 @@ for name in ('PlotNormalizedSpectra.cpp', 'PlotNormalizedSpectra_single.cpp',
              'PlotNormalizedSpectra_GEMchain.cpp', 'PlotSpectrum.C'):
     executable = (args.build_directory / (Path(name).stem + '_check')).resolve()
     subprocess.run(['c++', '-std=c++17',
-                    f'-DCYGNO_ANALYSIS_SOURCE="{repo / "analysis" / name}"',
+                    f'-DCYGNO_ANALYSIS_SOURCE="{repo / "analysis/reference_cpp" / name}"',
                     '-I'+str(args.build_directory.parents[1]/'generated'),
                     str(repo / 'validation/analysis_geometry.cc'), '-o', str(executable),
                     *flags], check=True)

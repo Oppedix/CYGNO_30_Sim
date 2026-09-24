@@ -16,6 +16,9 @@ def inside(root, name):
 
 def validate_snapshots(output, campaign):
     identity = campaign['identity']
+    if campaign['schema_version']==3:
+        require(identity['config'].get('output_mode') in ('raw','compact','both') and
+                identity['config'].get('output_schema_version')==1, 'Invalid output contract')
     require(campaign['fingerprint'] == rt.object_digest(identity), 'Campaign fingerprint mismatch')
     require(set(campaign['snapshots']) == {'config.json', 'matrix.json', 'geometry.json', 'quantities.tsv'},
             'Missing campaign snapshots')
@@ -81,15 +84,33 @@ def validate_job(output, row, campaign):
         campaign['identity']['effective_environment'], config['primaries_per_job'])
     require(job['accounting'] == accounting and job['generated_primaries'] == accounting['GeneratedPrimaries'],
             'Manifest/log accounting mismatch')
-    raw = inside(attempt, job['raw_path'])
-    require(raw.name in ('raw.root', 'raw_t0.root') and raw.stat().st_size > 0 and
-            list((attempt/'outfiles_V2').glob('*.root')) == [raw], 'Invalid raw output')
-    return job, raw
+    if campaign['schema_version']==3:
+        mode=config['output_mode']
+        require(mode in ('raw','compact','both') and config['output_schema_version']==1,
+                'Invalid campaign output contract')
+        require(job['schema_version']==3 and job['output_mode']==mode and job['output_schema_version']==1,
+                'Job output contract mismatch')
+        command=receipt['command']
+        require(command.count('--output-mode')==1 and command.index('--output-mode')+1<len(command) and
+                command[command.index('--output-mode')+1]==mode,
+                'Output mode receipt mismatch')
+        require(job['parity_status']==('pending-stage-b' if mode=='both' else 'not-applicable'),
+                'Invalid parity validation status')
+        data=inside(attempt,job['data_path'])
+    else:
+        require(job['schema_version']==2 and job.get('output_mode','raw')=='raw' and
+                job.get('output_schema_version',0)==0 and 'output_mode' not in config,
+                'Invalid legacy job schema/output contract')
+        mode='raw'
+        data=inside(attempt,job['raw_path'])
+    require(data.name in (mode+'.root',mode+'_t0.root') and data.stat().st_size>0 and
+            list((attempt/'outfiles_V2').glob('*.root'))==[data], 'Invalid simulation output')
+    return job, data
 
 
 def validate_campaign(output, allow_partial=False):
     campaign = rt.read(output/'campaign.json')
-    require(campaign['schema_version'] == 2 and campaign['stage'] == 'simulation', 'Not a stage A campaign')
+    require(campaign['schema_version'] in (2,3) and campaign['stage'] == 'simulation', 'Not a stage A campaign')
     validate_snapshots(output, campaign)
     validate_preflight(output, campaign)
     matrix = read_matrix(output/'matrix.json')

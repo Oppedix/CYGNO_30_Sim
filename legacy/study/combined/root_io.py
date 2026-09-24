@@ -1,7 +1,7 @@
 """Small ROOT validation/export adapter; no simulation or physics assumptions."""
 import math
 from pathlib import Path
-from .source_matrix import require, LAYOUT_MODULE_COUNTS
+from study.source_matrix import require, LAYOUT_MODULE_COUNTS
 
 
 def root_file(path):

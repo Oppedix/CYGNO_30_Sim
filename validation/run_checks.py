@@ -12,6 +12,8 @@ from pathlib import Path
 repo=Path(__file__).resolve().parents[1]
 mode=sys.argv[1]; build=Path(sys.argv[2]).resolve()
 root=build/'validation-results'; root.mkdir(exist_ok=True)
+multithreaded=(build/'validation/multithreaded.txt').read_text().strip()=='ON'
+suffix='_t0' if multithreaded else ''
 
 def run(args, directory, log):
     with (directory/log).open('w') as out:
@@ -19,9 +21,9 @@ def run(args, directory, log):
     if result.returncode: raise RuntimeError(f'{args[0]} failed: {directory/log}')
     return (directory/log).read_text()
 
-def transport(case, directory, workers=1, macro=None):
+def transport(case, directory, workers=1, macro=None, output_mode='raw'):
     directory.mkdir(parents=True,exist_ok=True)
-    log=run([build/'rdecay01', macro or repo/'validation/macros'/f'{case}.mac',workers],directory,'run.log')
+    log=run([build/'rdecay01', macro or repo/'validation/macros'/f'{case}.mac',workers,'--output-mode',output_mode],directory,'run.log')
     assert 'COMMAND NOT FOUND' not in log and '***** Illegal' not in log and 'FatalException' not in log, directory
     return log
 
@@ -88,7 +90,7 @@ elif mode=='layouts':
     # Compare an explicit current-profile run with the backward-compatible default.
     directory=out/'default'; directory.mkdir()
     run([build/'rdecay01',repo/'validation/macros/smoke.mac'],directory,'smoke.log')
-    raw='outfiles_V2/cleanup_smoke_t0.root'
+    raw=f'outfiles_V2/cleanup_smoke{suffix}.root'
     assert read_hits(directory/raw)==read_hits(out/profiles[0]/raw)
     # Misspellings/malformed options must never launch a different layout/job.
     for args in [ ['--layout','25x3'], ['--layout'], ['--unknown'],
@@ -103,6 +105,9 @@ elif mode=='transport':
     run([build/'validation/geometry_audit',out/'placements.tsv'],out,'audit.log')
     results={}
     for case,events,workers in [('smoke',20,1),('chain',40,1),('partial_chain',40,1),('stop_chain',40,1),('threads',40,2)]:
+        if workers>1 and not multithreaded:
+            print('SKIP: multi-worker case requires a multithreaded Geant4 build')
+            continue
         directory=out/case
         log=transport('chain' if case=='threads' else case,directory,workers)
         primary='Po212' if case=='smoke' else 'Bi211'
@@ -116,23 +121,75 @@ elif mode=='transport':
         assert sum(accounting(path,events) for path in files)==events
         from compare_hits import read_hits
         results[case]={p.name:len(read_hits(p)[1]) for p in files}
-    # Same seeds and separate filenames in two runs: no extra ntuples, stale rows,
-    # or reset event IDs leaking into the next run's tree.
-    multi=out/'multi';multi.mkdir()
-    text=(repo/'validation/macros/smoke.mac').read_text()
-    macro=multi/'multi.mac'
-    macro.write_text(text.replace('cleanup_smoke','first')+'\n/random/setSeeds 12345 67890\n/output/OutFile second\n/run/beamOn 10\n')
-    log=transport('smoke',multi,macro=macro)
+    # Each output mode must reset rows, group indices, tracks and accounting
+    # between runs. Use production pure readers with PyROOT-extracted records:
+    # these CTest checks still need no uproot/numpy installation.
     import ROOT
-    for name in ('first','second'):
-        f=ROOT.TFile.Open(str(multi/'outfiles_V2'/f'{name}_t0.root'))
-        assert [k.GetName() for k in f.GetListOfKeys()]==['Hits','RunMetadata','RunAccounting']
-        check_identity(multi/'outfiles_V2'/f'{name}_t0.root','cygno-5x5x3-v1')
-        f.Close()
-        assert accounting(multi/'outfiles_V2'/f'{name}_t0.root',20 if name=='first' else 10,0 if name=='first' else 1)==(20 if name=='first' else 10)
-        check(str(out/"placements.tsv"),20 if name=="first" else 10,[str(multi/"outfiles_V2"/f"{name}_t0.root")])
-        if name=="first": assert read_hits(multi/"outfiles_V2"/f"{name}_t0.root")==read_hits(out/"smoke/outfiles_V2/cleanup_smoke_t0.root")
-    results['multiple_runs']='first run exactly matches fresh process; both have one valid Hits tree with reset event IDs; solid RNG continues across runs'
+    sys.path.insert(0,str(repo))
+    from analysis.compact.io import SCHEMAS
+    from analysis.compact.preprocess import reconstruct
+    from analysis.raw.preprocess import groups
+    from analysis.common.io import TIMING_DEFINITION, PROCESSING_VERSION
+
+    def records(tree):
+        leaves=list(tree.GetListOfLeaves())
+        result=[]
+        for entry in range(tree.GetEntries()):
+            tree.GetEntry(entry)
+            result.append({leaf.GetName(): leaf.GetValueString() if leaf.GetTypeName()=='Char_t'
+                else int(leaf.GetValue()) if leaf.GetTypeName()=='Int_t' else leaf.GetValue()
+                for leaf in leaves})
+        return result
+
+    def raw_groups(path):
+        file=ROOT.TFile.Open(str(path))
+        rows=records(file.Get('Hits'));file.Close()
+        tracks=[]
+        canonical=list(groups([{key:[row[key] for row in rows] for key in rows[0]}],tracks.append)) if rows else []
+        return canonical,tracks
+
+    baseline=out/f'smoke/outfiles_V2/cleanup_smoke{suffix}.root'
+    baseline_groups,baseline_tracks=raw_groups(baseline)
+    for output_mode in ('raw','compact','both'):
+        multi=out/('multi-'+output_mode);multi.mkdir()
+        text=(repo/'validation/macros/smoke.mac').read_text()
+        macro=multi/'multi.mac'
+        macro.write_text(text.replace('cleanup_smoke','first')+
+            '\n/random/setSeeds 12345 67890\n/output/OutFile second\n/run/beamOn 10\n')
+        transport('smoke',multi,macro=macro,output_mode=output_mode)
+        for name in ('first','second'):
+            path=multi/'outfiles_V2'/f'{name}{suffix}.root'
+            requested=20 if name=='first' else 10
+            file=ROOT.TFile.Open(str(path))
+            expected={'RunMetadata','RunAccounting','OutputMetadata'}
+            if output_mode!='compact': expected.add('Hits')
+            if output_mode!='raw': expected.update(SCHEMAS)
+            keys=[key.GetName() for key in file.GetListOfKeys()]
+            assert len(keys)==len(expected) and set(keys)==expected,(output_mode,keys)
+            metadata=records(file.Get('OutputMetadata'))
+            assert metadata==[dict(OutputFormat=output_mode,OutputSchemaVersion=1,
+                TimingDefinition=TIMING_DEFINITION,CompactProcessingVersion=PROCESSING_VERSION)]
+            check_identity(path,'cygno-5x5x3-v1')
+            assert accounting(path,requested,0 if name=='first' else 1)==requested
+            if output_mode!='raw':
+                data={key:records(file.Get(key)) for key in SCHEMAS}
+                for tree,rows in data.items():
+                    assert all(0<=row['EventNumber']<requested for row in rows),(tree,name)
+                    assert [r['EventNumber'] for r in rows]==sorted(r['EventNumber'] for r in rows)
+                canonical,tracks=[],[]
+                for event in range(requested):
+                    g,t=reconstruct(event,{key:[r for r in rows if r['EventNumber']==event]
+                                           for key,rows in data.items()},'cygno-5x5x3-v1')
+                    canonical.extend(g);tracks.extend(t)
+                if name=='first':
+                    assert canonical==baseline_groups and tracks==baseline_tracks
+                if output_mode=='both':
+                    assert (canonical,tracks)==raw_groups(path)
+            file.Close()
+            if output_mode!='compact':
+                check(str(out/'placements.tsv'),requested,[str(path)])
+                if name=='first': assert read_hits(path)==read_hits(baseline)
+        results['multiple_runs_'+output_mode]='first matches fresh transport; second has reset rows, event/group/track keys and accounting'
     (out/'results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 elif mode=='bi212':
     out=Path(tempfile.mkdtemp(prefix='bi212-',dir=root))
