@@ -31,7 +31,8 @@ inline void ValidateIdentity(const FileIdentity& identity) {
   // existing layout, module construction or gas numbering.
   const bool phase6 = identity.geometryHash ==
     "af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79e2e3a8156b2";
-  if (identity.geometryHash != build::geometryHash && !phase6 &&
+  const bool phase6Layout = identity.layout == "legacy-25x3" || identity.layout == "cygno-5x5x3-v1";
+  if (identity.geometryHash != build::geometryHash && !(phase6 && phase6Layout) &&
       !(baseline && identity.layout == "cygno-5x5x3-v1"))
     throw std::runtime_error("File geometry fingerprint does not match a supported geometry");
 }

@@ -19,8 +19,8 @@ runs before grouping.
 Without an explicit output, the processor creates `elab_<basename>` beside the
 input, including when the input has directory components. New raw worker files
 have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
-`DetectorModel` and `SourcePolicy` string leaves. Both `legacy-25x3` and
-`cygno-5x5x3-v1` are supported with `code-compatible` and `historical`. Other detector models are unsupported.
+`DetectorModel` and `SourcePolicy` string leaves. `legacy-25x3`,
+`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `code-compatible` and `historical`. Other detector models are unsupported.
 
 Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
 `CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
@@ -228,8 +228,8 @@ events/year = selected_MC_groups * activity * quantity * 31536000 / generated_pr
 ```
 
 Activity is Table 7.1 Bq/kg with constructed mass in kg, or Bq/piece with constructed
-placement count. All six resistor contributions use 750 pieces in both supported
-layouts. Assays and equilibrium assumptions come from the thesis; quantities come
+placement count. All six resistor contributions use 750 pieces in the two 75-module
+layouts and 770 in `cygno-11x7-v1`. Assays and equilibrium assumptions come from the thesis; quantities come
 from actual code-compatible construction, including its Boolean-solid mass estimate.
 The selected production setting 10^7 comes from the thesis's approximate simulation
 count; it is never substituted for the verified denominator. The implementation uses

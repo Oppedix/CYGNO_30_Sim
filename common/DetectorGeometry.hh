@@ -76,7 +76,7 @@ constexpr Bounds moduleEnvelope{
    SensorOffsetZ()+module.sensorZ/2}
 };
 
-// Baseline current-layout constants. Both profiles use the SAME module above.
+// Baseline current-layout constants. All profiles use the SAME module above.
 // All modules have the same orientation; X/Y retain the 4 mm nominal cathode gap.
 constexpr int modulesX = 5;
 constexpr int modulesY = 5;
@@ -97,25 +97,35 @@ struct ModulePlacement {
   int ix, iy, iz; // zero-based grid indices; legacy has iz=0, Y varies fastest
   Point center;  // millimetres, translated without any rotation
 };
-enum class LayoutId { Current5x5x3, Legacy25x3 };
+enum class LayoutId { Current5x5x3, Legacy25x3, Cygno11x7 };
 inline const char* LayoutName(LayoutId id) {
   switch (id) {
     case LayoutId::Current5x5x3: return "cygno-5x5x3-v1";
     case LayoutId::Legacy25x3: return "legacy-25x3";
+    case LayoutId::Cygno11x7: return "cygno-11x7-v1";
   }
   throw std::invalid_argument("Unknown layout ID");
 }
 inline LayoutId ParseLayoutId(const std::string& name) {
   if (name == "cygno-5x5x3-v1") return LayoutId::Current5x5x3;
   if (name == "legacy-25x3") return LayoutId::Legacy25x3;
+  if (name == "cygno-11x7-v1") return LayoutId::Cygno11x7;
   throw std::invalid_argument("Unknown layout: " + name +
-      ". Choose legacy-25x3 or cygno-5x5x3-v1");
+      ". Choose legacy-25x3, cygno-5x5x3-v1 or cygno-11x7-v1");
 }
 constexpr int ModuleId(int ix, int iy, int iz) { return (ix*modulesY+iy)*modulesZ+iz; }
 inline std::vector<ModulePlacement> BuildModuleLayout(LayoutId id = LayoutId::Current5x5x3) {
   LayoutName(id); // Reject invalid enum values rather than silently using current.
   std::vector<ModulePlacement> layout;
-  layout.reserve(moduleCount);
+  layout.reserve(id == LayoutId::Cygno11x7 ? 77 : moduleCount);
+  if (id == LayoutId::Cygno11x7) {
+    // Single plane, Y fastest. X retains the short module dimension; no rotation.
+    for (int ix=0; ix<11; ++ix)
+      for (int iy=0; iy<7; ++iy)
+        layout.push_back({ix*7+iy, ix,iy,0,
+                          {(ix-5)*modulePitchX,(iy-3)*modulePitchY,0}});
+    return layout;
+  }
   if (id == LayoutId::Legacy25x3) {
     // Samuele 26ddbdb: outer X loop -12..12, inner Y loop -1..1, all Z=0.
     // Gas counter follows this order on +Z first, then on -Z (copies 75..149).
@@ -190,7 +200,7 @@ inline LayoutProfile BuildLayoutProfile(LayoutId id = LayoutId::Current5x5x3) {
   profile.occupiedEnvelope = {
     {centers.min.x+moduleEnvelope.min.x, centers.min.y+moduleEnvelope.min.y, centers.min.z+moduleEnvelope.min.z},
     {centers.max.x+moduleEnvelope.max.x, centers.max.y+moduleEnvelope.max.y, centers.max.z+moduleEnvelope.max.z}};
-  // Both supported layouts are centered and symmetric. Preserve baseline
+  // All supported layouts are centered and symmetric. Preserve baseline
   // arithmetic order for the common shell and World, including optical clearance.
   const Point span{centers.max.x, centers.max.y, centers.max.z};
   profile.vesselOuterHalfSize = {

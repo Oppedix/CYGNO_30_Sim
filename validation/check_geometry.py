@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a 5x5x3 audit against a saved 25x3 audit (standard library only).
+"""Check any supported layout audit against a saved module reference (standard library only).
 
 Validates every module's local component geometry/material signature, layout,
 IDs, names, sensitivity, world/vessel clearance and absence of inter-module
@@ -29,19 +29,21 @@ def local_signature(row, center):
 
 
 def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
-    assert profile in ('cygno-5x5x3-v1', 'legacy-25x3'), profile
+    assert profile in ('cygno-5x5x3-v1', 'legacy-25x3', 'cygno-11x7-v1'), profile
     before, after = read(before_path), read(after_path)
-    assert len(before) == len(after) == 3227
+    count = 77 if profile=='cygno-11x7-v1' else 75
+    assert len(after) == count*43+2
     assert len({r['name'] for r in after}) == len(after), 'Duplicate physical names'
-    assert collections.Counter(r['logical'] for r in before) == collections.Counter(r['logical'] for r in after)
     old_modules = [r for r in before if r['logical']=='Cathode']
     new_modules = {r['copy']:r for r in after if r['logical']=='Cathode'}
-    assert len(old_modules) == len(new_modules) == 75
+    old_count=len(old_modules)
+    assert len(before)==old_count*43+2
+    assert len(new_modules)==count
     # Baseline nearest cathode is unambiguous in XY; its modules had no Z layers.
     old_patterns=collections.defaultdict(collections.Counter)
     for row in before:
         if row['logical'] in ('World','Vessel'): continue
-        cathode=(next(m for m in old_modules if m['copy']==row['copy']%75) if same_layout
+        cathode=(next(m for m in old_modules if m['copy']==row['copy']%old_count) if same_layout
                  else min(old_modules,key=lambda m:(row['x']-m['x'])**2+(row['y']-m['y'])**2))
         center=tuple(cathode[a] for a in 'xyz')
         old_patterns[center][local_signature(row,center)]+=1
@@ -53,7 +55,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
     envelopes={}
     world=next(r for r in after if r['logical']=='World')
     vessel=next(r for r in after if r['logical']=='Vessel')
-    assert set(new_modules) == set(range(75))
+    assert set(new_modules) == set(range(count))
     if profile == 'legacy-25x3':
         # Reference transcribed from Samuele 26ddbdb's placement loops, independent
         # of the C++ profile factory. All legacy cathodes share one Z plane.
@@ -62,6 +64,9 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
         assert len(reference_centers) == 75
         expected_centers = {int(r['module_id']): tuple(float(r[a]) for a in 'xyz') for r in reference_centers}
         expected_vessel, expected_world = (6308,1214,514.4), (7000,1714,1640.65)
+    elif profile == 'cygno-11x7-v1':
+        expected_centers = {m: ((m//7-5)*504, (m%7-3)*804, 0) for m in range(77)}
+        expected_vessel, expected_world = (2780,2822,514.4), (7000,3322,1640.65)
     else:
         expected_centers = {m: ((m//15-2)*504, ((m//3)%5-2)*804, (m%3-1)*2285.3) for m in range(75)}
         expected_vessel, expected_world = (1268,2018,2799.7), (7000,2518,3925.95)
@@ -80,7 +85,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
         hi=[row[a]+row[a+'max'] for a in 'xyz']
         assert all(world[a+'min'] < lo[i] and hi[i] < world[a+'max'] for i,a in enumerate('xyz')), row['name']
         if row['logical']=='Vessel': continue
-        module_id=row['copy']%75
+        module_id=row['copy']%count
         center=tuple(new_modules[module_id][a] for a in 'xyz')
         patterns[module_id][local_signature(row,center)]+=1
         for i in range(3):
@@ -95,18 +100,26 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
             assert inside, ('Drift/GEM/cage component outside vessel', row['name'])
         if row['sensitive']=='1':
             assert row['logical']=='GasVolume'
+            assert row['copy'] not in gas, 'Duplicate gas copy'
             gas.add(row['copy'])
             assert all(math.isclose(row[a],center[i],abs_tol=1e-9) for i,a in enumerate('xy'))
-            side=row['copy']//75
+            side=row['copy']//count
             assert math.isclose(row['z']-center[2],250.25 if side==0 else -250.25,abs_tol=1e-9)
-    assert gas == set(range(150))
+    assert gas == set(range(2*count))
     for module_id,pattern in patterns.items():
         assert pattern == reference, (module_id, pattern-reference, reference-pattern)
     for a,b in itertools.combinations(envelopes,2):
         lo1,hi1=envelopes[a]; lo2,hi2=envelopes[b]
         assert any(hi1[i] < lo2[i] or hi2[i] < lo1[i] for i in range(3)), (a,b)
-    lo,hi=envelopes[37]
-    print('75 modules, 150 gas volumes, 3,227 unique placements: PASS')
+    assert len({tuple(r[a] for a in 'xyz') for r in new_modules.values()})==count
+    if profile == 'cygno-11x7-v1':
+        occupied = ([min(e[0][i] for e in envelopes.values()) for i in range(3)],
+                    [max(e[1][i] for e in envelopes.values()) for i in range(3)])
+        for actual, expected in zip(occupied, ((-2770.145,-2812.1275,-1140.650),(2770.075,2812.660,1140.650))):
+            assert all(math.isclose(a,b,abs_tol=1e-9) for a,b in zip(actual,expected))
+    center_id=next(m for m,r in new_modules.items() if all(r[a]==0 for a in 'xyz'))
+    lo,hi=envelopes[center_id]
+    print(f'{count} modules, {2*count} gas volumes, {len(after):,} unique placements: PASS')
     print('All 43 local placements per module, solid descriptions and material assignments match baseline.')
     print('Module envelope [mm]:',lo,hi)
     print('No inter-module envelope intersections, vessel crossings or world protrusions.')

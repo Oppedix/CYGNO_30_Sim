@@ -14,7 +14,7 @@ ROOT.gROOT.SetBatch(True)
 build=Path(sys.argv[1]).resolve()
 repo=Path(__file__).resolve().parents[1]
 out=Path(tempfile.mkdtemp(prefix='layout-analysis-',dir=build/'validation-results'))
-current='cygno-5x5x3-v1'; legacy='legacy-25x3'
+current='cygno-5x5x3-v1'; legacy='legacy-25x3'; planar='cygno-11x7-v1'
 fingerprint=hashlib.sha256((repo/'common/DetectorGeometry.hh').read_bytes()).hexdigest()
 baseline='d0e9f189266be3f0a608bba332b4fe5e5f17d9c7c2c6ef4bd95f53408f73c039'
 processor=build/'analysis/SimpleProcessEvents'
@@ -49,7 +49,7 @@ def raw(name,layout):
         fields[key]=array.array('b',[0]*256) if kind=='Char_t' else array.array('i' if kind=='Int_t' else 'd',[0])
         tree.Branch(key,fields[key],key+'/'+{'Char_t':'C','Int_t':'I','Double_t':'D'}[kind])
     # Independent module-0 centers, not the shared origin/module 37.
-    center=(-6048.,-804.,250.25) if layout==legacy else (-1008.,-1608.,-2285.30+250.25)
+    center=(-2520.,-2412.,250.25) if layout==planar else (-6048.,-804.,250.25) if layout==legacy else (-1008.,-1608.,-2285.30+250.25)
     for event,offset in enumerate((0.,230.,231.)):
         values=dict(EventNumber=event,ParticleName='e-',ParticleID=1,ParticleTag=0,ParentID=0,
                     x_hits=center[0]+offset,y_hits=center[1],z_hits=center[2],EnergyDeposit=.02,
@@ -72,7 +72,7 @@ def config(path,layout,inputs,model='code-compatible',policy='historical'):
     return path
 
 processed={}
-for layout in (current,legacy):
+for layout in (current,legacy,planar):
     source=raw(layout,layout);metadata(source,layout)
     destination=out/('elab_'+layout+'.root')
     run([processor,source,destination]);identity(destination,layout);processed[layout]=destination
@@ -111,6 +111,11 @@ for case,kw in [('layout',dict(layout='unknown')),('model',dict(model='thesis-7.
     bad=raw('bad_'+case,current);metadata(bad,**(dict(layout=current)|kw))
     run([processor,bad,out/'bad-output.root','--assume-layout',current,'--assume-model','code-compatible'],ok=False)
     assert not (out/'bad-output.root').exists()
+
+# No historical geometry hash can describe the new profile.
+for old_hash in (baseline,'af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79e2e3a8156b2'):
+    old_planar=raw('old_planar',planar);metadata(old_planar,planar,hash_value=old_hash)
+    run([processor,old_planar,out/'bad-output.root'],ok=False)
 
 # Compatibility is deliberately narrow: known old current markers only.
 old=raw('old_markers',current);markers(old,hash_value=baseline)
@@ -155,4 +160,4 @@ for layout,path in processed.items():
     run([executable,path,layout,'thesis-7.3'],ok=False)
     assert result.read_bytes()==before
 for path in (unversioned,conflict): run([executable,path],ok=False)
-print('PASS: both layouts, metadata, assumptions, compatibility, all plotter cuts and pre-output mismatch gates;',out)
+print('PASS: all three layouts, metadata, assumptions, compatibility, all plotter cuts and pre-output mismatch gates;',out)

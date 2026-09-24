@@ -14,11 +14,11 @@ from analysis.common.inputs import canonical_input
 from analysis.common.spectra import accumulate, summarize, scale_for
 
 
-def run(build, output, primaries=30, contribution='GEMsCore_K40'):
+def run(build, output, primaries=30, contribution='GEMsCore_K40', layout='legacy-25x3'):
     require(1<=primaries<=1000,'Diagnostic limited to 1..1000 primaries')
     output.mkdir(parents=True,exist_ok=False)
     row=next(r for r in read_matrix(rt.REPO/'config/study/thesis-table7.1.json')['contributions'] if r['id']==contribution)
-    config=rt.load_config(rt.REPO/'config/study/samuele.json') | dict(primaries_per_job=primaries)
+    config=rt.load_config(rt.REPO/'config/study/samuele.json') | dict(primaries_per_job=primaries,layout=layout)
     rt.invoke([build/'geometry_quantities',output/'quantities.tsv',config['layout'],output/'geometry.json'],
               output,'geometry',120)
     geometry=rt.read(output/'geometry.json')
@@ -55,4 +55,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--build',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--primaries',type=int,default=30)
     p.add_argument('--contribution',default='GEMsCore_K40')
-    a=p.parse_args();run(a.build.resolve(),a.output.resolve(),a.primaries,a.contribution)
+    p.add_argument('--layout',default='legacy-25x3')
+    a=p.parse_args();run(a.build.resolve(),a.output.resolve(),a.primaries,a.contribution,a.layout)

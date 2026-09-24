@@ -80,6 +80,22 @@ class CompactTests(unittest.TestCase):
         with uproot.update(self.path) as f: del f['OutputMetadata']
         with uproot.open(self.path) as f, self.assertRaises(ValueError): compact_header(f,EXPECTED,4)
 
+    def test_layout_specific_gas_limits_and_both_parity(self):
+        for layout, count in [('legacy-25x3',150),('cygno-5x5x3-v1',150),('cygno-11x7-v1',154)]:
+            expected=EXPECTED | dict(layout=layout)
+            geometry=GEOMETRY | dict(gas_centers_mm={str(i):[0]*3 for i in range(count)})
+            with self.subTest(layout=layout):
+                fixture(self.path,expected,records=[dict(VolumeNumber=v) for v in range(count)])
+                with uproot.open(self.path) as f:
+                    self.assertEqual(validate(f,expected,4,geometry,1)['status'],'passed')
+                    _,trees=compact_header(f,expected,4)
+                    result=list(compact_groups(trees,4,layout,1))
+                    self.assertEqual(set(result[0].volumes),set(range(count)))
+                fixture(self.path,expected,records=[dict(VolumeNumber=count)],mode='compact')
+                with uproot.open(self.path) as f:
+                    _,trees=compact_header(f,expected,4)
+                    with self.assertRaises(ValueError): list(compact_groups(trees,4,layout,1))
+
     def test_malformed_relationships(self):
         _,_,original=fixture(self.path,EXPECTED)
         mutations=[
@@ -238,5 +254,7 @@ class TransportTests(unittest.TestCase):
     def test_same_transport(self):
         from validation.compact_transport import run
         with tempfile.TemporaryDirectory() as directory:
-            result=run(Path(os.environ['CYGNO_TRANSPORT_BUILD']).resolve(),Path(directory)/'run')
-            self.assertTrue(result['transport_unchanged'])
+            for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
+                with self.subTest(layout=layout):
+                    result=run(Path(os.environ['CYGNO_TRANSPORT_BUILD']).resolve(),Path(directory)/layout,layout=layout)
+                    self.assertTrue(result['transport_unchanged'])

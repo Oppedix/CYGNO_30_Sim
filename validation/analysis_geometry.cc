@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
   if (argc!=2) return 1;
   std::map<Int_t,TVector3> centers;
   BuildDetectorMap(centers, cygno::geometry::ParseLayoutId(argv[1]));
-  assert(centers.size()==150);
+  assert(centers.size()==2*cygno::geometry::BuildModuleLayout(cygno::geometry::ParseLayoutId(argv[1])).size());
   std::cout << std::setprecision(17);
   for (const auto& entry : centers) {
     const int id=entry.first;

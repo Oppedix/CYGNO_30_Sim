@@ -24,7 +24,7 @@ def check(placements, events, paths):
     with open(placements) as source:
         gas = {int(row["copy"]): row for row in csv.DictReader(source, delimiter="\t")
                if row["sensitive"] == "1"}
-    assert len(gas) == 150
+    assert gas and set(gas) == set(range(len(gas))) and len(gas)%2 == 0
     seen_events = set()
     total_rows = positive_deposits = radioactive_rows = 0
     for path in paths:

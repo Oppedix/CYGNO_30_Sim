@@ -71,10 +71,10 @@ bad=copy.deepcopy(matrix)
 next(r for r in bad['contributions'] if r['id']=='Resistors_U238')['stop_before']=None
 rejects(lambda:validate_matrix(bad))
 
-# Export the actual nine source lists for both profiles, with independently
+# Export the actual nine source lists for all profiles, with independently
 # expected placement counts and analytic vessel mass (copper at 8.96 g/cm3).
 quantities={}
-for layout in ('legacy-25x3','cygno-5x5x3-v1'):
+for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
     path=out/(layout+'.tsv')
     with (out/(layout+'.log')).open('w') as log:
         subprocess.run([str(build/'geometry_quantities'),str(path),layout],check=True,stdout=log,stderr=subprocess.STDOUT)
@@ -82,8 +82,11 @@ for layout in ('legacy-25x3','cygno-5x5x3-v1'):
     q=quantities[layout]
     counts=dict(Cathodes=75,GEMsOuter=450,GEMsCore=450,RingSupports=150,RingStrips=600,
                 Resistors=750,Lens=300,Sensors=300,Vessel=1)
+    if layout=='cygno-11x7-v1':
+        counts=dict(Cathodes=77,GEMsOuter=462,GEMsCore=462,RingSupports=154,RingStrips=616,
+                    Resistors=770,Lens=308,Sensors=308,Vessel=1)
     assert {c:v['pieces'] for c,v in q.items()}==counts
-    full=(12616.,2428.,1028.8) if layout=='legacy-25x3' else (2536.,4036.,5599.4)
+    full=(5560.,5644.,1028.8) if layout=='cygno-11x7-v1' else (12616.,2428.,1028.8) if layout=='legacy-25x3' else (2536.,4036.,5599.4)
     expected_vessel=(math.prod(full)-math.prod(x-10 for x in full))*8.96e-6
     # Boolean GetCubicVolume uses Geant4's deterministic Monte Carlo estimator,
     # not exact box subtraction. This is a 5% diagnostic bound, not a replacement
@@ -92,9 +95,9 @@ for layout in ('legacy-25x3','cygno-5x5x3-v1'):
     assert abs(discrepancy)<.05,(layout,q['Vessel'],expected_vessel)
     print(layout,'constructed vessel kg=',q['Vessel']['mass_kg'],
           'analytic kg=',expected_vessel,'relative difference=',discrepancy)
-    assert math.isclose(q['Resistors']['mass_kg'],750*1.6*.55*3.2*3.97e-6,rel_tol=1e-12)
+    assert math.isclose(q['Resistors']['mass_kg'],counts['Resistors']*1.6*.55*3.2*3.97e-6,rel_tol=1e-12)
     for row in rows:
-        expected_quantity=750 if row['component']=='Resistors' else q[row['component']]['mass_kg']
+        expected_quantity=counts['Resistors'] if row['component']=='Resistors' else q[row['component']]['mass_kg']
         assert quantity_for(row,q)==expected_quantity
     for kwargs in [dict(layout='other'),dict(model='thesis-7.3'),dict(geometry_hash='wrong')]:
         args=dict(layout=layout,model='code-compatible',geometry_hash=fingerprint)|kwargs
@@ -114,7 +117,7 @@ def fixture(layout):
     for key,value in vectors.items(): t.Branch(key,value)
     for i,x in enumerate((0.,231.)):
         event[0]=i
-        for key,value in dict(EDep_Out=.02,VolNnum_Out=37.,X_Vertex=x,Y_Vertex=0.,Z_Vertex=250.25).items():
+        for key,value in dict(EDep_Out=.02,VolNnum_Out=38. if layout=='cygno-11x7-v1' else 37.,X_Vertex=x,Y_Vertex=0.,Z_Vertex=250.25).items():
             vectors[key].clear();vectors[key].push_back(value)
         t.Fill()
     t.Write()

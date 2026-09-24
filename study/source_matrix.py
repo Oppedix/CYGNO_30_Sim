@@ -9,7 +9,7 @@ import math
 from pathlib import Path
 
 # Counts are the Python file-validation contract; C++ derives placement counts.
-LAYOUT_MODULE_COUNTS = {'legacy-25x3': 75, 'cygno-5x5x3-v1': 75}
+LAYOUT_MODULE_COUNTS = {'legacy-25x3': 75, 'cygno-5x5x3-v1': 75, 'cygno-11x7-v1': 77}
 LAYOUTS = set(LAYOUT_MODULE_COUNTS)
 COMPONENTS = {
     'GEMsCore': ('Acrylic', 'GEMs'), 'GEMsOuter': ('EFCu', 'GEMs'),

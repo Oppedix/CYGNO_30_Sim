@@ -352,7 +352,7 @@ void DetectorConstruction::BuildSensitiveGasVolumes()
   auto* solid = new G4Box("GasVolume",d.cathodeX*mm/2,d.cathodeY*mm/2,d.driftLength*mm/2);
   fLogicalGasVolume = new G4LogicalVolume(solid,fMaterials.gas,"GasVolume");
   fLogicalGasVolume->SetVisAttributes(SolidColour(G4Colour(0,0,1,0.2)));
-  // Gas copy = side*75 + module ID. The side is local to each module's cathode.
+  // Gas copy = side*moduleCount + module ID. The side is local to each module's cathode.
   for (G4int side=0; side<2; ++side) {
     for (const auto& module : fModuleLayout) {
       const G4double sign = side == 0 ? 1 : -1;

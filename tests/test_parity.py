@@ -16,9 +16,9 @@ from fixtures import raw_fixture
 
 @unittest.skipUnless(os.environ.get('CYGNO_REFERENCE_BUILD'), 'Set CYGNO_REFERENCE_BUILD for optional C++/ROOT parity')
 class ReferenceParity(unittest.TestCase):
-    def test_both_layouts(self):
+    def test_all_layouts(self):
         build=Path(os.environ['CYGNO_REFERENCE_BUILD']).resolve()
-        for layout in ('legacy-25x3','cygno-5x5x3-v1'):
+        for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
             with self.subTest(layout=layout), tempfile.TemporaryDirectory() as d:
                 folder=Path(d)
                 subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json'],

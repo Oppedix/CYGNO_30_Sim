@@ -1,0 +1,25 @@
+# Planar layout inspection only; copy to an external directory as vis.mac.
+# Show cathode outlines to count unrotated module footprints without occlusion.
+/vis/open TSG_OFFSCREEN
+/vis/viewer/set/autoRefresh false
+/vis/drawVolume
+/vis/geometry/set/visibility Cathode 0 true
+/vis/geometry/set/colour Cathode 0 0.15 0.25 0.55 1
+/vis/geometry/set/forceWireframe Cathode 0 true
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility Vessel 0 false
+/vis/geometry/set/visibility GEMInnerLogical 0 false
+/vis/geometry/set/visibility GasVolume 0 false
+/vis/geometry/set/visibility Lens 0 false
+/vis/geometry/set/visibility Resistor 0 false
+/vis/geometry/set/visibility RingStrip 0 false
+/vis/geometry/set/visibility RingSupport 0 false
+/vis/geometry/set/visibility Sensor 0 false
+/vis/geometry/set/visibility logicGEM 0 false
+/vis/viewer/set/viewpointThetaPhi 0 0
+/vis/viewer/set/style wireframe
+/vis/viewer/set/background white
+/vis/tsg/offscreen/set/size 1200 1200
+/vis/tsg/offscreen/set/format zb_png
+/vis/tsg/offscreen/set/file cygno-11x7-v1.png
+/vis/viewer/flush

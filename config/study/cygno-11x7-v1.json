@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "mode": "production",
+  "layout": "cygno-11x7-v1",
+  "model": "code-compatible",
+  "source_policy": "historical",
+  "primaries_per_job": 10000000,
+  "seed": 12345,
+  "timeout_seconds": 604800,
+  "rdm_threshold_years": 1e+60
+}

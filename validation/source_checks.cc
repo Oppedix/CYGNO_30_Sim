@@ -50,12 +50,17 @@ int main(int argc, char** argv) {
     {"RingStrips",detector->GetRingStripstList()}, {"Resistors",detector->GetResistorList()},
     {"Lens",detector->GetLensList()}, {"Sensors",detector->GetSensorsList()}, {"Vessel",{"Vessel"}}};
   require(detector->GetComponentMasses().size()==sources.size(),"extra mass map keys");
+  const int count=detector->GetLayoutProfile().expectedModuleCount;
+  const std::map<G4String,int> perModule{{"Cathodes",1},{"GEMsOuter",6},{"GEMsCore",6},
+    {"RingSupports",2},{"RingStrips",8},{"Resistors",10},{"Lens",4},{"Sensors",4}};
   int event=0;
   for(const auto& source:sources) {
     require(ui->ApplyCommand("/detector/RadElement "+source.first)==0,"source command");
+    require(source.second.size()==(source.first=="Vessel" ? 1 : count*perModule.at(source.first)),"source count mismatch");
     double mass=0;
     for(const auto& name:source.second) mass+=detector->GetVolumeStored()->GetVolume(name)->GetLogicalVolume()->GetMass();
     require(std::abs(mass-detector->GetComponentMasses().at(source.first))<=1e-12*mass,"component mass mismatch");
+    require(mass>0 && std::isfinite(mass),"invalid constructed mass");
     G4cout<<"MASS_OK "<<source.first<<" "<<mass/CLHEP::kg<<" kg"<<G4endl;
     for(int n=0;n<10;++n) {
       std::stringstream before, expectedState, actualState;

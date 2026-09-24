@@ -85,6 +85,30 @@ Completed contributions remain reusable, and queued contributions remain unstart
 Individual job failures do not stop the remaining selected contributions; they
 are retained until explicitly retried with `--retry-failed`.
 
+## Explicit 11x7 comparison
+
+The additional `cygno-11x7-v1` profile has 11 X columns (short 500 mm module
+side), 7 Y rows (long 800 mm side), and one Z plane: 77 unrotated modules and
+154 gas cells. It preserves the existing module, physics and analysis. The
+principal Samuele configuration and the existing 5x5x3 profile remain unchanged.
+See [layout contracts and comparison dimensions](docs/LAYOUT.md).
+
+Use the separate configuration and fresh campaign directory for a tiny diagnostic:
+
+```sh
+python3 study/simulate.py \
+  --config config/study/cygno-11x7-v1.json \
+  --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/11x7-smoke" \
+  --mode smoke --primaries 2 --jobs 8 --output-mode both --archive
+```
+
+The four-case decay preflight remains mandatory. Table 7.1 activities are unchanged;
+normalization uses the actual 77-module constructed masses/piece counts. This
+single-plane topology resembles Samuele's 25x3 layout, but its different module
+count and vessel/source quantities imply different total backgrounds.
+For local viewing: `(cd "$CYGNO_BUILD" && ./rdecay01 --layout cygno-11x7-v1)`.
+
 ## Output modes and canonical analysis
 
 Raw remains the default. Compact removes repeated sensitive-step rows while
@@ -182,7 +206,7 @@ cmake --build "$REFERENCE_BUILD" --target SimpleProcessEvents \
   PlotNormalizedSpectra geometry_quantities --parallel
 ```
 
-The parity test uses both layouts, all 26 scales/categories, grouping, chunk/EOF
+The parity test uses all three layouts, all 26 scales/categories, grouping, chunk/EOF
 boundaries, exact windows, histogram edges/flows and MC variances. Linux still
 needs a fresh 4/4 preflight and 26/26 smoke after this refactor, followed by
 archive/offline validation and a controlled reference comparison before 1M jobs.

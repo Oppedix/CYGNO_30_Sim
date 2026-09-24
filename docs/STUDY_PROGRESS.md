@@ -1,5 +1,8 @@
 # Background-study finalization
 
+> Layout update (2026-09-24): `cygno-11x7-v1` is now implemented; see
+> [current layout contracts](LAYOUT.md). The dated findings below describe the earlier two-profile baseline.
+
 > Current workflow: [two-stage simulation/offline analysis](BACKGROUND_STUDY.md).
 > The earlier macOS PART122 results below remain historical evidence. The operator
 > now reports a Linux x86_64 private Geant4 11.3.1 serial environment passing all

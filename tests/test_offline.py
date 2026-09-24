@@ -31,6 +31,15 @@ class ReaderTests(unittest.TestCase):
             raw_fixture(self.path, self.expected, rows)
             self.assertEqual(inspect_raw(self.path, self.expected, 2, 1)['hit_rows'], len(rows))
 
+    def test_layout_specific_gas_limits(self):
+        for layout, count in [('legacy-25x3',150),('cygno-5x5x3-v1',150),('cygno-11x7-v1',154)]:
+            expected=self.expected | dict(layout=layout)
+            with self.subTest(layout=layout):
+                raw_fixture(self.path,expected,[dict(VolumeNumber=v) for v in range(count)])
+                self.assertEqual(inspect_raw(self.path,expected,2,1)['hit_rows'],count)
+                raw_fixture(self.path,expected,[dict(VolumeNumber=count)])
+                with self.assertRaises(ValueError): inspect_raw(self.path,expected,2,1)
+
     def test_bad_data(self):
         for row in [dict(EventNumber=-1), dict(EventNumber=2), dict(VolumeNumber=-1), dict(VolumeNumber=150),
                     dict(EnergyDeposit=float('nan')), dict(x_hits=float('inf'))]:

@@ -1,11 +1,12 @@
 # Detector layout profiles
 
-The principal study profile is **legacy-25x3**. Two runtime profiles use the same **code-compatible** module internals and
+The principal study profile is **legacy-25x3**. Three runtime profiles use the same **code-compatible** module internals and
 historical source sampler. Select a profile before geometry construction:
 
 ```sh
 /path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout legacy-25x3
 /path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout cygno-5x5x3-v1
+/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout cygno-11x7-v1
 ```
 
 The option also works before the macro. Omitting it retains `cygno-5x5x3-v1`;
@@ -13,7 +14,7 @@ unknown or duplicate layout options fail before initialization. `--help` prints
 usage. With no macro the viewer uses the selected layout. Use separate working
 directories for runs and retain the command and log: the application prints
 layout, detector model and source policy at startup. The raw Hits schema is
-unchanged. Processing and all plotters reconstruct either profile from validated
+unchanged. Processing and all plotters reconstruct each profile from validated
 layout/model metadata; conflicting assumptions are rejected.
 
 `common/DetectorGeometry.hh` provides `LayoutId`, `ParseLayoutId`,
@@ -30,7 +31,7 @@ The unqualified constants and no-argument helpers retain the current profile.
 loops: outer `i=-12..12`, inner `j=-1..1`, center `(i*504,j*804,0)` mm and module
 ID `3*(i+12)+(j+1)`. Thus all 75 cathodes share Z=0; each module contains its
 own positive/negative drift regions. Gas copy `side*75+moduleId` reproduces the
-historical gas counter exactly. Both profiles retain the current unique component
+historical gas counter exactly. All profiles retain the current unique component
 copy/name scheme. Samuele's repeated cathode copy `i+37` is not reused; see the
 [exact mapping](history/BACKGROUND_EXPERIMENT.md#axis-1-module-layout) and independent
 [75-center fixture](../validation/references/legacy-25x3-centers.tsv).
@@ -44,9 +45,73 @@ the optics sit outside, with no wall crossings. Vessel mass changes with layout
 and must be read from the constructed geometry for normalization.
 
 Module IDs preserve ordering/side semantics, not world coordinates, across
-layouts. Both have module 37 at the origin. No sampler RNG draws or internal
+the two 75-module layouts. They both have module 37 at the origin; the 11x7 profile has module 38. No sampler RNG draws or internal
 dimensions changed. This does not promise trajectory equality to Samuele's
 historical executable.
+
+## Planar 11 × 7 comparison profile
+
+`cygno-11x7-v1` deliberately contains **77 modules** in one Z plane. The
+unrotated 500 mm short module dimension is along X, and the 800 mm long dimension
+is along Y. Pitches remain 504 mm and 804 mm respectively. For `ix=0..10`,
+`iy=0..6`, `iz=0`:
+
+```text
+moduleId = ix*7 + iy                     # 0..76, Y fastest
+center = ((ix-5)*504, (iy-3)*804, 0) mm
+central module = 38 at (0,0,0)
+gasCopy = side*77 + moduleId             # side 0: 0..76; side 1: 77..153
+gas center = module center + (0,0,side == 0 ? 250.25 : -250.25) mm
+```
+
+There are 154 gas cells and `77*43 + World + Vessel = 3313` physical placements.
+The complete occupied bounds are **(-2770.145,-2812.1275,-1140.650)** to
+**(2770.075,2812.6600,1140.650)** mm. The occupied XY aspect ratio Y/X is about
+1.0153. These values follow the existing envelopes and vessel/World formulas;
+they are independent numerical test contracts, not production overrides.
+
+| Layout | Grid X × Y × Z | Modules / gas cells | Occupied full spans (mm) | Vessel outer full size (mm) | World full size (mm) |
+| --- | --- | --- | --- | --- | --- |
+| legacy-25x3 | 25 × 3 × 1 | 75 / 150 | 12596.220 × 2408.7875 × 2281.300 | 12616 × 2428 × 1028.8 | 14000 × 3428 × 3281.3 |
+| cygno-5x5x3-v1 | 5 × 5 × 3 | 75 / 150 | 2516.220 × 4016.7875 × 6851.900 | 2536 × 4036 × 5599.4 | 14000 × 5036 × 7851.9 |
+| cygno-11x7-v1 | 11 × 7 × 1 | 77 / 154 | 5540.220 × 5624.7875 × 2281.300 | 5560 × 5644 × 1028.8 | 14000 × 6644 × 3281.3 |
+
+The new vessel half-size is `(2780,2822,514.4)` mm; World half-size is
+`(7000,3322,1640.65)` mm. All envelopes are disjoint, non-optical components
+are in the vessel cavity, no components cross the wall, and all fit inside World.
+Inherited overlaps inside individual modules remain unchanged.
+
+This topology is very similar to Samuele's 25 × 3 × 1: both use one plane,
+identical module orientation, local/camera geometry, pitches and source sampler,
+with no module rotations. They are **not scientifically identical**. There are
+77 versus 75 modules, 154 versus 150 gas cells, component copy strides of 77
+versus 75, and different vessel dimensions/mass, component quantities and source
+placement populations. Different normalized total backgrounds are expected.
+
+Use [cygno-11x7-v1.json](../config/study/cygno-11x7-v1.json) for this comparison.
+[samuele.json](../config/study/samuele.json) remains the principal legacy reference.
+Both use the unchanged Table 7.1 activities, model, sampler policy, RDM threshold
+and canonical primary default. Masses and piece counts come from actual
+`geometry_quantities` construction, never historical normalization constants.
+Source counts are Cathodes 77, GEMsOuter 462, GEMsCore 462, RingSupports 154,
+RingStrips 616, Resistors 770, Lens 308, Sensors 308 and Vessel 1.
+
+Python raw, compact and both analysis consume the campaign's 154 exported gas
+centers and constructed quantities. Gas copy 153 is valid and 154 is invalid;
+150 remains invalid in either 75-module profile. No analysis assumes that module
+37 is central. The three notebooks retain their intentionally synthetic legacy
+teaching fixtures; the common walkthrough's real-campaign branch is tested with
+constructed 11x7 geometry/quantities and synthetic both-mode events at cell 153.
+This software test does not replace the real decay preflight.
+
+The normal viewer is `(cd "$CYGNO_BUILD" && ./rdecay01 --layout cygno-11x7-v1)`.
+For a face-on inspection, execute `/vis/viewer/set/viewpointThetaPhi 0 0` in its
+UI and hide World/Vessel if needed. The optional
+[offscreen macro](../config/vis-11x7-offscreen.mac) provides these visibility
+settings without altering geometry. Copy it as `vis.mac` to a separate working
+directory, then launch the executable there without a batch macro. Inspect 11 X
+columns, 7 Y rows, one Z plane, a nearly square footprint, consistent orientations,
+and no missing/duplicate modules. A human viewer review remains a release gate.
 
 ## Current 5 × 5 × 3 profile (unchanged numerical baseline)
 
@@ -97,7 +162,8 @@ physical volumes, including 150 sensitive placements.
 ## Components and IDs
 
 Every module component passes through `DetectorConstruction::PlaceInModule`.
-A component's copy number is `localCopy*75 + moduleId`; its physical name is
+A component's copy number is `localCopy*moduleCount + moduleId` (stride 75 in
+the two existing profiles, 77 in 11x7); its physical name is
 `Prefix_copy`. Names are unique across the physical-volume store. Copy numbers
 are unique within a family, not across families. World and Vessel remain
 singletons with copy 0. Logical and solid names retain their existing definitions.
@@ -167,7 +233,7 @@ ROOT vectors. All four plotting sources use that adapter, including the exact
 0.25 mm cathode offset. There is no separate 3 mm detector-gap parameter anymore.
 The original 20 mm fiducial inset and all other cuts are unchanged.
 
-Select the two supported layouts with `--layout`; do not edit module counts to
+Select the three supported layouts with `--layout`; do not edit module counts to
 switch studies. New profiles would need their own explicit ID and validation.
 The scheme handles translations only; adding rotations requires transforming
 both local component coordinates and source sampling consistently.
@@ -175,8 +241,7 @@ both local component coordinates and source sampling consistently.
 The envelope formulas describe the current internals. If internals are explicitly
 changed in a later study, recompute the envelope and update its checks too. Compile-
 time assertions reject pitches smaller than these bounds. Validation expectations
-currently assert the requested 75 modules and 150 gas cells; update those only
-when intentionally changing the study configuration.
+assert independent 75/150 and 77/154 contracts for their respective profiles.
 
 `VolumeNumber` has no layout version encoded. A separate `RunMetadata` tree now
 identifies layout, model and source policy without changing any Hits branches.
@@ -189,8 +254,8 @@ module-local Z.
 
 ## Adding a future layout
 
-No 11x7 profile is implemented here. Add its ID and ordered centers in the shared
-layout provider, keeping a single detector constructor and analysis adapter.
+Add future IDs and ordered centers in the shared layout provider, keeping a
+single detector constructor and analysis adapter.
 The profile count is derived from its placements; construction copy strides and
 the ROOT map consume that count. Processing derives the valid gas count from the
 selected profile. Update the Python `LAYOUT_MODULE_COUNTS` validation contract and
@@ -199,6 +264,9 @@ the exact `side*75 + moduleId` numbering. Default no-argument helpers retain the
 75-module compatibility layout. Rotations would require an explicit transform
 contract; do not silently reinterpret centers or copy IDs as orientations.
 
-The Phase 1–6 geometry-header fingerprint remains accepted for either supported
-layout: the finalization changed count plumbing only, with the same placement
+The Phase 1–6 geometry-header fingerprint remains accepted only for the two original
+75-module layouts: the finalization changed count plumbing only, with the same placement
 snapshots, geometry, materials and local offsets. Unsupported model IDs are rejected.
+
+The 11x7 addition produces a new geometry-header hash. No historical hash is
+accepted as the identity of this new profile.

@@ -21,21 +21,22 @@ for name in ('PlotNormalizedSpectra.cpp', 'PlotNormalizedSpectra_single.cpp',
                     '-I'+str(args.build_directory.parents[1]/'generated'),
                     str(repo / 'validation/analysis_geometry.cc'), '-o', str(executable),
                     *flags], check=True)
-    for layout in ('cygno-5x5x3-v1', 'legacy-25x3'):
+    for layout in ('cygno-5x5x3-v1', 'legacy-25x3', 'cygno-11x7-v1'):
         placements=args.placements
-        if layout=='legacy-25x3':
-            placements=args.build_directory/'legacy-placements.tsv'
+        if layout!='cygno-5x5x3-v1':
+            placements=args.build_directory/(layout+'-placements.tsv')
             subprocess.run([str(args.build_directory.parents[1]/'validation/geometry_audit'),
                             str(placements),'--layout',layout],check=True,stdout=subprocess.DEVNULL)
         with placements.open() as source:
             gas={int(r['copy']):tuple(float(r[a]) for a in 'xyz')
                  for r in csv.DictReader(source,delimiter='\t') if r['sensitive']=='1'}
-        assert len(gas)==150
+        expected_count = 154 if layout=='cygno-11x7-v1' else 150
+        assert len(gas)==expected_count
         output = subprocess.check_output([str(executable),layout], text=True)
         rows = list(csv.reader(output.splitlines(), delimiter='\t'))
-        assert len(rows) == 150
+        assert len(rows) == expected_count
         for row in rows:
             assert all(abs(float(value)-expected) < 1e-9
                        for value, expected in zip(row[1:], gas[int(row[0])]))
         (args.build_directory/(Path(name).stem+'-'+layout+'.centers.tsv')).write_text(output)
-        print(f'{name}: {layout}: 150 centers match Geant4; unchanged 20 mm fiducial boundaries pass')
+        print(f'{name}: {layout}: {expected_count} centers match Geant4; unchanged 20 mm fiducial boundaries pass')
