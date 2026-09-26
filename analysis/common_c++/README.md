@@ -19,20 +19,26 @@ From the repository root:
 ```bash
 g++ -O3 -std=c++17 -ffp-contract=off \
     analysis/common_c++/AnalyzeCompactCampaign.cpp \
-    -I. $(root-config --cflags --libs) -lRooFitHS3 \
+    -I. \
+    $(root-config --cflags --libs) \
+    -lRooFitHS3 \
+    -lRooFitJSONInterface \
     -o analysis/common_c++/AnalyzeCompactCampaign
 ```
 
-Requirements are a C++17-capable compiler and ROOT with its RooFit/HS3 JSON
-support. Tested with ROOT **6.40.04** and Apple Clang. `root-config` must be on
+This command has been verified with ROOT **6.30.02 on CNAF**. Requirements are a
+C++17-capable compiler and ROOT with its RooFit/HS3 JSON support. The program has
+also been tested with ROOT **6.40.04** and Apple Clang. `root-config` must be on
 `PATH`, with ROOT's normal runtime library environment available. Use the
 compiler/standard compatible with your ROOT installation; `root-config --cflags`
 supplies that installation's flags.
 
-`-lRooFitHS3` supplies ROOT's existing `RooFit::Detail::JSONTree` JSON reader.
-This avoids vendoring a JSON library or writing a custom parser. The source
-requires `RooFit/Detail/JSONInterface.h` and `libRooFitHS3` from that ROOT
-installation; a minimal ROOT build without HS3 is insufficient. This is a ROOT
+`-lRooFitJSONInterface` is required on ROOT 6.30.02 because the program uses
+ROOT's RooFit JSON support (`RooFit::Detail::JSONTree`) to read campaign JSON
+metadata. Link it alongside `-lRooFitHS3` as shown above. This avoids vendoring
+a JSON library or writing a custom parser. The source requires
+`RooFit/Detail/JSONInterface.h` and the matching RooFit JSON libraries from that
+ROOT installation; a minimal ROOT build without HS3 is insufficient. This is a ROOT
 **Detail** interface, so a future ROOT API change may require a small adjustment
 to the metadata reader. No RooFit modeling or fitting is performed.
 
