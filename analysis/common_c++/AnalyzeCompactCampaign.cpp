@@ -81,7 +81,9 @@ std::string jsonText(const JSONNode& node) {
     return text.str();
 }
 double number(const JSONNode& node) {
-    require(node.is_number(), "Expected JSON number: " + node.key());
+    // has_val() works in ROOT 6.30 and 6.40. val_double() checks the numeric type
+    // directly, without the precision loss of converting through val() strings.
+    require(node.has_val(), "Expected JSON number: " + node.key());
     const double value = node.val_double();
     require(std::isfinite(value), "Nonfinite number: " + node.key());
     return value;
