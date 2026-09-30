@@ -290,3 +290,54 @@ normalization, category and thesis-table explanations. Its synthetic default and
 optional campaign path share the same functions. Lightweight execution tests
 compare cell-derived counts with production, check category sums/flows and prove
 timing independence. Alternative timing cuts are discussed but never enabled.
+
+
+## Standalone compact topology study
+
+`analysis/common_c++/AnalyzeCompactCampaign.cpp` extends completed compact
+campaign analysis without rerunning simulation or changing compact schema,
+physics, sources, normalization, or `analysis/reference_cpp`. See its
+[compile/run instructions and output contract](../analysis/common_c++/README.md).
+
+A historical Group is Samuele's inherited spectral bookkeeping object. It is
+not guaranteed to correspond one-to-one to a physical interaction or one Geant4
+track. One event can contain several groups; an ER group surviving a selection
+is the detector candidate counted in these spectra. Historical `no_cut` and
+`fiducial_20mm`, including Figure 7.5/7.6, stay unchanged.
+
+The additional nested selections require (1) exactly one volume with positive
+TOTAL deposited energy after the historical fiducial cut, then (2) no positive
+ER site in another group in the SAME EventNumber with `abs(dt) <= coincidence_ns`
+and Euclidean separation **> 10 mm**. Zero-energy touches do not trigger a
+multi-volume veto; zero-active groups fail the new selections. Exactly 10 mm
+survives and exactly the time window is coincident. The candidate uses its sole
+active volume's stored first position/time; the fiducial cut still uses the first
+stored volume. Partner e-/e+ groups may themselves fail fiducial or single-volume
+cuts. Alpha/gamma groups are excluded as candidates and partners.
+
+`--coincidence-ns VALUE` must be positive and finite; **default 1 ns**. This is an
+idealized prompt timing assumption, not a complete CYGNO reconstruction model.
+Times are event-relative; independent primaries must never be compared. Low
+background rates motivate ignoring accidental coincidences between independent
+physical events, but a prompt spatial multi-site / Compton-like topology is not
+proof of Compton scattering. No truth process, track or ancestry veto is used.
+
+Compact retains only the first position/time per group × volume, even if that
+first step deposited zero energy. Distinct groups, different gas volumes and
+within-event prompt coincidence are accessible; two sites compressed into the
+same group AND volume are invisible. The thesis considers cross-module track
+matching/merging: reconstruction may identify one particle, while this study
+explores the complementary choice of vetoing its topology. Signal efficiency
+must be evaluated, since solar-neutrino recoil electrons can cross module
+boundaries and topology cuts can reject signal.
+
+New spectra and PNG/PDF figures accompany `cutflow.md`, with four stages and
+contribution/category/TOTAL annual-rate efficiencies, using the full `all`
+window. Category efficiencies use normalized rates, never summed raw MC counts.
+`SelectionEnergyWindows` adds all four selections without changing the historical
+`ExactEnergyWindows` tree. Timing/spatial parameters are recorded in summary,
+cut-flow, ROOT provenance and the multi-site figure caption. The small Python
+`analysis/common/topology.py` is a semantic oracle with synthetic C++ parity
+tests for both layouts; historical `study/analyze.py` remains compatible with
+untimed schema-0 raw input. Earlier statements about timing independence in this
+document refer to the historical Python/reference analyses.

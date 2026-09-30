@@ -1,10 +1,11 @@
 // Standalone Samuele ER analysis of a completed, unpacked compact campaign.
 // From the repository root (ROOT built with RooFit/HS3 JSON support):
 //   g++ -O3 -std=c++17 -ffp-contract=off analysis/common_c++/AnalyzeCompactCampaign.cpp \
-//       -I. $(root-config --cflags --libs) -lRooFitHS3 \
+//       -I. $(root-config --cflags --libs) -lRooFitHS3 -lRooFitJSONInterface \
 //       -o analysis/common_c++/AnalyzeCompactCampaign
-//   analysis/common_c++/AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR
+//   analysis/common_c++/AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR [--coincidence-ns VALUE]
 // Do not use -ffast-math: the order of floating-point operations is scientific input.
+// ROOT 6.40 builds without libRooFitJSONInterface: omit that library (see README).
 // ROOT's own JSON reader avoids an external JSON dependency. No Geant4 is needed.
 
 #include <RooFit/Detail/JSONInterface.h>
@@ -18,6 +19,7 @@
 #include <TLegend.h>
 #include <TNamed.h>
 #include <TObjString.h>
+#include <TParameter.h>
 #include <TPaveText.h>
 #include <TROOT.h>
 #include <TStyle.h>
@@ -55,7 +57,18 @@ const std::array<std::string, 7> categories = {
     "Camera Lenses", "Vessel", "Camera Sensors", "Cathodes", "Resistors", "GEMs", "Field Cage"};
 const std::array<const char*, 6> windows = {
     "all", "gt10", "gt10_le400", "underflow", "in_range", "overflow"};
-const std::array<const char*, 2> selections = {"no_cut", "fiducial_20mm"};
+constexpr int selectionCount = 4;
+const std::array<const char*, selectionCount> selections = {
+    "no_cut", "fiducial_20mm", "fiducial_20mm_single_volume",
+    "fiducial_20mm_single_volume_prompt_single_site"};
+const std::array<const char*, selectionCount> stageTitles = {
+    "No cut", "20 mm fiducial", "Fiducial + multi-volume veto",
+    "Fiducial + multi-volume + prompt spatial multi-site veto"};
+// Feasibility assumptions, not a complete CYGNO timing/reconstruction model.
+struct TopologyParameters {
+    double coincidenceNs = 1.; // Explicit default; can be overridden on the command line.
+    double distanceMm = 10.; // Strict separation > 10 mm: equality survives.
+};
 
 // Small file/ROOT operations live here; the complete analysis follows in main.
 void require(bool condition, const std::string& message) {
@@ -147,18 +160,170 @@ int histogramBin(double energy) {
            + (binWidth * (approximate + 1) <= energy);
 }
 
-// One small record per contribution, never one C++ object per group/step.
+// Fixed-size spectra/counters per contribution; event objects are discarded below.
 struct Contribution {
-    std::string id, category, unit, path;
+    std::string id, component, category, unit, path;
     double activity = 0., quantity = 0., scale = 0.;
     int generated = 0;
     Long64_t processed = 0;
-    std::array<std::array<Long64_t, 6>, 2> counts{};
-    std::array<std::unique_ptr<TH1D>, 2> raw;
+    std::array<std::array<Long64_t, 6>, selectionCount> counts{};
+    std::array<std::unique_ptr<TH1D>, selectionCount> raw;
 };
 
+// A historical Group is Samuele's inherited spectral bookkeeping object.
+// It is not guaranteed to correspond one-to-one to a physical interaction
+// or one Geant4 track. A detector candidate here is an ER group passing cuts.
+struct Site {
+    double x, y, z, timeNs;
+};
+struct ERGroup {
+    double energyKeV = 0.;
+    bool fiducial = false;
+    std::vector<Site> activeSites; // One per gas volume with TOTAL deposit > 0.
+};
+
+// Only other ER groups in THIS Geant4 event can veto a candidate. A partner
+// need not be fiducial or single-volume. No process/track/ancestry labels enter.
+// Compact cannot resolve two sites compressed into the same group AND volume.
+void fillEvent(const std::vector<ERGroup>& eventGroups, Contribution& result,
+               const TopologyParameters& parameters) {
+    for (size_t i = 0; i < eventGroups.size(); ++i) {
+        const auto& candidate = eventGroups[i];
+        const bool singleVolume = candidate.fiducial && candidate.activeSites.size() == 1;
+        bool promptSingleSite = singleVolume;
+        if (singleVolume) {
+            const auto& first = candidate.activeSites.front();
+            for (size_t j = 0; j < eventGroups.size() && promptSingleSite; ++j) {
+                if (i == j) continue; // A group's own sites never serve as partners.
+                for (const auto& partner : eventGroups[j].activeSites) {
+                    const double dt = std::abs(first.timeNs - partner.timeNs);
+                    const double dx = first.x - partner.x;
+                    const double dy = first.y - partner.y;
+                    const double dz = first.z - partner.z;
+                    const double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dt <= parameters.coincidenceNs && distance > parameters.distanceMm) {
+                        promptSingleSite = false;
+                        break;
+                    }
+                }
+            }
+        }
+        const std::array<bool, selectionCount> selected = {
+            true, candidate.fiducial, singleVolume, promptSingleSite};
+        const double energy = candidate.energyKeV;
+        const std::array<bool, 6> flags = {true, energy > 10., energy > 10. && energy <= 400.,
+            energy < 0., energy >= 0. && energy < maximumEnergy, energy >= maximumEnergy};
+        const int bin = histogramBin(energy);
+        for (int cut = 0; cut < selectionCount; ++cut) {
+            if (!selected[cut]) continue;
+            result.raw[cut]->AddBinContent(bin);
+            for (int w = 0; w < 6; ++w) if (flags[w]) ++result.counts[cut][w];
+        }
+    }
+}
+
+std::string efficiency(double selected, double denominator) {
+    if (denominator == 0.) return "n/a";
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(6) << 100. * selected / denominator;
+    return text.str();
+}
+
+// Rates, not summed MC counts, determine category efficiencies: matrix rows
+// have different activities, masses/pieces and therefore different scales.
+void writeCutflow(const fs::path& path, const std::vector<Contribution>& results,
+                  const TopologyParameters& parameters) {
+    std::ofstream report(path);
+    require(bool(report), "Cannot create cutflow.md");
+    report << std::setprecision(17)
+           << "# Detector-topology cut flow\n\n"
+           << "A historical Group is Samuele's inherited spectral bookkeeping object. "
+           << "It is not guaranteed to correspond one-to-one to a physical interaction or one Geant4 track. "
+           << "One Geant4 event can contain several groups; each selected ER group is a detector candidate.\n\n"
+           << "Four nested selections: all final e-/e+ groups; historical first-position 20 mm fiducial cut; "
+           << "then exactly one active volume; then no prompt spatially separated site in another ER group. "
+           << "An active volume has total deposited energy > 0; zero-energy touches do not veto. "
+           << "Groups with zero active volumes fail the single-volume selection.\n\n"
+           << "Coincidence window: **" << parameters.coincidenceNs << " ns** (inclusive dt <= window; default 1 ns). "
+           << "Spatial threshold: **" << parameters.distanceMm << " mm** (strict distance > threshold; equality survives). "
+           << "Only other e-/e+ groups in the SAME EventNumber supply partner sites, even if those groups fail "
+           << "fiducial or single-volume cuts. Alpha/gamma groups are neither ER candidates nor partners.\n\n"
+           << "FirstHitTime_ns is event-relative, with no absolute timing relation between independent primaries. "
+           << "This is an idealized prompt-coincidence feasibility study, not a complete CYGNO timing/reconstruction model. "
+           << "Low expected background rates motivate neglecting accidental coincidences between independent physical events. "
+           << "Prompt spatial multi-site / Compton-like topology does not establish a Compton interaction; no MC-truth process "
+           << "or ancestry cut is used.\n\n"
+           << "Compact stores only the first position/time for each group × gas volume (including a zero-energy first step). "
+           << "It can identify separated groups, different gas volumes and within-event coincidence, but cannot recover "
+           << "distinct physical sites compressed into the SAME historical group AND gas volume. "
+           << "No campaign rerun or schema change is needed.\n\n"
+           << "The thesis considers matching/merging a track crossing modules. Reconstruction may identify one particle; "
+           << "vetoing that topology is a complementary analysis choice. Both topology cuts must be evaluated on signal: "
+           << "a solar-neutrino recoil electron may itself cross a module boundary.\n\n"
+           << "Tables use the full `all` energy window, including histogram flows. Expected events/year retain the historical "
+           << "ER-group counting convention, not unique primary-event counts. Step efficiency = selected annual rate / "
+           << "previous-stage annual rate; cumulative efficiency = selected annual rate / no-cut annual rate. "
+           << "No-cut efficiencies are 100% for nonzero denominators; zero denominators are n/a. "
+           << "Contribution count/rate efficiencies agree; category/TOTAL efficiencies use normalized annual rates, "
+           << "NEVER cross-contribution MC count ratios. Rates below are rounded to 10 significant digits; "
+           << "summary.txt and ROOT retain full precision.\n\n";
+    report << std::setprecision(10); // Readable rates; ROOT and summary retain full precision.
+    std::array<std::array<double, 7>, selectionCount> categoryRates{};
+    std::array<std::array<double, 6>, selectionCount> totalRates{};
+    for (const auto& result : results) {
+        const int c = std::find(categories.begin(), categories.end(), result.category) - categories.begin();
+        for (int cut = 0; cut < selectionCount; ++cut) {
+            categoryRates[cut][c] += result.counts[cut][0] * result.scale;
+            for (int w = 0; w < 6; ++w) totalRates[cut][w] += result.counts[cut][w] * result.scale;
+        }
+    }
+    for (int cut = 0; cut < selectionCount; ++cut) {
+        const int previous = cut == 0 ? 0 : cut - 1;
+        report << "## " << cut + 1 << ". " << stageTitles[cut] << "\n\n`" << selections[cut] << "`\n\n"
+               << "### Contributions\n\n"
+               << "| Contribution | Physical component | Thesis category | Selected MC ER groups | Expected events/year | Step efficiency [%] | Cumulative efficiency [%] |\n"
+               << "|---|---|---|---:|---:|---:|---:|\n";
+        for (const auto& result : results) {
+            const double rate = result.counts[cut][0] * result.scale;
+            report << "| " << result.id << " | " << result.component << " | " << result.category
+                   << " | " << result.counts[cut][0] << " | " << rate << " | "
+                   << efficiency(rate, result.counts[previous][0] * result.scale) << " | "
+                   << efficiency(rate, result.counts[0][0] * result.scale) << " |\n";
+        }
+        report << "\n### Thesis categories\n\n"
+               << "| Thesis category | Expected events/year | Step efficiency [%] | Cumulative efficiency [%] |\n"
+               << "|---|---:|---:|---:|\n";
+        for (int c = 0; c < 7; ++c)
+            report << "| " << categories[c] << " | " << categoryRates[cut][c] << " | "
+                   << efficiency(categoryRates[cut][c], categoryRates[previous][c]) << " | "
+                   << efficiency(categoryRates[cut][c], categoryRates[0][c]) << " |\n";
+        report << "| TOTAL | " << totalRates[cut][0] << " | "
+               << efficiency(totalRates[cut][0], totalRates[previous][0]) << " | "
+               << efficiency(totalRates[cut][0], totalRates[0][0]) << " |\n\n";
+    }
+    report << "## Total annual rates in exact energy windows\n\n"
+           << "| Selection | all | E > 10 keV | 10 < E <= 400 keV |\n|---|---:|---:|---:|\n";
+    for (int cut = 0; cut < selectionCount; ++cut)
+        report << "| " << selections[cut] << " | " << totalRates[cut][0] << " | "
+               << totalRates[cut][1] << " | " << totalRates[cut][2] << " |\n";
+    report.close();
+    require(bool(report), "Cut-flow write failure");
+}
+
 int main(int argc, char** argv) try {
-    require(argc == 3, "Usage: AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR");
+    require(argc == 3 || argc == 5,
+            "Usage: AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR [--coincidence-ns VALUE] (default 1 ns)");
+    TopologyParameters parameters;
+    if (argc == 5) {
+        require(std::string(argv[3]) == "--coincidence-ns", "Unknown analysis option");
+        size_t used = 0;
+        parameters.coincidenceNs = std::stod(argv[4], &used);
+        require(used == std::strlen(argv[4]) && std::isfinite(parameters.coincidenceNs) &&
+                parameters.coincidenceNs > 0., "--coincidence-ns must be positive and finite");
+    }
+    std::ostringstream topologyCaption;
+    topologyCaption << std::setprecision(17) << "dt <= " << parameters.coincidenceNs
+                    << " ns, separation > " << parameters.distanceMm << " mm";
     gROOT->SetBatch(true); // Save plots without opening a graphical desktop window.
     gStyle->SetOptStat(0);
 
@@ -272,7 +437,7 @@ int main(int argc, char** argv) try {
         for (int axis = 0; axis < 3; ++axis) gasCenters[volume][axis] = number(center.child(axis));
     }
 
-    // The only persistent analysis data are 26 pairs of 902-bin histograms and
+    // The only persistent analysis data are 26 sets of four 902-bin histograms and
     // their exact counters. ROOT streams the large event trees through its cache.
     std::vector<Contribution> results;
     std::set<std::string> contributionIds, categoryNames;
@@ -285,6 +450,7 @@ int main(int argc, char** argv) try {
         Contribution result;
         result.id = row["id"].val();
         const std::string component = row["component"].val();
+        result.component = component;
         result.category = row["category"].val();
         result.unit = row["activity_unit"].val();
         require(!result.id.empty() && result.id.find_first_not_of(
@@ -356,7 +522,7 @@ int main(int argc, char** argv) try {
         branch(groups, "VolumeCount", "Int_t", &volumeCount);
         auto* particle = branch(groups, "ParticleName", "Char_t");
         int volumeEvent = 0, volumeGroup = 0, order = 0, volumeNumber = 0;
-        double depositedMeV = 0., x = 0., y = 0., z = 0.;
+        double depositedMeV = 0., x = 0., y = 0., z = 0., firstTimeNs = 0.;
         branch(volumes, "EventNumber", "Int_t", &volumeEvent);
         branch(volumes, "GroupIndex", "Int_t", &volumeGroup);
         branch(volumes, "VolumeOrder", "Int_t", &order);
@@ -365,6 +531,7 @@ int main(int argc, char** argv) try {
         branch(volumes, "x_first", "Double_t", &x);
         branch(volumes, "y_first", "Double_t", &y);
         branch(volumes, "z_first", "Double_t", &z);
+        branch(volumes, "FirstHitTime_ns", "Double_t", &firstTimeNs);
         for (auto* table : {&groups, &volumes}) {
             table->SetCacheSize(16 * 1024 * 1024); // Bounded read-ahead for selected branches.
             for (int i = 0; i < table->GetListOfBranches()->GetEntries(); ++i) {
@@ -373,10 +540,11 @@ int main(int argc, char** argv) try {
             }
             table->StopCacheLearningPhase();
         }
-        for (int cut = 0; cut < 2; ++cut) result.raw[cut] = histogram(result.id + "_" + selections[cut]);
+        for (int cut = 0; cut < selectionCount; ++cut) result.raw[cut] = histogram(result.id + "_" + selections[cut]);
         const Long64_t volumeEntries = volumes.GetEntries();
         Long64_t nextVolume = 0;
         int previousEvent = -1, previousGroup = -1;
+        std::vector<ERGroup> eventGroups; // At most ONE event, never a run-sized map.
         // A fixed, tiny stamp array checks duplicate gas copies without allocating
         // a container for every group. Tracks/TrackGroups are never opened.
         std::vector<Long64_t> seenGas(gasCenters.size(), -1);
@@ -386,6 +554,10 @@ int main(int argc, char** argv) try {
             ++result.processed; // Includes alpha-labeled historical groups.
             require(event >= 0 && event < result.generated && event >= previousEvent &&
                     groupIndex == (event == previousEvent ? previousGroup + 1 : 0), "Invalid group identity/order");
+            if (event != previousEvent) {
+                fillEvent(eventGroups, result, parameters);
+                eventGroups.clear(); // Timing has no meaning between independent primaries.
+            }
             previousEvent = event;
             previousGroup = groupIndex;
             require(volumeCount > 0 && volumeCount <= static_cast<int>(gasCenters.size()) &&
@@ -402,8 +574,9 @@ int main(int argc, char** argv) try {
             // ------------------------------------------------------------
             // 4. Reconstruct each stored group energy
             // ------------------------------------------------------------
-            double energy = 0.;
-            bool fiducial = false;
+            ERGroup reconstructed;
+            double& energy = reconstructed.energyKeV;
+            bool& fiducial = reconstructed.fiducial;
             for (int v = 0; v < volumeCount; ++v) {
                 require(volumes.GetEntry(nextVolume++) > 0, "Cannot read GroupVolumes entry");
                 require(volumeEvent == event && volumeGroup == groupIndex && order == v,
@@ -411,11 +584,15 @@ int main(int argc, char** argv) try {
                 require(volumeNumber >= 0 && volumeNumber < static_cast<int>(gasCenters.size()), "Invalid gas copy ID");
                 require(seenGas[volumeNumber] != entry, "Repeated gas copy within group");
                 seenGas[volumeNumber] = entry;
-                require(std::isfinite(depositedMeV) && std::isfinite(x) && std::isfinite(y) && std::isfinite(z),
+                require(std::isfinite(depositedMeV) && std::isfinite(x) && std::isfinite(y) && std::isfinite(z) &&
+                        std::isfinite(firstTimeNs),
                         "Nonfinite group volume");
                 // Multiply EACH MeV deposit before addition, in stored VolumeOrder.
                 // No sum-in-MeV-then-convert, reassociation, or fused multiply-add.
                 energy += depositedMeV * 1000.;
+                // A zero-energy touch is not a detectable second volume. Use the
+                // stored first position/time, even if the first step deposited zero.
+                if (depositedMeV > 0.) reconstructed.activeSites.push_back({x, y, z, firstTimeNs});
 
                 // ------------------------------------------------------------
                 // 5. Apply the 20 mm fiducial cut
@@ -428,16 +605,14 @@ int main(int argc, char** argv) try {
                 }
             }
             require(std::isfinite(energy), "Nonfinite summed group energy");
-            const std::array<bool, 6> flags = {true, energy > 10., energy > 10. && energy <= 400.,
-                energy < 0., energy >= 0. && energy < maximumEnergy, energy >= maximumEnergy};
-            const int bin = histogramBin(energy);
-            for (int cut = 0; cut < (fiducial ? 2 : 1); ++cut) {
-                result.raw[cut]->AddBinContent(bin); // Unit count, including ROOT flow bins 0 and 901.
-                for (int w = 0; w < 6; ++w) if (flags[w]) ++result.counts[cut][w];
-            }
+            eventGroups.push_back(std::move(reconstructed));
         }
+        // 5b. Apply nested detector-topology cuts after collecting all ER groups.
+        // Reconstruction might merge a cross-module track; vetoing that topology
+        // is a complementary background-rejection study, with signal cost to test.
+        fillEvent(eventGroups, result, parameters); // Flush the final event, including EOF.
         require(nextVolume == volumeEntries, "Unconsumed/orphan GroupVolumes rows");
-        for (int cut = 0; cut < 2; ++cut) {
+        for (int cut = 0; cut < selectionCount; ++cut) {
             result.raw[cut]->ResetStats();
             result.raw[cut]->SetEntries(result.counts[cut][0]);
         }
@@ -458,13 +633,13 @@ int main(int argc, char** argv) try {
     // ------------------------------------------------------------
     // 7. Sum categories and produce the final spectra
     // ------------------------------------------------------------
-    std::array<std::array<std::unique_ptr<TH1D>, 7>, 2> categoryHistograms;
-    std::array<std::array<std::array<double, bins + 2>, 7>, 2> variances{};
-    for (int cut = 0; cut < 2; ++cut)
+    std::array<std::array<std::unique_ptr<TH1D>, 7>, selectionCount> categoryHistograms;
+    std::array<std::array<std::array<double, bins + 2>, 7>, selectionCount> variances{};
+    for (int cut = 0; cut < selectionCount; ++cut)
         for (int c = 0; c < 7; ++c) categoryHistograms[cut][c] = histogram(categories[c]);
     for (const auto& result : results) {
         const int category = std::find(categories.begin(), categories.end(), result.category) - categories.begin();
-        for (int cut = 0; cut < 2; ++cut)
+        for (int cut = 0; cut < selectionCount; ++cut)
             for (int bin = 0; bin <= bins + 1; ++bin) {
                 const double count = result.raw[cut]->GetBinContent(bin);
                 // Each contribution has its OWN activity/quantity/denominator.
@@ -489,12 +664,21 @@ int main(int argc, char** argv) try {
             << "Windows: all; E>10; 10<E<=400; E<0; 0<=E<2000; E>=2000 (keV)\n"
             << "Errors: Poisson historical-group counts; no assay/geometry uncertainty.\n"
             << "Trusted completed campaign: no artifact hashing or track relationship validation.\n\n";
+    summary << "Topology: " << topologyCaption.str()
+            << "; idealized prompt spatial multi-site / Compton-like topology, ER partners only.\n"
+            << "Active volume: total deposit > 0; exactly one required.\n"
+            << "Compact blind spot: distinct sites in the same historical group AND gas volume.\n\n";
     auto* provenance = output.mkdir("provenance");
     provenance->cd();
     TNamed("CampaignPath", campaignPath.c_str()).Write();
     TNamed("Layout", layout.c_str()).Write();
     TNamed("CampaignFingerprint", campaign["fingerprint"].val().c_str()).Write();
     TNamed("ROOTVersion", gROOT->GetVersion()).Write();
+    TParameter<double>("CoincidenceWindow_ns", parameters.coincidenceNs).Write();
+    TParameter<double>("MultisiteDistance_mm", parameters.distanceMm).Write();
+    TNamed("TopologyConvention", (topologyCaption.str() +
+        "; same-event other ER groups only; active volume deposit > 0; first stored position/time; "
+        "idealized feasibility cut, no truth-process veto; same-group/same-volume blind spot").c_str()).Write();
     TNamed("HistogramConvention", "900 bins [0,2000); category regular bins counts/keV/year; flows counts/year").Write();
     for (const char* name : {"campaign.json", "config.json", "matrix.json", "geometry.json", "quantities.tsv"})
         TObjString(readText(campaignPath / name).c_str()).Write(name);
@@ -513,6 +697,13 @@ int main(int argc, char** argv) try {
     exact.Branch("Window", &window); exact.Branch("Fiducial", &cut);
     exact.Branch("Count", &count); exact.Branch("RatePerYear", &rate);
     exact.Branch("VariancePerYear2", &variance);
+    std::string selection;
+    TTree selectionWindows("SelectionEnergyWindows", "All four nested selections, exact unbinned windows");
+    selectionWindows.SetDirectory(nullptr);
+    selectionWindows.Branch("Contribution", &id); selectionWindows.Branch("Category", &category);
+    selectionWindows.Branch("Selection", &selection); selectionWindows.Branch("Window", &window);
+    selectionWindows.Branch("Count", &count); selectionWindows.Branch("RatePerYear", &rate);
+    selectionWindows.Branch("VariancePerYear2", &variance);
     TTree normalization("Normalization", "Measured denominators and contribution scales");
     normalization.SetDirectory(nullptr);
     normalization.Branch("Contribution", &id); normalization.Branch("Category", &category);
@@ -521,8 +712,8 @@ int main(int argc, char** argv) try {
     normalization.Branch("Scale", &scale); normalization.Branch("ProcessedGroups", &processed);
     normalization.Branch("InputPath", &path);
     auto* contributionsDirectory = output.mkdir("contributions");
-    std::array<std::array<Long64_t, 6>, 2> totalCounts{};
-    std::array<std::array<double, 6>, 2> totalRates{}, totalVariances{};
+    std::array<std::array<Long64_t, 6>, selectionCount> totalCounts{};
+    std::array<std::array<double, 6>, selectionCount> totalRates{}, totalVariances{};
     for (const auto& result : results) {
         id = result.id; category = result.category; activity = result.activity; unit = result.unit;
         quantity = result.quantity; generated = result.generated; scale = result.scale;
@@ -533,14 +724,16 @@ int main(int argc, char** argv) try {
                 << " processed_groups=" << processed << '\n';
         auto* directory = contributionsDirectory->mkdir(id.c_str());
         directory->cd();
-        for (cut = 0; cut < 2; ++cut) {
+        for (cut = 0; cut < selectionCount; ++cut) {
             // Raw histograms make exact equivalence inspectable without dividing
             // normalized floating-point results back by a scale.
             result.raw[cut]->Write((std::string("raw_") + selections[cut]).c_str());
             for (int w = 0; w < 6; ++w) {
                 window = windows[w]; count = result.counts[cut][w];
                 rate = count * scale; variance = count * scale * scale;
-                exact.Fill();
+                if (cut < 2) exact.Fill(); // Preserve the historical two-selection contract.
+                selection = selections[cut];
+                selectionWindows.Fill();
                 totalCounts[cut][w] += count;
                 totalRates[cut][w] += rate;
                 totalVariances[cut][w] += variance;
@@ -549,16 +742,16 @@ int main(int argc, char** argv) try {
             }
         }
     }
-    output.cd(); exact.Write(); normalization.Write();
+    output.cd(); exact.Write(); selectionWindows.Write(); normalization.Write();
     summary << "\nExact totals (sum individually normalized contributions):\n";
-    for (cut = 0; cut < 2; ++cut)
+    for (cut = 0; cut < selectionCount; ++cut)
         for (int w = 0; w < 6; ++w)
             summary << selections[cut] << ' ' << windows[w] << ": count=" << totalCounts[cut][w]
                     << " rate/year=" << totalRates[cut][w] << " variance/year^2=" << totalVariances[cut][w] << '\n';
 
     const std::array<const char*, 7> colors = {
         "#0072B2", "#999999", "#56B4E9", "#E69F00", "#CC79A7", "#D55E00", "#009E73"};
-    for (cut = 0; cut < 2; ++cut) {
+    for (cut = 0; cut < selectionCount; ++cut) {
         auto* directory = output.mkdir(selections[cut]);
         auto* categoryDirectory = directory->mkdir("categories");
         auto total = histogram("total");
@@ -583,10 +776,16 @@ int main(int argc, char** argv) try {
             total->Add(&h); // Total uses exactly the category spectra drawn below.
         }
         directory->cd(); total->Write();
-        const char* figure = cut ? "figure7.6" : "figure7.5";
-        const char* title = cut ? "Internal radioactivity: 20 mm fiducial cut" : "Internal radioactivity: no fiducial cut";
+        const std::array<const char*, selectionCount> figures = {
+            "figure7.5", "figure7.6", "figure_multivolume_veto", "figure_multisite_veto"};
+        const std::array<const char*, selectionCount> titles = {
+            "Internal radioactivity: no fiducial cut", "Internal radioactivity: 20 mm fiducial cut",
+            "20 mm fiducial + single-volume", "20 mm fiducial + single-volume + prompt multi-site veto"};
+        const char* figure = figures[cut];
+        const char* title = titles[cut];
         TCanvas canvas(figure, title, 1200, 750);
         canvas.SetLeftMargin(.12); canvas.SetRightMargin(.04); canvas.SetBottomMargin(.12); canvas.SetTopMargin(.14);
+        if (cut >= 2) canvas.SetTopMargin(.19); // Space for the added topology caption.
         THStack stack("categories", title);
         TLegend legend(.72, .57, .95, .84);
         legend.SetBorderSize(0); legend.SetFillStyle(0); legend.SetTextSize(.028);
@@ -603,19 +802,28 @@ int main(int argc, char** argv) try {
         stack.GetYaxis()->SetTitle("counts / keV / year");
         stack.GetXaxis()->SetLimits(0., maximumEnergy);
         legend.Draw();
-        TPaveText caption(.12, .875, .96, .925, "NDC");
+        TPaveText caption(.12, cut < 2 ? .875 : .835, .96, cut < 2 ? .925 : .875, "NDC");
         caption.SetFillStyle(0); caption.SetBorderSize(0); caption.SetTextFont(42); caption.SetTextSize(.022);
         caption.AddText((layout + " | " + config["mode"].val() + " | 26/26 contributions | physics unvalidated").c_str());
         caption.Draw();
+        TPaveText topologyNote(.12, .885, .96, .925, "NDC");
+        if (cut >= 2) {
+            topologyNote.SetFillStyle(0); topologyNote.SetBorderSize(0);
+            topologyNote.SetTextFont(42); topologyNote.SetTextSize(.020);
+            topologyNote.AddText((cut == 3 ? topologyCaption.str() + " | idealized prompt coincidence"
+                                          : "Exactly one gas volume with positive deposited energy").c_str());
+            topologyNote.Draw();
+        }
         for (const char* extension : {"png", "pdf"}) {
             const auto file = staged / (std::string(figure) + "." + extension);
             canvas.SaveAs(file.c_str());
             require(fs::exists(file) && fs::file_size(file) > 0, "Figure export failed: " + file.string());
         }
     }
+    writeCutflow(staged / "cutflow.md", results, parameters);
     output.Close();
     require(!output.TestBit(TFile::kWriteError), "ROOT output write failure");
-    summary << "\nOutputs: analysis.root, figure7.5.png, figure7.5.pdf, figure7.6.png, figure7.6.pdf, summary.txt\nCOMPLETE\n";
+    summary << "\nOutputs: analysis.root, figure7.5.png, figure7.5.pdf, figure7.6.png, figure7.6.pdf, figure_multivolume_veto.png/pdf, figure_multisite_veto.png/pdf, summary.txt, cutflow.md\nCOMPLETE\n";
     summary.close();
     require(bool(summary), "Summary write failure");
     require(!fs::exists(outputPath), "Output appeared during analysis; refusing overwrite");
