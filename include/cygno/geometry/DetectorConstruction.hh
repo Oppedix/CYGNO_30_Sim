@@ -66,8 +66,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   // Singular pointers retain only the LAST placement in each construction loop.
   // Use the ordered name lists/store below when selecting among all sources.
   G4VPhysicalVolume* GetCathodesVolumes() {return fPhysicalCathodes;}
-  G4VPhysicalVolume* GetGEMVolumesPlus() {return fPhysicGEMsPlus;}
-  G4VPhysicalVolume* GetGEMVolumesMinus() {return fPhysicGEMsMinus;}
   G4VPhysicalVolume* GetRingsSupportPlus() {return fPhysicRingsSupportPlus;}
   G4VPhysicalVolume* GetRingsSupportMinus() {return fPhysicRingsSupportMinus;}
   G4VPhysicalVolume* GetResistorsPlus() {return fPhysicResistorsPlus;}
@@ -76,9 +74,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   G4VPhysicalVolume* GetRingStripsMinus() {return fPhysicRingStripsMinus;}
   G4VPhysicalVolume* GetVessel() {return fPhysicVessel;} 
 
-  G4double GetCathodeWidth() {return fCathodeWidth;}
-  G4double GetGEMOuterWidth() {return fGEMOuterWidth;}
-  G4double GetGEMInnerWidth() {return fGEMCoreWidth;}
   G4double GetRingsSupportWidth() {return fRingSupportWidth;}
   G4double GetRingStripsWidth() {return fRingStripWidth;}
   G4double GetResistorWidth() {return fResistorWidth;}
@@ -88,9 +83,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   
   G4PhysicalVolumeStore* GetVolumeStored() {return fPhysVolStore;}
 
-  std::vector<G4String> GetCathodesList() {return fListCathodes;}
-  std::vector<G4String> GetGEMsOuterLists() {return fListGEMsOuter;}
-  std::vector<G4String> GetGEMsInnerLists() {return fListGEMsCore;}
+  std::vector<G4String> GetCathodesCopperList() {return fListCathodesCopper;}
+  std::vector<G4String> GetCathodesPolyimideList() {return fListCathodesPolyimide;}
+  std::vector<G4String> GetGEMsCopperList() {return fListGEMsCopper;}
+  std::vector<G4String> GetGEMsPolyimideList() {return fListGEMsPolyimide;}
   std::vector<G4String> GetRingsSupportList() {return fListSupportRings;}
   std::vector<G4String> GetRingStripstList() {return fListRingStrips;}
   std::vector<G4String> GetResistorList() {return fListResistors;}
@@ -104,7 +100,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   
   private:
   struct Materials {
-    G4Material *air, *copper, *glass, *pmma, *alumina, *silicon, *gas;
+    G4Material *air, *copper, *glass, *pmma, *alumina, *silicon, *gas, *polyimide;
   };
   Materials DefineMaterials();
   G4VPhysicalVolume* BuildWorld();
@@ -129,9 +125,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   G4double fWorldSize_y;
   G4double fWorldSize_z;
 
-  G4double fCathodeWidth;
-  G4double fGEMOuterWidth;
-  G4double fGEMCoreWidth;
   G4double fRingSupportWidth;
   G4double fRingStripWidth;
   G4double fResistorWidth;
@@ -139,9 +132,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   G4double fSensorWidth;
   G4double fVesselWidth;
   
-  std::vector<G4String> fListCathodes;
-  std::vector<G4String> fListGEMsOuter;
-  std::vector<G4String> fListGEMsCore;
+  std::vector<G4String> fListCathodesPolyimide;
+  std::vector<G4String> fListCathodesCopper;
+  std::vector<G4String> fListGEMsCopper;
+  std::vector<G4String> fListGEMsPolyimide;
   std::vector<G4String> fListSupportRings;
   std::vector<G4String> fListRingStrips;
   std::vector<G4String> fListResistors;
@@ -150,10 +144,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   std::vector<G4String> fListDetector;
   
   G4VPhysicalVolume* fPhysicalCathodes;
-  G4VPhysicalVolume* fPhysicGEMsPlus;
-  G4VPhysicalVolume* fPhysicGEMsMinus;
-  G4VPhysicalVolume* fPhysicGEMsCorePlus;
-  G4VPhysicalVolume* fPhysicGEMsCoreMinus;
   G4VPhysicalVolume* fPhysicRingsSupportPlus;
   G4VPhysicalVolume* fPhysicRingsSupportMinus;
   G4VPhysicalVolume* fPhysicRingStripsPlus;

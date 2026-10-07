@@ -101,7 +101,7 @@ int main(int argc,char** argv) {
     return 1;
   }
   std::cout << "CYGNO layout=" << cygno::geometry::LayoutName(layout)
-            << " detector_model=code-compatible source_model=historical\n";
+            << " detector_model=cygno-300elj-v1 source_model=uniform-volume-v1\n";
   G4UIExecutive* ui = nullptr;
   if (positional.empty()) {
     int uiArgc = 1; // Geometry options belong to this application, not the UI.

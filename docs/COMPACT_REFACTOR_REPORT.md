@@ -1,3 +1,6 @@
+> Historical validation record for the previous detector/source model.
+> The active 300ELJ construction and current contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
+
 # Raw/compact simulation refactor: implementation report
 
 Completed from current main 60823ec in the existing working tree. Changes are

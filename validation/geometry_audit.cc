@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
     }
   }
   const std::map<G4String,std::vector<G4String>> sources{
-    {"Cathodes",detector.GetCathodesList()}, {"GEMsOuter",detector.GetGEMsOuterLists()},
-    {"GEMsCore",detector.GetGEMsInnerLists()}, {"RingSupports",detector.GetRingsSupportList()},
+    {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
+    {"GEMsPolyimide",detector.GetGEMsPolyimideList()}, {"RingSupports",detector.GetRingsSupportList()},
     {"RingStrips",detector.GetRingStripstList()}, {"Resistors",detector.GetResistorList()},
     {"Lens",detector.GetLensList()}, {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
   // Supply the normal particle-table readiness required by a primary action.

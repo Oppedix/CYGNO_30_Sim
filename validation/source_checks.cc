@@ -11,20 +11,12 @@
 #include "G4PrimaryVertex.hh"
 #include "G4UImanager.hh"
 #include "Randomize.hh"
-#include "G4QuickRand.hh"
-#include "G4Version.hh"
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
 void require(bool ok, const char* message) { if(!ok) throw std::runtime_error(message); }
 int main(int argc, char** argv) {
   if (argc > 2) return 1;
-#if G4VERSION_NUMBER < 1140
-  // 11.3 uses a private solid-surface RNG with no public state/seed setter.
-  // Replaying only CLHEP would falsely compare different surface samples.
-  G4cout << "SKIP: exact solid RNG replay requires Geant4 >=11.4 seed API" << G4endl;
-  return 77;
-#endif
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
   G4RunManager manager;
@@ -45,13 +37,13 @@ int main(int argc, char** argv) {
   G4IonTable::GetIonTable()->GetIon(84,212,0.);
   RadioactiveSourceSampler sampler(detector);
   const std::map<G4String,std::vector<G4String>> sources{
-    {"Cathodes",detector->GetCathodesList()}, {"GEMsOuter",detector->GetGEMsOuterLists()},
-    {"GEMsCore",detector->GetGEMsInnerLists()}, {"RingSupports",detector->GetRingsSupportList()},
+    {"CathodesPolyimide",detector->GetCathodesPolyimideList()}, {"CathodesCopper",detector->GetCathodesCopperList()}, {"GEMsCopper",detector->GetGEMsCopperList()},
+    {"GEMsPolyimide",detector->GetGEMsPolyimideList()}, {"RingSupports",detector->GetRingsSupportList()},
     {"RingStrips",detector->GetRingStripstList()}, {"Resistors",detector->GetResistorList()},
     {"Lens",detector->GetLensList()}, {"Sensors",detector->GetSensorsList()}, {"Vessel",{"Vessel"}}};
   require(detector->GetComponentMasses().size()==sources.size(),"extra mass map keys");
   const int count=detector->GetLayoutProfile().expectedModuleCount;
-  const std::map<G4String,int> perModule{{"Cathodes",1},{"GEMsOuter",6},{"GEMsCore",6},
+  const std::map<G4String,int> perModule{{"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
     {"RingSupports",2},{"RingStrips",8},{"Resistors",10},{"Lens",4},{"Sensors",4}};
   int event=0;
   for(const auto& source:sources) {
@@ -65,40 +57,28 @@ int main(int argc, char** argv) {
     for(int n=0;n<10;++n) {
       std::stringstream before, expectedState, actualState;
       auto* engine=CLHEP::HepRandom::getTheEngine(); engine->put(before);
-      // Geant4 11.4 surface solids also use a separate thread-local RNG.
-#if G4VERSION_NUMBER >= 1140
-      G4QuickRand(123456u+event);
-#endif
       const auto expected=sampler.Sample(source.first).position;
-#if G4VERSION_NUMBER >= 1140
-      const auto expectedQuick=G4QuickRand();
-#endif
       engine->put(expectedState); engine->get(before);
-#if G4VERSION_NUMBER >= 1140
-      G4QuickRand(123456u+event);
-#endif
       G4Event evt(event++); generator.GeneratePrimaries(&evt);
       require(evt.GetNumberOfPrimaryVertex()==1,"one vertex required");
       if(evt.GetPrimaryVertex()->GetPosition()!=expected) G4cerr<<"MISMATCH event "<<evt.GetEventID()<<" component "<<source.first<<" expected "<<expected<<" actual "<<evt.GetPrimaryVertex()->GetPosition()<<G4endl;
       require(evt.GetPrimaryVertex()->GetPosition()==expected,"vertex must use same-event sample");
       require(expected.mag2()>0,"fixed-seed first vertex must not be origin");
       action.BeginOfEventAction(&evt); engine->put(actualState);
-#if G4VERSION_NUMBER >= 1140
-      require(G4QuickRand()==expectedQuick,"unexpected solid RNG draws");
-#endif
       require(actualState.str()==expectedState.str(),"unexpected RNG draws or event-action sampling");
     }
     int outside=0;
-    for(int n=0;n<1000;++n) {
+    for(int n=0;n<20000;++n) {
       const auto sample=sampler.Sample(source.first);
-      outside+=sample.volume->GetLogicalVolume()->GetSolid()->Inside(sample.position-sample.volume->GetObjectTranslation())==kOutside;
+      outside+=sample.volume->GetLogicalVolume()->GetSolid()->Inside(sample.volume->GetObjectRotationValue().inverse()*(sample.position-sample.volume->GetObjectTranslation()))==kOutside;
     }
-    G4cout<<"CONTAINMENT_DIAGNOSTIC "<<source.first<<" "<<outside<<" / 1000 outside; no rejection/resampling"<<G4endl;
+    require(outside==0,"uniform-volume sample outside solid");
+    G4cout<<"CONTAINMENT_DIAGNOSTIC "<<source.first<<" "<<outside<<" / 20000 outside; no rejection/resampling"<<G4endl;
   }
   require(ui->ApplyCommand("/isotope/AtomicNumber 83")==0,"isotope change");
   require(ui->ApplyCommand("/isotope/MassNumber 211")==0,"isotope change");
   G4Event changed(event); generator.GeneratePrimaries(&changed);
   require(changed.GetPrimaryVertex()->GetPrimary()->GetG4code()->GetAtomicNumber()==83,"updated Z");
   require(changed.GetPrimaryVertex()->GetPrimary()->GetG4code()->GetAtomicMass()==211,"updated A");
-  G4cout<<"PASS: 90 vertices equal their own samples, event zero non-origin, exact RNG replay, all mass keys/totals"<<G4endl;
+  G4cout<<"PASS: 100 vertices equal their own samples, event zero non-origin, exact RNG replay, all mass keys/totals"<<G4endl;
 }

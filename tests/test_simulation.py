@@ -17,8 +17,8 @@ from study.source_matrix import COMPONENTS, read_matrix
 
 class SimulationTests(unittest.TestCase):
     def test_macros_and_seeds(self):
-        rows = read_matrix(rt.REPO/'config/study/thesis-table7.1.json')['contributions']
-        self.assertEqual(len(rows), 26)
+        rows = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')['contributions']
+        self.assertEqual(len(rows), 31)
         cfg = rt.load_config(rt.REPO/'config/study/samuele.json')
         self.assertEqual(cfg['primaries_per_job'], 10_000_000)
         for row in rows:
@@ -61,7 +61,7 @@ class SimulationTests(unittest.TestCase):
 
     def test_interruption_and_retry(self):
         cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2}
-        row = read_matrix(rt.REPO/'config/study/thesis-table7.1.json')['contributions'][0]
+        row = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')['contributions'][0]
         campaign = dict(fingerprint='fixture', identity=dict(effective_environment={}))
         with tempfile.TemporaryDirectory() as d:
             output = Path(d)
@@ -84,7 +84,7 @@ class SchedulingTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.output = Path(temporary.name)
         self.cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2}
-        self.matrix = read_matrix(rt.REPO/'config/study/thesis-table7.1.json')
+        self.matrix = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')
         self.rows = self.matrix['contributions']
         self.env = dict.fromkeys(rt.ENV_KEYS, '/fixture/data') | dict(
             source_hash='fixture-source', geometry_hash=rt.digest(rt.REPO/'common/DetectorGeometry.hh'),
@@ -162,7 +162,7 @@ class SchedulingTests(unittest.TestCase):
         with patch.object(rt, 'invoke', side_effect=invoke), patch.object(rt, 'save', side_effect=save):
             self.schedule(self.rows[:6], jobs=3)
         self.assertEqual(peak, 3)
-        self.assertEqual(self.campaign['coverage'], '6/26')
+        self.assertEqual(self.campaign['coverage'], '6/31')
         self.assertIn('[DONE 6/6]', self.stream.getvalue())
         with patch('study.campaign.validate_snapshots'), patch('study.campaign.validate_preflight'):
             self.assertEqual(len(validate_campaign(self.output, allow_partial=True)), 6)
@@ -190,7 +190,7 @@ class SchedulingTests(unittest.TestCase):
             return self.fake_invoke(*args, **options)
         with patch.object(rt, 'invoke', side_effect=invoke):
             self.schedule(jobs=4)
-        self.assertEqual(self.campaign['coverage'], '25/26')
+        self.assertEqual(self.campaign['coverage'], '30/31')
         self.assertEqual(self.manifest(failed)['status'], 'failed')
         with patch.object(rt, 'invoke') as invoke:
             self.schedule(jobs=4)
@@ -199,9 +199,9 @@ class SchedulingTests(unittest.TestCase):
             self.schedule(jobs=4, retry=True)
         self.assertEqual(invoke.call_count, 1)
         self.assertEqual(self.manifest(failed)['attempt'], 'attempt-0002')
-        self.assertEqual(self.campaign['coverage'], '26/26')
+        self.assertEqual(self.campaign['coverage'], '31/31')
         with patch('study.campaign.validate_snapshots'), patch('study.campaign.validate_preflight'):
-            self.assertEqual(len(validate_campaign(self.output)), 26)
+            self.assertEqual(len(validate_campaign(self.output)), 31)
 
     def test_interrupt_drains_active_jobs_leaves_pending_and_resumes(self):
         with patch.object(rt, 'invoke', side_effect=self.fake_invoke):
@@ -245,7 +245,7 @@ class SchedulingTests(unittest.TestCase):
             self.assertEqual(self.manifest(row)['attempt'], 'attempt-0002')
             self.assertEqual((self.output/'jobs'/row['id']/'attempt-0001'/'manifest.json').read_bytes(),
                              attempts[row['id']])
-        self.assertEqual(self.campaign['coverage'], '5/26')
+        self.assertEqual(self.campaign['coverage'], '5/31')
 
     def test_precancelled_job_never_creates_attempt(self):
         cancel = threading.Event()
@@ -281,13 +281,13 @@ class SchedulingTests(unittest.TestCase):
             if label == 'environment':
                 return '\n'.join(f'CYGNO_ENV {k} {v}' for k, v in self.env.items())
             if label == 'quantities':
-                headers = dict(layout=self.cfg['layout'], **{'detector-model': 'code-compatible',
-                    'source-policy': 'historical', 'geometry-hash': self.env['geometry_hash'],
+                headers = dict(layout=self.cfg['layout'], **{'detector-model': 'cygno-300elj-v1',
+                    'source-policy': 'uniform-volume-v1', 'geometry-hash': self.env['geometry_hash'],
                     'compiled-source-hash': self.env['source_hash'], 'provenance': 'synthetic test'})
                 Path(command[1]).write_text(''.join(f'# {k}: {v}\n' for k, v in headers.items())+
                     'component\tmass_kg\tpieces\tgeometry_material\n'+
                     ''.join(f'{name}\t2\t3\tfixture\n' for name in COMPONENTS))
-                rt.save(Path(command[3]), dict(layout=self.cfg['layout'], geometry_hash=self.env['geometry_hash'],
+                rt.save(Path(command[3]), dict(layout=self.cfg['layout'], model=self.cfg['model'], source_policy=self.cfg['source_policy'], geometry_hash=self.env['geometry_hash'],
                     source_hash=self.env['source_hash'], gas_size_mm=[100, 100, 100],
                     gas_centers_mm={str(i): [0, 0, 0] for i in range(150)}))
                 return ''
@@ -313,13 +313,13 @@ class SchedulingTests(unittest.TestCase):
             resumed = rt.read(args.output/'campaign.json')
             self.assertEqual(resumed['identity'], original['identity'])
             self.assertEqual(resumed['fingerprint'], original['fingerprint'])
-            self.assertEqual(resumed['coverage'], '4/26')
+            self.assertEqual(resumed['coverage'], '4/31')
             self.assertEqual(len(list((args.output/'jobs').iterdir())), 4)
             checked.assert_called_once()
             self.assertEqual(sum(call.args[2] == 'simulation' for call in invoked.call_args_list), 4)
             args.only = None
             self.assertEqual(simulate.run(args), 0)
-            self.assertEqual(len(validate_campaign(args.output)), 26)
+            self.assertEqual(len(validate_campaign(args.output)), 31)
 
 
 class InvocationTests(unittest.TestCase):
@@ -400,8 +400,8 @@ class InvocationTests(unittest.TestCase):
             stream = io.StringIO()
             with redirect_stdout(stream):
                 rt.invoke(['fixture'], Path(directory), 'simulation', 120,
-                          contribution='GEMsCore_U238', primaries=1000)
-            self.assertEqual(stream.getvalue(), '[GEMsCore_U238] 500/1000 events (50.0%)\n')
+                          contribution='GEMsPolyimide_U238', primaries=1000)
+            self.assertEqual(stream.getvalue(), '[GEMsPolyimide_U238] 500/1000 events (50.0%)\n')
 
 
 if __name__ == '__main__': unittest.main()

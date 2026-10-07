@@ -23,81 +23,113 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-// Resolve a physical component and sample the inherited surface/depth model.
+// Exact bulk sampling for the active box, cylinder and rectangular-shell solids.
 #include "cygno/source/RadioactiveSourceSampler.hh"
 #include "cygno/geometry/DetectorConstruction.hh"
+#include "G4Box.hh"
+#include "G4DisplacedSolid.hh"
 #include "G4LogicalVolume.hh"
-#include "G4VSolid.hh"
+#include "G4SubtractionSolid.hh"
+#include "G4Tubs.hh"
 #include "G4Exception.hh"
 #include "Randomize.hh"
+#include <cassert>
+#include <stdexcept>
 
-// Choose a component uniformly from its ordered list, then move a surface point
-// inward by a random depth along the surface normal. This is the existing source
-// model, not a uniform-in-volume sampler. All placements currently have no rotation.
-// Accepted names are the exact strings below; invalid names fail explicitly.
-SourcePoint RadioactiveSourceSampler::Sample(const G4String& El){
-
-  std::vector<G4String> Elements;
-  G4double width;
-  
-  if(El == "Cathodes"){
-    Elements = fDetector->GetCathodesList();
-    width = fDetector->GetCathodeWidth();
-  } else if (El == "GEMsOuter"){
-    Elements = fDetector->GetGEMsOuterLists();
-    width = fDetector->GetGEMOuterWidth();
-  } else if (El == "GEMsCore"){
-    Elements = fDetector->GetGEMsInnerLists();
-    width = fDetector->GetGEMInnerWidth();
-  } else if (El == "RingSupports"){
-    Elements = fDetector->GetRingsSupportList();
-    width = fDetector->GetRingsSupportWidth();
-  } else if (El == "RingStrips"){
-    Elements = fDetector->GetRingStripstList();
-    width = fDetector->GetRingStripsWidth();
-  } else if (El == "Resistors"){
-    Elements = fDetector->GetResistorList();
-    width = fDetector->GetResistorWidth();
-  } else if (El == "Vessel"){
-    Elements.push_back("Vessel");
-    width = fDetector->GetVesselWidth();
-  } else if (El == "Lens"){
-    Elements = fDetector->GetLensList();
-    width = fDetector->GetLensWidth();
-  } else if (El == "Sensors"){
-    Elements = fDetector->GetSensorsList();
-    width = fDetector->GetSensorWidth();
+namespace {
+struct Slab {
+  G4ThreeVector lo, hi;
+  double Volume() const { const auto size=hi-lo; return size.x()*size.y()*size.z(); }
+  G4ThreeVector Sample() const {
+    return {lo.x()+(hi.x()-lo.x())*G4UniformRand(),
+            lo.y()+(hi.y()-lo.y())*G4UniformRand(),
+            lo.z()+(hi.z()-lo.z())*G4UniformRand()};
   }
+};
+Slab BoxBounds(G4VSolid* solid) {
+  if (auto* displaced=dynamic_cast<G4DisplacedSolid*>(solid)) {
+    if (!displaced->GetObjectRotation().isIdentity() ||
+        !dynamic_cast<G4Box*>(displaced->GetConstituentMovedSolid()))
+      throw std::runtime_error("Uniform frame sampler requires translated, axis-aligned boxes");
+  } else if (!dynamic_cast<G4Box*>(solid)) {
+    throw std::runtime_error("Uniform frame sampler requires box operands");
+  }
+  Slab bounds;
+  solid->BoundingLimits(bounds.lo,bounds.hi);
+  return bounds;
+}
+}
 
-  
-  // Reject an invalid component instead of indexing an empty source list. Do
-  // not guess what the legacy ambiguous names "GEMs" or "Rings" should mean.
-  if (Elements.empty()) {
+G4ThreeVector RadioactiveSourceSampler::SampleLocal(G4VSolid* solid) {
+  G4ThreeVector point;
+  if (dynamic_cast<G4Box*>(solid)) {
+    point=BoxBounds(solid).Sample();
+  } else if (auto* lens=dynamic_cast<G4Tubs*>(solid)) {
+    const double r0=lens->GetInnerRadius(), r1=lens->GetOuterRadius();
+    const double radius=std::sqrt(r0*r0+(r1*r1-r0*r0)*G4UniformRand());
+    const double phi=lens->GetStartPhiAngle()+lens->GetDeltaPhiAngle()*G4UniformRand();
+    point={radius*std::cos(phi),radius*std::sin(phi),
+           (2*G4UniformRand()-1)*lens->GetZHalfLength()};
+  } else if (auto* frame=dynamic_cast<G4SubtractionSolid*>(solid)) {
+    const auto outer=BoxBounds(frame->GetConstituentSolid(0));
+    auto inner=BoxBounds(frame->GetConstituentSolid(1));
+    for (int axis=0; axis<3; ++axis) {
+      inner.lo[axis]=std::max(outer.lo[axis],inner.lo[axis]);
+      inner.hi[axis]=std::min(outer.hi[axis],inner.hi[axis]);
+      if (inner.lo[axis]>=inner.hi[axis]) throw std::runtime_error("Empty rectangular frame cut");
+    }
+    // Peel two slabs per axis. Later slabs are restricted to the preceding
+    // inner bounds, so all six pieces are disjoint, including frame corners.
+    std::vector<Slab> pieces;
+    Slab remaining=outer;
+    double volume=0;
+    for (int axis=0; axis<3; ++axis) {
+      auto lower=remaining, upper=remaining;
+      lower.hi[axis]=inner.lo[axis]; upper.lo[axis]=inner.hi[axis];
+      for (const auto& slab : {lower,upper}) if (slab.Volume()>0) {
+        pieces.push_back(slab); volume+=slab.Volume();
+      }
+      remaining.lo[axis]=inner.lo[axis]; remaining.hi[axis]=inner.hi[axis];
+    }
+    if (pieces.empty()) throw std::runtime_error("Empty source frame");
+    double choice=G4UniformRand()*volume;
+    const Slab* selected=&pieces.back();
+    for (const auto& slab : pieces) {
+      choice-=slab.Volume();
+      if (choice<0) { selected=&slab; break; }
+    }
+    point=selected->Sample();
+  } else {
+    throw std::runtime_error("Unsupported uniform-volume source solid: "+solid->GetName());
+  }
+  assert(solid->Inside(point)!=kOutside);
+  return point;
+}
+
+SourcePoint RadioactiveSourceSampler::Sample(const G4String& component) {
+  std::vector<G4String> elements;
+  if (component=="CathodesPolyimide") elements=fDetector->GetCathodesPolyimideList();
+  else if (component=="CathodesCopper") elements=fDetector->GetCathodesCopperList();
+  else if (component=="GEMsPolyimide") elements=fDetector->GetGEMsPolyimideList();
+  else if (component=="GEMsCopper") elements=fDetector->GetGEMsCopperList();
+  else if (component=="RingSupports") elements=fDetector->GetRingsSupportList();
+  else if (component=="RingStrips") elements=fDetector->GetRingStripstList();
+  else if (component=="Resistors") elements=fDetector->GetResistorList();
+  else if (component=="Lens") elements=fDetector->GetLensList();
+  else if (component=="Sensors") elements=fDetector->GetSensorsList();
+  else if (component=="Vessel") elements={"Vessel"};
+  if (elements.empty()) {
     G4ExceptionDescription message;
-    message << "Unknown or empty radioactive component: " << El
-            << ". Choose Cathodes, GEMsOuter, GEMsCore, RingSupports, RingStrips, "
-            << "Resistors, Vessel, Lens or Sensors.";
-    G4Exception("RadioactiveSourceSampler::Sample",
-                "CYGNO_SOURCE", FatalException, message);
+    message << "Unknown or empty radioactive component: " << component;
+    G4Exception("RadioactiveSourceSampler::Sample", "CYGNO_SOURCE", FatalException, message);
     return {};
   }
-
-  G4int min = 0;
-  G4int max = Elements.size();
-  
-  G4int nEl = min + (int)(G4UniformRand() * (max - min));  //select a random element in the vector
-    
-  G4VPhysicalVolume* vol = fDetector->GetVolumeStored()->GetVolume(Elements[nEl]); // get the corresponding random physical volume
-
-  G4VSolid* solid = vol->GetLogicalVolume()->GetSolid(); // get the corresponding solid
-  
-  G4ThreeVector PointOnSurface = solid->GetPointOnSurface(); // get a random point on the surface
-
-  G4ThreeVector Normal = solid->SurfaceNormal(PointOnSurface); // get the normal to the surface in that point
-  
-  G4ThreeVector TranslationVolume = vol->GetObjectTranslation(); // get the translation vector of that physical volume
-  
-  G4ThreeVector Point = TranslationVolume + PointOnSurface - G4UniformRand()*width*Normal; //random point in the random volume as the translation vector + a point on the surface + a random depth 
-
-  return {Point, vol};
+  // Each family consists of equal-volume, same-material placements. Their
+  // uniform selection therefore gives uniform bulk contamination by mass.
+  const auto name=elements.at(static_cast<size_t>(G4UniformRand()*elements.size()));
+  auto* volume=fDetector->GetVolumeStored()->GetVolume(name);
+  const auto local=SampleLocal(volume->GetLogicalVolume()->GetSolid());
+  // Current components are direct World daughters. Geant4's OBJECT transform
+  // maps local to mother/world coordinates, including any placement rotation.
+  return {volume->GetObjectRotationValue()*local+volume->GetObjectTranslation(),volume};
 }

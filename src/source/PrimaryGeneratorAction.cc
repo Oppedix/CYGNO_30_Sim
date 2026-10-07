@@ -60,7 +60,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
   (void)G4UniformRand();
 
   fParticleGun->SetParticleEnergy(0*eV);
-  //fParticleGun->SetParticlePosition(GetPointOnDetectorElement("Cathodes"));
+  //fParticleGun->SetParticlePosition(GetPointOnDetectorElement("CathodesPolyimide"));
   fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));          
   fParticleGun->SetParticleDefinition(particle);
 
@@ -105,7 +105,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     fParticleGun->SetParticleCharge(ionCharge);
   }    
     
-  // Sample before this same event creates its vertex. The algorithm is unchanged.
+  // Sample before this same event creates its vertex. Uniform-volume policy recorded in RunMetadata.
   fParticleGun->SetParticlePosition(fSourceSampler.Sample(fElement).position);
   fParticleGun->GeneratePrimaryVertex(anEvent);
   fGeneratedPrimaries += fParticleGun->GetNumberOfParticles();

@@ -170,6 +170,80 @@ struct Contribution {
     std::array<std::unique_ptr<TH1D>, selectionCount> raw;
 };
 
+// Display copies keep axis ranges/styles independent of saved numerical objects.
+void saveFigure(TCanvas& canvas, const fs::path& stem) {
+    fs::create_directories(stem.parent_path());
+    for (const char* extension : {"png", "pdf"}) {
+        const auto file=stem.string()+"."+extension;
+        canvas.SaveAs(file.c_str());
+        require(fs::exists(file) && fs::file_size(file)>0, "Figure export failed: "+file);
+    }
+}
+void exportRangeStack(const fs::path& stem, const std::array<std::unique_ptr<TH1D>,7>& spectra,
+                      const char* title, double low, double high) {
+    TCanvas canvas("range_stack",title,1200,750);
+    canvas.SetLeftMargin(.12); canvas.SetRightMargin(.04); canvas.SetBottomMargin(.12);
+    THStack stack("range_categories",title);
+    TLegend legend(.72,.57,.95,.84);
+    legend.SetBorderSize(0); legend.SetFillStyle(0); legend.SetTextSize(.028);
+    std::vector<std::unique_ptr<TH1D>> copies;
+    double minimum=std::numeric_limits<double>::infinity(), maximum=0.;
+    for (int bin=1; bin<=bins; ++bin) {
+        if (spectra[0]->GetXaxis()->GetBinUpEdge(bin)<=low ||
+            spectra[0]->GetXaxis()->GetBinLowEdge(bin)>=high) continue;
+        double total=0.;
+        for (const auto& h : spectra) {
+            const auto value=h->GetBinContent(bin);
+            if (value>0) minimum=std::min(minimum,value);
+            total+=value;
+        }
+        maximum=std::max(maximum,total);
+    }
+    for (int c=0; c<7; ++c) {
+        copies.emplace_back(static_cast<TH1D*>(spectra[c]->Clone()));
+        copies.back()->SetDirectory(nullptr);
+        stack.Add(copies.back().get());
+        legend.AddEntry(copies.back().get(),categories[c].c_str(),"f");
+    }
+    const bool nonempty=std::isfinite(minimum);
+    canvas.SetLogy(nonempty);
+    stack.SetMinimum(nonempty ? minimum*.25 : 0.);
+    stack.SetMaximum(nonempty ? maximum*20. : 1.);
+    stack.Draw("HIST");
+    stack.GetXaxis()->SetTitle("Deposited energy [keV]");
+    stack.GetYaxis()->SetTitle("counts / keV / year");
+    stack.GetXaxis()->SetRangeUser(low,high);
+    legend.Draw();
+    saveFigure(canvas,stem);
+}
+void exportOverlay(const fs::path& stem, const TH1D& initial, const TH1D& final,
+                   const char* initialLabel) {
+    std::unique_ptr<TH1D> first(static_cast<TH1D*>(initial.Clone("overlay_initial")));
+    std::unique_ptr<TH1D> last(static_cast<TH1D*>(final.Clone("overlay_final")));
+    first->SetDirectory(nullptr); last->SetDirectory(nullptr);
+    TCanvas canvas("total_overlay","Total normalized spectra",1200,750);
+    canvas.SetLeftMargin(.12); canvas.SetRightMargin(.04); canvas.SetBottomMargin(.12);
+    double minimum=std::numeric_limits<double>::infinity();
+    for (int bin=1; bin<=bins; ++bin) for (const auto* h : {first.get(),last.get()})
+        if (h->GetBinContent(bin)>0) minimum=std::min(minimum,h->GetBinContent(bin));
+    const bool nonempty=std::isfinite(minimum);
+    canvas.SetLogy(nonempty);
+    first->SetTitle("Internal radioactivity: total normalized spectrum");
+    first->GetXaxis()->SetTitle("Deposited energy [keV]");
+    first->GetYaxis()->SetTitle("counts / keV / year");
+    first->SetFillStyle(0); first->SetLineColor(TColor::GetColor("#0072B2")); first->SetLineWidth(2);
+    last->SetFillStyle(0); last->SetLineColor(TColor::GetColor("#D55E00")); last->SetLineWidth(3); last->SetLineStyle(2);
+    first->SetMinimum(nonempty ? minimum*.25 : 0.);
+    first->SetMaximum(nonempty ? std::max(first->GetMaximum(),last->GetMaximum())*20. : 1.);
+    first->Draw("HIST"); last->Draw("HIST SAME");
+    TLegend legend(.49,.72,.95,.86);
+    legend.SetBorderSize(0); legend.SetFillStyle(0); legend.SetTextSize(.028);
+    legend.AddEntry(first.get(),initialLabel,"l");
+    legend.AddEntry(last.get(),"Final: fiducial + single volume + prompt single site","l");
+    legend.Draw();
+    saveFigure(canvas,stem);
+}
+
 // A historical Group is Samuele's inherited spectral bookkeeping object.
 // It is not guaranteed to correspond one-to-one to a physical interaction
 // or one Geant4 track. A detector candidate here is an ER group passing cuts.
@@ -345,8 +419,8 @@ int main(int argc, char** argv) try {
     const JSONNode& geometry = geometryDocument->rootnode();
     const auto& environment = campaign["identity"]["effective_environment"];
     require(integer(campaign["schema_version"]) == 3 && campaign["stage"].val() == "simulation" &&
-            campaign["status"].val() == "complete" && campaign["coverage"].val() == "26/26",
-            "Expected a completed schema-3, 26-contribution simulation campaign");
+            campaign["status"].val() == "complete" ,
+            "Expected a completed schema-3, source-matrix simulation campaign");
     require(config["output_mode"].val() == "compact" && integer(config["output_schema_version"]) == 1,
             "This analysis requires output_mode=compact, schema 1");
     require(jsonText(config) == jsonText(campaign["identity"]["config"]) &&
@@ -355,16 +429,29 @@ int main(int argc, char** argv) try {
     const std::string model = config["model"].val();
     const std::string policy = config["source_policy"].val();
     const std::string geometryHash = environment["geometry_hash"].val();
-    require(model == "code-compatible" && policy == "historical", "Unsupported model/source policy");
-    require(geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
+    require(model == "cygno-300elj-v1" && policy == "uniform-volume-v1", "Unsupported model/source policy");
+    require(geometry["model"].val() == model && geometry["source_policy"].val() == policy &&
+            geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
             geometry["source_hash"].val() == environment["source_hash"].val(), "Geometry snapshot mismatch");
-    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == "thesis-table7.1-v1" &&
+    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == "cygno-300elj-radioassay-v1" &&
             integer(matrix["seconds_per_year"]) == 31536000 &&
             matrix["quantity_policy"].val() == "constructed-component-mass-kg-or-placement-count",
             "Unsupported matrix/year/quantity convention");
     const auto& rows = matrix["contributions"];
-    require(rows.is_seq() && rows.num_children() == 26 && campaign["job_records"].num_children() == 26,
-            "Expected all 26 matrix contributions and job records");
+    const std::map<std::string,std::vector<std::string>> sourceIsotopes{
+        {"GEMsPolyimide",{"U238","Th232","K40"}}, {"GEMsCopper",{"U238","Th232","K40"}},
+        {"CathodesPolyimide",{"U238","Th232","K40"}}, {"CathodesCopper",{"U238","Th232","K40"}},
+        {"RingSupports",{"U238","Th232","K40"}}, {"RingStrips",{"U238","Th232"}},
+        {"Vessel",{"U238","Th232"}}, {"Lens",{"U238","Th232","K40"}},
+        {"Sensors",{"U238","Th232","K40"}}, {"Resistors",{"U238","Th232","K40","U235","Ra226","Th228"}}};
+    std::set<std::string> expectedContributions;
+    for (const auto& [component,isotopes] : sourceIsotopes)
+        for (const auto& isotope : isotopes) expectedContributions.insert(component+"_"+isotope);
+    const auto contributionCount=expectedContributions.size();
+    const std::string coverage=std::to_string(contributionCount)+"/"+std::to_string(contributionCount);
+    require(rows.is_seq() && rows.num_children() == contributionCount &&
+            campaign["job_records"].num_children() == contributionCount && campaign["coverage"].val() == coverage,
+            "Expected all canonical matrix contributions and job records");
 
     // ------------------------------------------------------------
     // 2. Read constructed quantities and contribution information
@@ -437,18 +524,20 @@ int main(int argc, char** argv) try {
         for (int axis = 0; axis < 3; ++axis) gasCenters[volume][axis] = number(center.child(axis));
     }
 
-    // The only persistent analysis data are 26 sets of four 902-bin histograms and
+    // The only persistent analysis data are source-matrix sets of four 902-bin histograms and
     // their exact counters. ROOT streams the large event trees through its cache.
     std::vector<Contribution> results;
     std::set<std::string> contributionIds, categoryNames;
     std::map<std::string, std::string> componentCategories, componentUnits;
 
     // ------------------------------------------------------------
-    // 3. Loop over the 26 compact ROOT files
+    // 3. Loop over the source-matrix compact ROOT files
     // ------------------------------------------------------------
     for (const auto& row : rows.children()) {
         Contribution result;
         result.id = row["id"].val();
+        require(expectedContributions.erase(result.id)==1 && result.id == row["component"].val()+"_"+
+                row["chain_start"]["name"].val(), "Unexpected canonical source/isotope");
         const std::string component = row["component"].val();
         result.component = component;
         result.category = row["category"].val();
@@ -483,7 +572,7 @@ int main(int argc, char** argv) try {
         // Never guess attempt-0001 or select the newest file by filename.
         const auto dataPath = inside(attempt, job["data_path"].val());
         result.path = dataPath.lexically_relative(campaignPath).string();
-        std::cout << "[" << results.size() + 1 << "/26] " << result.id << ": " << result.path << std::endl;
+        std::cout << "[" << results.size() + 1 << "/" << contributionCount << "] " << result.id << ": " << result.path << std::endl;
 
         // TFile opens a ROOT container. A TTree is its column-oriented table.
         TFile input(dataPath.c_str(), "READ");
@@ -659,7 +748,7 @@ int main(int argc, char** argv) try {
     std::ofstream summary(staged / "summary.txt");
     require(bool(summary), "Cannot create summary.txt");
     summary << std::setprecision(17) << "Campaign: " << campaignPath << "\nLayout: " << layout
-            << "\nFingerprint: " << campaign["fingerprint"].val() << "\nCoverage: 26/26\n"
+            << "\nFingerprint: " << campaign["fingerprint"].val() << "\nCoverage: " << coverage << "\n"
             << "Scale = activity * quantity * 60 * 60 * 24 * 365 / actual generated primaries\n"
             << "Windows: all; E>10; 10<E<=400; E<0; 0<=E<2000; E>=2000 (keV)\n"
             << "Errors: Poisson historical-group counts; no assay/geometry uncertainty.\n"
@@ -751,6 +840,7 @@ int main(int argc, char** argv) try {
 
     const std::array<const char*, 7> colors = {
         "#0072B2", "#999999", "#56B4E9", "#E69F00", "#CC79A7", "#D55E00", "#009E73"};
+    std::array<std::unique_ptr<TH1D>,selectionCount> totalSpectra;
     for (cut = 0; cut < selectionCount; ++cut) {
         auto* directory = output.mkdir(selections[cut]);
         auto* categoryDirectory = directory->mkdir("categories");
@@ -804,7 +894,7 @@ int main(int argc, char** argv) try {
         legend.Draw();
         TPaveText caption(.12, cut < 2 ? .875 : .835, .96, cut < 2 ? .925 : .875, "NDC");
         caption.SetFillStyle(0); caption.SetBorderSize(0); caption.SetTextFont(42); caption.SetTextSize(.022);
-        caption.AddText((layout + " | " + config["mode"].val() + " | 26/26 contributions | physics unvalidated").c_str());
+        caption.AddText((layout + " | " + config["mode"].val() + " | " + coverage + " contributions | physics unvalidated").c_str());
         caption.Draw();
         TPaveText topologyNote(.12, .885, .96, .925, "NDC");
         if (cut >= 2) {
@@ -819,11 +909,23 @@ int main(int argc, char** argv) try {
             canvas.SaveAs(file.c_str());
             require(fs::exists(file) && fs::file_size(file) > 0, "Figure export failed: " + file.string());
         }
+        // BEGIN additional stack figures (presentation only)
+        const std::string shortName=cut==3 ? "final" : selections[cut];
+        exportRangeStack(staged / "figures/stacks" / (shortName+"_0_100keV"),
+                         categoryHistograms[cut],title,0.,100.);
+        exportRangeStack(staged / "figures/stacks" / (shortName+"_100_2000keV"),
+                         categoryHistograms[cut],title,100.,2000.);
+        // END additional stack figures
+        totalSpectra[cut]=std::move(total);
     }
+    // BEGIN additional overlay figures (presentation only)
+    exportOverlay(staged / "figures/overlays/no_cut_vs_final",*totalSpectra[0],*totalSpectra[3],"No cut");
+    exportOverlay(staged / "figures/overlays/fiducial_vs_final",*totalSpectra[1],*totalSpectra[3],"20 mm fiducial");
+    // END additional overlay figures
     writeCutflow(staged / "cutflow.md", results, parameters);
     output.Close();
     require(!output.TestBit(TFile::kWriteError), "ROOT output write failure");
-    summary << "\nOutputs: analysis.root, figure7.5.png, figure7.5.pdf, figure7.6.png, figure7.6.pdf, figure_multivolume_veto.png/pdf, figure_multisite_veto.png/pdf, summary.txt, cutflow.md\nCOMPLETE\n";
+    summary << "\nOutputs: analysis.root, figure7.5.png, figure7.5.pdf, figure7.6.png, figure7.6.pdf, figure_multivolume_veto.png/pdf, figure_multisite_veto.png/pdf, figures/stacks/* (8 PNG/PDF pairs), figures/overlays/* (2 PNG/PDF pairs), summary.txt, cutflow.md\nCOMPLETE\n";
     summary.close();
     require(bool(summary), "Summary write failure");
     require(!fs::exists(outputPath), "Output appeared during analysis; refusing overwrite");

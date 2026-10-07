@@ -20,7 +20,7 @@ Without an explicit output, the processor creates `elab_<basename>` beside the
 input, including when the input has directory components. New raw worker files
 have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
 `DetectorModel` and `SourcePolicy` string leaves. `legacy-25x3`,
-`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `code-compatible` and `historical`. Other detector models are unsupported.
+`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v1` and `uniform-volume-v1`. Other detector models are unsupported.
 
 Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
 `CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
@@ -33,25 +33,17 @@ policy, then explicitly identify both axes:
 
 ```sh
 /path/to/build/analysis/SimpleProcessEvents old.root processed.root \
-  --assume-layout legacy-25x3 --assume-model code-compatible
+  --assume-layout legacy-25x3 --assume-model cygno-300elj-v1
 ```
 
-The assumption records `historical` source policy; it is not suitable for data
-from a different sampler. `--assume-geometry` remains an alias of `--assume-layout`.
-For already versioned data, either assumption acts as an additional consistency
-check and cannot override the file. Neither option transforms coordinates or
-converts another detector model. Older public code revisions must be checked
-against the code-compatible model before using this path.
-
-Backward compatibility is intentionally narrow. Pre-Phase-2 processed files with
-both `CygnoGeometry` and `CygnoLayout=cygno-5x5x3-v1` are accepted for the current
-header fingerprint or the verified `74cc26f` header fingerprint
-`d0e9f189266be3f0a608bba332b4fe5e5f17d9c7c2c6ef4bd95f53408f73c039`.
-That older hash is never accepted for `legacy-25x3`. Their code-compatible model
-and historical policy are recorded with explicit compatibility provenance. A
-hash-only raw metadata record cannot identify a runtime layout and is rejected.
-Unknown hashes cannot be bypassed by assumptions. The header fingerprint remains
-a conservative source/configuration guard, not a hash of all simulation physics.
+Explicit assumptions are suitable only for independently verified data generated
+with `cygno-300elj-v1 / uniform-volume-v1`. They cannot convert an older model or
+sampler. `--assume-geometry` remains an alias of `--assume-layout`. Versioned
+metadata is never overridden. Pre-Phase-2 incomplete markers and old geometry
+hashes are rejected; there is no old-hash compatibility exception for this model.
+The exact compiled geometry fingerprint is required by the ROOT reference.
+Portable campaigns validate their own matching archived model/policy/hashes and
+source bytes rather than today's checkout.
 
 ## Grouping semantics and intentional changes
 
@@ -108,9 +100,9 @@ new source-matrix studies (the format header must precede all data rows):
 ```text
 # normalization-format: quantity-v2
 # layout: legacy-25x3
-# detector-model: code-compatible
-# source-policy: historical
-# provenance: Table 7.1 plus matching geometry_quantities export and validated generated-primary counts
+# detector-model: cygno-300elj-v1
+# source-policy: uniform-volume-v1
+# provenance: canonical 300ELJ/separate-Cu and retained Table 7.1 assays, matching geometry_quantities export and validated generated-primary counts
 # component isotope quantity quantity_unit activity activity_unit generated_events category input_file
 ```
 
@@ -122,7 +114,7 @@ have the same quantity, units and category. Unrecognized or mismatched units,
 duplicates and nonfinite scales fail before creating output. There is no implicit
 micro-/milli-Bq conversion: the matrix already supplies Bq values.
 
-Use the 26 contributions in `config/study/thesis-table7.1.json` and the actual
+Use the 31 contributions in `config/study/cygno-300elj-radioassay-v1.json` and the actual
 constructed mass/piece export; see [source provenance](STUDY_SOURCES.md). The
 assay matrix has no layout or detector-model default and launches no simulations.
 The runner attaches the verified actual generated-primary count for each completed job.
@@ -132,8 +124,8 @@ is absent, with its original meaning (kg and Bq/kg) and category equal to compon
 
 ```text
 # layout: legacy-25x3
-# detector-model: code-compatible
-# source-policy: historical
+# detector-model: cygno-300elj-v1
+# source-policy: uniform-volume-v1
 # provenance: identify source revision, assay source, mass basis and generated-event accounting
 # component isotope mass_kg activity_Bq_per_kg generated_events input_file
 ```
@@ -227,15 +219,16 @@ For each component/chain contribution independently:
 events/year = selected_MC_groups * activity * quantity * 31536000 / generated_primaries
 ```
 
-Activity is Table 7.1 Bq/kg with constructed mass in kg, or Bq/piece with constructed
+Activity is canonical-matrix Bq/kg with constructed mass in kg, or Bq/piece with constructed
 placement count. All six resistor contributions use 750 pieces in the two 75-module
-layouts and 770 in `cygno-11x7-v1`. Assays and equilibrium assumptions come from the thesis; quantities come
-from actual code-compatible construction, including its Boolean-solid mass estimate.
+layouts and 770 in `cygno-11x7-v1`. Layer assays come from the 300ELJ study; other assays and chain assumptions retain
+the thesis values. Quantities come
+from actual cygno-300elj-v1 construction, including its Boolean-solid mass estimate.
 The selected production setting 10^7 comes from the thesis's approximate simulation
 count; it is never substituted for the verified denominator. The implementation uses
 a 365-day year; the thesis rounds it to 3.15e7 seconds in Eq. 7.14.
 
-GEMs = separately normalized GEMsOuter + GEMsCore. Field Cage = separately
+GEMs = separately normalized GEMsCopper + GEMsPolyimide. Cathodes = separately normalized CathodesCopper + CathodesPolyimide. Field Cage = separately
 normalized RingStrips + RingSupports. The other categories are Camera Lenses,
 Vessel, Camera Sensors, Cathodes and Resistors. These sums do not change activities
 or add branch weights. Resistor upper/lower segments are separate matrix rows.
@@ -244,7 +237,7 @@ The thesis motivates the 20 mm fiducial inset; the exact implementation is the
 inherited first-position predicate: relative to the selected gas center, the first
 saved group position satisfies |x|<=230 mm, |y|<=380 mm and |z|<=230 mm.
 It does not require every step or every crossed volume to lie inside. Gas centers
-retain the code-compatible ±250.25 mm local offset. No reconstruction smearing,
+retain the cygno-300elj-v1 ±250.03 mm local offset. No reconstruction smearing,
 trigger efficiency, time-coincidence selection or optical response is introduced.
 
 Exact unbinned windows are all finite energies (including flows), E>10 keV,

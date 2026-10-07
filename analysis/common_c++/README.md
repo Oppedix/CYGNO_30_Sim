@@ -6,12 +6,12 @@ separate implementation. Historical Python spectra/reporting and
 `analysis/reference_cpp/` are unchanged; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked, 26-contribution campaign** produced by
+Input is a **completed, unpacked, 31-contribution campaign** produced by
 `study/simulate.py` with `output_mode=compact`, campaign schema 3, output schema 1.
 The same executable handles `legacy-25x3` and `cygno-11x7-v1` using their saved
 geometry and constructed quantities. No detector coordinates, assay activities,
-component masses, resistor counts, primary counts, or contribution list are
-compiled into the program.
+component masses, resistor counts, primary counts, are compiled into the program. The canonical source/isotope schema is checked
+explicitly; activities and normalization quantities come from campaign snapshots.
 
 ## Compile
 
@@ -110,7 +110,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all 26 physical rows,
+1. The ordered `matrix.json.contributions` array supplies all 31 physical rows,
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -306,13 +306,13 @@ the campaign matrix:
 | Camera Lenses | Lens: U238, Th232, K40 | 3 |
 | Vessel | Vessel: U238, Th232 | 2 |
 | Camera Sensors | Sensors: U238, Th232, K40 | 3 |
-| Cathodes | Cathodes: U238, Th232 | 2 |
+| Cathodes | CathodesPolyimide: U238, Th232, K40; CathodesCopper: U238, Th232, K40 | 6 |
 | Resistors | Resistors: U238, Th232, K40, U235, Ra226, Th228 | 6 |
-| GEMs | GEMsCore: U238, Th232, K40; GEMsOuter: U238, Th232 | 5 |
+| GEMs | GEMsPolyimide: U238, Th232, K40; GEMsCopper: U238, Th232, K40 | 6 |
 | Field Cage | RingSupports: U238, Th232, K40; RingStrips: U238, Th232 | 5 |
 
 The resistor upper/lower chain segments remain distinct matrix contributions.
-GEMs and Field Cage combine separately normalized component histograms. The
+GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
 program does not implement or change decay-chain physics.
 
 ## Outputs
@@ -363,8 +363,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: 26 × 4 × 6 explicit selection windows
-ExactEnergyWindows                TTree: 26 × 2 × 6 contribution windows
+SelectionEnergyWindows            TTree: 31 × 4 × 6 explicit selection windows
+ExactEnergyWindows                TTree: 31 × 2 × 6 contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -427,10 +427,10 @@ fiducial_20mm      1     1           1          0         1         0
 ```
 
 For campaign integration, this small real transport file was reused in a
-**clearly labeled synthetic 26-job campaign fixture**, with actual exported
+**clearly labeled synthetic 31-job campaign fixture**, with actual exported
 geometry/quantities and the saved matrix activities. This exercises differing
 normalization scales and category sums; it is not a physically simulated
-26-source campaign. Attempts alternate between `attempt-0002` and
+31-source campaign. Attempts alternate between `attempt-0002` and
 `attempt-0007` to check manifest-based discovery.
 
 Comparisons require exact equality for accepted/processed counts, all six
@@ -465,7 +465,7 @@ times remain analyzable. The topology oracle rejects missing/nonfinite times
 instead of inventing them.
 
 `tests/test_topology.py` compiles the production C++ executable when `root-config`
-is available and creates synthetic 26-contribution compact campaigns for both
+is available and creates synthetic 31-contribution compact campaigns for both
 `legacy-25x3` and `cygno-11x7-v1`. It checks default/custom timing, endpoint and
 partner policies, every historical histogram edge and neighboring floats, exact
 windows, raw bins, annual rates/variances, category density/errors, cut-flow
@@ -475,3 +475,24 @@ explicitly skipped without ROOT; the semantic tests still run. Set
 historical ROOT histograms/trees and pixel-identical historical PNG exports.
 PDF page content can likewise be checked by rendering both versions; file bytes
 may differ due to creation-time metadata.
+
+## Additional presentation figures
+
+The original full-range `figure7.5`, `figure7.6`, `figure_multivolume_veto` and
+`figure_multisite_veto` PNG/PDF pairs keep their names and rendering behavior.
+New `figures/overlays/no_cut_vs_final.png/pdf` and
+`figures/overlays/fiducial_vs_final.png/pdf` compare **total normalized spectra**
+against `fiducial_20mm_single_volume_prompt_single_site`, with distinct solid and
+dashed lines. Log-Y is used when positive data exist.
+
+`figures/stacks/` adds `*_0_100keV.png/pdf` and `*_100_2000keV.png/pdf` for
+`no_cut`, `fiducial_20mm`, `fiducial_20mm_single_volume` and `final`: eight
+additional stack pairs. These change display axis ranges only. No bins,
+selection logic, normalization, category weights or numerical counters change.
+All additional drawing uses detached histogram copies.
+
+`tests/test_topology.py` compiles the same source with only the added export
+calls removed and compares every saved ROOT histogram/content/error and tree
+counter exactly, plus all four original PNG files byte-for-byte. It also checks
+the ten new PNG/PDF pairs exist and retains the independent Python numerical
+oracle. This regression runs when ROOT is available.

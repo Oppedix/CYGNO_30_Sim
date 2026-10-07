@@ -25,8 +25,8 @@ from study.source_matrix import read_matrix
 build = Path(sys.argv[1]).resolve()
 out = Path(tempfile.mkdtemp(prefix='study-runner-', dir=build/'validation-results'))
 config = runner.load_config(repo/'config/study/smoke-A.json')
-matrix = read_matrix(repo/'config/study/thesis-table7.1.json')
-identity = dict(layout=config['layout'], model='code-compatible', source_policy='historical',
+matrix = read_matrix(repo/'config/study/cygno-300elj-radioassay-v1.json')
+identity = dict(layout=config['layout'], model='cygno-300elj-v1', source_policy='uniform-volume-v1',
                 geometry_hash=runner.digest(repo/'common/DetectorGeometry.hh'))
 
 
@@ -102,12 +102,12 @@ first_data = runner.dataset_state(small_env)
 (data/'entry').write_text('two')
 assert first_data != runner.dataset_state(small_env)
 
-selected = ['GEMsCore_U238', 'GEMsCore_Th232', 'GEMsCore_K40']
-args = argparse.Namespace(config=repo/'config/study/smoke-A.json', matrix=repo/'config/study/thesis-table7.1.json',
+selected = ['GEMsPolyimide_U238', 'GEMsPolyimide_Th232', 'GEMsPolyimide_K40']
+args = argparse.Namespace(config=repo/'config/study/smoke-A.json', matrix=repo/'config/study/cygno-300elj-radioassay-v1.json',
                           output=out/'campaign', build=build, only=selected, retry_failed=False)
 real_invoke = runner.invoke
 attempted = []
-failing = {'GEMsCore_Th232'}
+failing = {'GEMsPolyimide_Th232'}
 
 
 def synthetic_invoke(command, cwd, label, timeout):
@@ -117,7 +117,7 @@ def synthetic_invoke(command, cwd, label, timeout):
     if label == 'simulation':
         contribution = cwd.parent.name
         attempted.append(contribution)
-        raw_fixture(cwd/'outfiles_V2/raw_t0.root', hit=contribution == 'GEMsCore_K40')
+        raw_fixture(cwd/'outfiles_V2/raw_t0.root', hit=contribution == 'GEMsPolyimide_K40')
         runner.save(cwd/'simulation.command.json', dict(command=list(map(str, command)),
                     fixture=True, returncode=-6 if contribution in failing else 0))
         (cwd/'simulation.log').write_text(env_log+'\nSYNTHETIC RUNNER FIXTURE; NOT RADIOACTIVE TRANSPORT\n')
@@ -137,7 +137,7 @@ with patch.object(runner, 'invoke', side_effect=synthetic_invoke), \
     assert first['status'] == 'complete' and first['accounting']['hit_rows'] == 0
     failed = runner.read(jobs_dir/selected[1]/'manifest.json')
     assert failed['status'] == 'failed' and 'accounting' not in failed
-    assert runner.read(args.output/'latest-report.json')['coverage'] == '2/26'
+    assert runner.read(args.output/'latest-report.json')['coverage'] == '2/31'
     before = runner.artifacts(jobs_dir/selected[0]/first['attempt'])
     assert runner.run(args) == 2  # complete jobs reused, failure retained
     assert attempted == selected
@@ -164,20 +164,20 @@ with patch.object(runner, 'invoke', side_effect=synthetic_invoke), \
     with patch.object(runner, 'compiled_source_hash', return_value='stale'):
         rejects(lambda: runner.run(args))
     assert len(attempted) == 4
-    # The default schedules ALL 26 contributions; these are synthetic outputs,
+    # The default schedules ALL 31 contributions; these are synthetic outputs,
     # not a matrix Monte Carlo campaign or a claim of chain completeness.
-    full_args = argparse.Namespace(**(vars(args) | {'output': out/'all-26', 'only': None}))
+    full_args = argparse.Namespace(**(vars(args) | {'output': out/'all-31', 'only': None}))
     assert runner.run(full_args) == 0
     full_report = runner.read(full_args.output/'latest-report.json')
-    assert full_report['complete_matrix'] is True and full_report['coverage'] == '26/26'
+    assert full_report['complete_matrix'] is True and full_report['coverage'] == '31/31'
     assert full_report['scientific_validity'] == 'unvalidated'
     campaign_manifest = runner.read(full_args.output/'campaign.json')
     assert campaign_manifest['quantities']['Resistors']['pieces'] == 750
-    assert campaign_manifest['job_records']['GEMsCore_K40']['generated_primaries'] == 2
-    assert len(campaign_manifest['job_records']['GEMsCore_K40']['seeds']) == 2
+    assert campaign_manifest['job_records']['GEMsPolyimide_K40']['generated_primaries'] == 2
+    assert len(campaign_manifest['job_records']['GEMsPolyimide_K40']['seeds']) == 2
     report_dir = Path(full_report['path'])
     exported = runner.read(report_dir/'spectra.json')
-    assert len(exported['windows']) == 312 and len(exported['categories']) == 84
+    assert len(exported['windows']) == len(matrix['contributions'])*2*6 and len(exported['categories']) == 84
     assert len(exported['density']) == 14
     assert 'Resistors U238 750 piece' in (report_dir/'normalization.tsv').read_text()
     for name in ('figure7.5.png', 'figure7.5.pdf', 'figure7.6.png', 'figure7.6.pdf', 'table7.2.csv', 'table7.3.csv', 'tables.json'):
@@ -263,14 +263,14 @@ for layout, center in [('legacy-25x3', (-6048., -804., 250.25)),
         tree.Fill()
     tree.Write()
     for name, value in dict(CygnoLayout=layout, CygnoGeometry=identity['geometry_hash'],
-                            CygnoDetectorModel='code-compatible', CygnoSourcePolicy='historical').items():
+                            CygnoDetectorModel='cygno-300elj-v1', CygnoSourcePolicy='uniform-volume-v1').items():
         ROOT.TNamed(name, value).Write()
     file.Close()
     norm = directory/'normalization.tsv'
-    norm.write_text(f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: code-compatible\n# source-policy: historical\n# provenance: synthetic boundary test\n'+
-                    f'GEMsCore K40 2 kg 1 Bq/kg 31536000 "GEMs" "{source}"\n')
+    norm.write_text(f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: cygno-300elj-v1\n# source-policy: uniform-volume-v1\n# provenance: synthetic boundary test\n'+
+                    f'GEMsPolyimide K40 2 kg 1 Bq/kg 31536000 "GEMs" "{source}"\n')
     real_invoke([build/'analysis/PlotNormalizedSpectra', norm], directory, 'plot', 60)
-    summary = export_spectra(directory/'NormalizedHisto.root', [{'id': 'GEMsCore_K40', 'category': 'GEMs'}])
+    summary = export_spectra(directory/'NormalizedHisto.root', [{'id': 'GEMsPolyimide_K40', 'category': 'GEMs'}])
     expected = {'all': 10, 'gt10': 6, 'gt10_le400': 2, 'underflow': 1, 'in_range': 7, 'overflow': 2}
     for window in summary['windows']:
         count = expected[window['window']] + (int(window['window'] in ('all', 'gt10', 'gt10_le400', 'in_range')) if not window['fiducial'] else 0)

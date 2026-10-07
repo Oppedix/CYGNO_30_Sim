@@ -1,3 +1,6 @@
+> Historical validation record for the previous detector/source model.
+> The active 300ELJ construction and current contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
+
 # Background-study finalization
 
 > Layout update (2026-09-24): `cygno-11x7-v1` is now implemented; see

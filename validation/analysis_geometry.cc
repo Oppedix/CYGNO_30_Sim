@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     const int id=entry.first;
     const auto& c=entry.second;
     assert(isWithin(centers,c.X(),c.Y(),c.Z(),id));
-    assert(isWithin(centers,c.X()+230,c.Y()+380,c.Z()+230,id));
+    assert(isWithin(centers,std::nextafter(c.X()+230,c.X()),std::nextafter(c.Y()+380,c.Y()),std::nextafter(c.Z()+230,c.Z()),id));
     assert(!isWithin(centers,c.X()+231,c.Y(),c.Z(),id));
     assert(!isWithin(centers,c.X(),c.Y()+381,c.Z(),id));
     assert(!isWithin(centers,c.X(),c.Y(),c.Z()+231,id));

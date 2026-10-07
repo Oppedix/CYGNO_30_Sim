@@ -11,27 +11,25 @@
 
 namespace cygno {
 namespace geometry {
+inline constexpr const char* detectorModel = "cygno-300elj-v1";
+inline constexpr const char* sourcePolicy = "uniform-volume-v1";
 constexpr double millimetre = 1.0;
 constexpr double centimetre = 10.0 * millimetre;
 
 struct ModuleDimensions {
   double cathodeX = 50 * centimetre;
   double cathodeY = 80 * centimetre;
-  // Historical half-length, also used as the source sampling depth. Neighboring
-  // offsets use half of this value; preserve the resulting internal overlap.
-  double cathodeHalfZ = 0.05 * centimetre;
+  double cathodePolyimideThickness = 0.050 * millimetre;
+  double cathodeCopperThickness = 0.005 * millimetre;
+  double cathodeTotalThickness = cathodePolyimideThickness + 2*cathodeCopperThickness;
+  double cathodeHalfThickness = cathodeTotalThickness/2;
   double gemX = 50 * centimetre;
   double gemY = 80 * centimetre;
-  double gemThickness = 0.05 * millimetre;
-  double gemCavityX = 50.01 * centimetre;
-  double gemCavityY = 80.01 * centimetre;
-  double gemCavityThickness = 0.005 * millimetre;
-  double gemCoreX = 50 * centimetre;
-  double gemCoreY = 80 * centimetre;
-  double gemCoreThickness = 0.029 * millimetre;
-  double gemCavityShiftFraction = 0.095;
+  double gemPolyimideThickness = 0.050 * millimetre;
+  double gemCopperThickness = 0.005 * millimetre;
+  double gemThickness = gemPolyimideThickness + 2*gemCopperThickness;
   int gemLayers = 3;
-  double gemGap = 0.2 * centimetre;
+  double gemClearGap = 2.000 * millimetre; // clear gas, not centre pitch
   double driftLength = 50 * centimetre;
   double supportThickness = 0.075 * millimetre;
   double stripThickness = 0.035 * millimetre;
@@ -52,14 +50,20 @@ struct ModuleDimensions {
   double sensorDistanceFromLens = 6 * centimetre;
 };
 constexpr ModuleDimensions module{};
-constexpr double GasOffsetZ() { return module.cathodeHalfZ/2 + module.driftLength/2; }
+constexpr double GasOffsetZ() { return module.cathodeHalfThickness + module.driftLength/2; }
 constexpr double StripSpacing() {
   return (module.driftLength-module.stripCount*module.stripLengthZ)/(module.stripCount+1);
 }
-constexpr double LensOffsetZ() {
-  return module.driftLength + 2*module.gemGap + 3*module.gemThickness
-       + module.lensDistanceFromGEMs;
+constexpr double GEMCentrePitch() { return module.gemThickness + module.gemClearGap; }
+constexpr double GEMStackThickness() {
+  return module.gemLayers*module.gemThickness + (module.gemLayers-1)*module.gemClearGap;
 }
+constexpr double GEMInnerFaceZ() { return module.cathodeHalfThickness + module.driftLength; }
+constexpr double GEMCentreZ(int layer) {
+  return GEMInnerFaceZ() + module.gemThickness/2 + layer*GEMCentrePitch();
+}
+constexpr double GEMOuterFaceZ() { return GEMInnerFaceZ() + GEMStackThickness(); }
+constexpr double LensOffsetZ() { return GEMOuterFaceZ() + module.lensDistanceFromGEMs; }
 constexpr double SensorOffsetZ() { return LensOffsetZ()+module.sensorDistanceFromLens; }
 
 struct Point { double x, y, z; };
@@ -162,8 +166,7 @@ constexpr Point moduleCenterHalfSpan{
 constexpr Point vesselOuterHalfSize{
   moduleCenterHalfSpan.x+module.cathodeX/2+2*vesselWall,
   moduleCenterHalfSpan.y+module.cathodeY/2+2*vesselWall,
-  moduleCenterHalfSpan.z+module.cathodeHalfZ/2+module.driftLength
-    +2*module.gemGap+3*module.gemThickness+2*vesselWall};
+  moduleCenterHalfSpan.z+GEMOuterFaceZ()+2*vesselWall};
 constexpr double worldMargin = 50 * centimetre;
 // Enlarge only as needed; retain the previous minimum World half sizes.
 inline Point WorldHalfSize(const Point& vessel = vesselOuterHalfSize,
@@ -206,8 +209,7 @@ inline LayoutProfile BuildLayoutProfile(LayoutId id = LayoutId::Current5x5x3) {
   profile.vesselOuterHalfSize = {
     span.x+module.cathodeX/2+2*vesselWall,
     span.y+module.cathodeY/2+2*vesselWall,
-    span.z+module.cathodeHalfZ/2+module.driftLength
-      +2*module.gemGap+3*module.gemThickness+2*vesselWall};
+    span.z+GEMOuterFaceZ()+2*vesselWall};
   profile.worldHalfSize = WorldHalfSize(profile.vesselOuterHalfSize,span);
   return profile;
 }

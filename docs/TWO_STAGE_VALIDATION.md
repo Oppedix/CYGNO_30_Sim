@@ -1,3 +1,6 @@
+> Historical validation record for the previous detector/source model.
+> The active 300ELJ construction and current contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
+
 # Raw/compact refactor validation — 2026-09-24
 
 Baseline `main`: **60823eca4bd10c5f27cdc38e76f8d447c7ac050f**, verified against

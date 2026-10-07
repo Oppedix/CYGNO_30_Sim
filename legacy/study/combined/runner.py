@@ -27,7 +27,7 @@ TOOLS = {'simulation': 'rdecay01', 'processor': 'analysis/SimpleProcessEvents',
 def normalization(rows, jobs, quantities, identity):
     lines = ['# normalization-format: quantity-v2', f"# layout: {identity['layout']}",
              f"# detector-model: {identity['model']}", f"# source-policy: {identity['source_policy']}",
-             '# provenance: Table 7.1; actual construction and generated counts; chain validity and campaign coverage in summary.json']
+             '# provenance: cygno-300elj-radioassay-v1; actual construction and generated counts; chain validity and campaign coverage in summary.json']
     for row in rows:
         count = jobs[row['id']]['accounting']['GeneratedPrimaries']
         quantity = quantity_for(row, quantities)
@@ -244,7 +244,7 @@ def run(args):
         completed = [row for row in matrix['contributions'] if jobs[row['id']]['status'] == 'complete']
         report = dict(campaign_fingerprint=fingerprint, mode=config['mode'], scientific_validity='unvalidated',
                       limitations=LIMITATIONS, jobs={key: value['status'] for key, value in jobs.items()},
-                      coverage=f'{len(completed)}/26', complete_matrix=len(completed) == 26)
+                      coverage=f'{len(completed)}/{len(matrix["contributions"])}', complete_matrix=len(completed) == len(matrix["contributions"]))
         reports = output/'reports'; reports.mkdir(exist_ok=True)
         report_dir = reports/f'report-{time.time_ns()}'; report_dir.mkdir()
         save(report_dir/'summary.json', report)
@@ -287,7 +287,7 @@ def main():
     parser.add_argument('--list', '--dry-run', dest='list', action='store_true', help='Print matrix/macros; no Geant4')
     parser.add_argument('--macros-dir', type=Path, help='Export individual macros to a new directory; no Geant4')
     parser.add_argument('--analysis-only', action='store_true', help='Revalidate completed results and regenerate plots; no Geant4')
-    parser.add_argument('--matrix', type=Path, default=REPO/'config/study/thesis-table7.1.json')
+    parser.add_argument('--matrix', type=Path, default=REPO/'config/study/cygno-300elj-radioassay-v1.json')
     parser.add_argument('--only', nargs='+', help='Explicit diagnostic subset; never called a complete matrix')
     parser.add_argument('--retry-failed', action='store_true', help='New attempts; retain every old artifact')
     args = parser.parse_args()

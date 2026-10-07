@@ -107,8 +107,8 @@ python validation/compact_transport.py --build "$CYGNO_BUILD" \
 python -m analysis.compact.benchmark --raw raw.root --compact compact.root
 ```
 
-The small integration defaults to the unchanged GEMsCore_K40 matrix contribution;
-`--contribution GEMsCore_U238` selects the chain on a validated environment.
+The small integration defaults to the unchanged GEMsPolyimide_K40 matrix contribution;
+`--contribution GEMsPolyimide_U238` selects the chain on a validated environment.
 It compares raw-only against both-mode raw rows and accounting, then checks both
 representations and standalone compact spectra. Benchmark bytes are separately
 measured files, not estimated per-tree compressed bytes. Compression ratio is a

@@ -30,7 +30,7 @@ int main() {
         ? geo::Point{(m/7-5)*504.0,(m%7-3)*804.0,0}
         : legacy
         ? geo::Point{(m/3-12)*504.0,(m%3-1)*804.0,0}
-        : geo::Point{(m/15-2)*504.0,((m/3)%5-2)*804.0,(m%3-1)*2285.3};
+        : geo::Point{(m/15-2)*504.0,((m/3)%5-2)*804.0,(m%3-1)*2285.42};
       point(placement.center,expected);
       require(centers.emplace(expected.x,expected.y,expected.z).second);
       require(placement.ix==(planar ? m/7 : legacy ? m/3 : m/15));
@@ -40,20 +40,20 @@ int main() {
         const int copy=geo::GasCopyNumber(m,side,count);
         require(copy==side*count+m && copies.insert(copy).second);
         point(geo::GasCenter(placement,side),
-              {expected.x,expected.y,expected.z+(side==0 ? 250.25 : -250.25)});
+              {expected.x,expected.y,expected.z+(side==0 ? 250.03 : -250.03)});
       }
     }
     require(copies.size()==2*count);
     require(*copies.begin()==0 && *copies.rbegin()==2*count-1);
     point(p.modules.at(planar ? 38 : 37).center,{0,0,0});
-    point(p.occupiedEnvelope.min,planar ? geo::Point{-2770.145,-2812.1275,-1140.65} : legacy ? geo::Point{-6298.145,-1204.1275,-1140.65}
-                                        : geo::Point{-1258.145,-2008.1275,-3425.95});
-    point(p.occupiedEnvelope.max,planar ? geo::Point{2770.075,2812.660,1140.65} : legacy ? geo::Point{6298.075,1204.660,1140.65}
-                                        : geo::Point{1258.075,2008.660,3425.95});
-    point(p.vesselOuterHalfSize,planar ? geo::Point{2780,2822,514.4} : legacy ? geo::Point{6308,1214,514.4}
-                                      : geo::Point{1268,2018,2799.7});
-    point(p.worldHalfSize,planar ? geo::Point{7000,3322,1640.65} : legacy ? geo::Point{7000,1714,1640.65}
-                                : geo::Point{7000,2518,3925.95});
+    point(p.occupiedEnvelope.min,planar ? geo::Point{-2770.145,-2812.1275,-1140.71} : legacy ? geo::Point{-6298.145,-1204.1275,-1140.71}
+                                        : geo::Point{-1258.145,-2008.1275,-3426.13});
+    point(p.occupiedEnvelope.max,planar ? geo::Point{2770.075,2812.660,1140.71} : legacy ? geo::Point{6298.075,1204.660,1140.71}
+                                        : geo::Point{1258.075,2008.660,3426.13});
+    point(p.vesselOuterHalfSize,planar ? geo::Point{2780,2822,514.21} : legacy ? geo::Point{6308,1214,514.21}
+                                      : geo::Point{1268,2018,2799.63});
+    point(p.worldHalfSize,planar ? geo::Point{7000,3322,1640.71} : legacy ? geo::Point{7000,1714,1640.71}
+                                : geo::Point{7000,2518,3926.13});
     std::cout << p.name << ": profile, bounds and " << 2*count << " gas centers PASS\n";
   }
   // The default must preserve the baseline profile. Unknown profiles fail closed.

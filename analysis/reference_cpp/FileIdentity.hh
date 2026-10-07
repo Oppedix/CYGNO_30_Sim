@@ -18,22 +18,11 @@ struct FileIdentity {
 };
 inline void ValidateIdentity(const FileIdentity& identity) {
   geometry::ParseLayoutId(identity.layout);
-  if (identity.model != "code-compatible")
+  if (identity.model != "cygno-300elj-v1")
     throw std::runtime_error("Unsupported detector model: " + identity.model);
-  if (identity.sourcePolicy != "historical")
+  if (identity.sourcePolicy != "uniform-volume-v1")
     throw std::runtime_error("Unsupported source policy: " + identity.sourcePolicy);
-  // The baseline header predates runtime profiles, but its current layout and
-  // internals are numerically identical (Phase 1 regression). No other old hash
-  // is accepted for this baseline. It cannot identify legacy-25x3 data.
-  const bool baseline = identity.geometryHash ==
-    "d0e9f189266be3f0a608bba332b4fe5e5f17d9c7c2c6ef4bd95f53408f73c039";
-  // Phase 1–6 header: count plumbing was generalized without changing either
-  // existing layout, module construction or gas numbering.
-  const bool phase6 = identity.geometryHash ==
-    "af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79e2e3a8156b2";
-  const bool phase6Layout = identity.layout == "legacy-25x3" || identity.layout == "cygno-5x5x3-v1";
-  if (identity.geometryHash != build::geometryHash && !(phase6 && phase6Layout) &&
-      !(baseline && identity.layout == "cygno-5x5x3-v1"))
+  if (identity.geometryHash != build::geometryHash)
     throw std::runtime_error("File geometry fingerprint does not match a supported geometry");
 }
 inline void RequireExpected(const FileIdentity& actual, const std::string& layout,
@@ -61,14 +50,6 @@ inline FileIdentity RequireGeometry(TFile& file, const std::string& assumedLayou
     identity = {marker("CygnoLayout"), marker("CygnoDetectorModel"),
                 marker("CygnoSourcePolicy"), marker("CygnoGeometry"),
                 marker("GeometryProvenance")};
-    // Pre-Phase-2 processed files have exactly these two identity markers.
-    // Their known processor could only label the current code-compatible model.
-    if (!file.Get("CygnoDetectorModel") && !file.Get("CygnoSourcePolicy") &&
-        identity.layout == "cygno-5x5x3-v1") {
-      identity.model = "code-compatible";
-      identity.sourcePolicy = "historical";
-      identity.provenance += "; compatible pre-Phase-2 current-layout markers";
-    }
     ValidateIdentity(identity);
     found = true;
   }
@@ -94,10 +75,10 @@ inline FileIdentity RequireGeometry(TFile& file, const std::string& assumedLayou
   }
   if (!found) {
     if (assumedLayout.empty() || assumedModel.empty())
-      throw std::runtime_error("Unversioned file: verify its source revision, then supply both --assume-layout PROFILE and --assume-model code-compatible");
-    identity = {assumedLayout, assumedModel, "historical", build::geometryHash,
+      throw std::runtime_error("Unversioned file: verify its source revision, then supply both --assume-layout PROFILE and --assume-model cygno-300elj-v1");
+    identity = {assumedLayout, assumedModel, "uniform-volume-v1", build::geometryHash,
       "Researcher explicitly identified unversioned data: layout=" + assumedLayout +
-      ", detector_model=" + assumedModel + ", source_policy=historical"};
+      ", detector_model=" + assumedModel + ", source_policy=uniform-volume-v1"};
     ValidateIdentity(identity);
   }
   RequireExpected(identity, assumedLayout, assumedModel);

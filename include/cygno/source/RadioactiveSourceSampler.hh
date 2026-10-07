@@ -5,6 +5,7 @@
 #include "globals.hh"
 class DetectorConstruction;
 class G4VPhysicalVolume;
+class G4VSolid;
 struct SourcePoint {
   G4ThreeVector position;
   const G4VPhysicalVolume* volume = nullptr;
@@ -12,8 +13,8 @@ struct SourcePoint {
 class RadioactiveSourceSampler {
  public:
   explicit RadioactiveSourceSampler(DetectorConstruction* detector) : fDetector(detector) {}
-  // Exactly one uniform volume choice, the solid's GetPointOnSurface(), and one
-  // depth draw. No rejection/resampling: containment is a diagnostic, not a cut.
+  // Uniform bulk sampling; no rejection or surface-depth approximation.
+  static G4ThreeVector SampleLocal(G4VSolid* solid);
   SourcePoint Sample(const G4String& component);
  private:
   DetectorConstruction* fDetector;

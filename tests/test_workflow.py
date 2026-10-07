@@ -53,7 +53,7 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(simulate.run(args),2)
                 self.assertEqual(calls.count('simulation'),1)  # reused
                 campaign=rt.read(args.output/'campaign.json')
-                self.assertEqual(campaign['coverage'],'1/26')
+                self.assertEqual(campaign['coverage'],'1/31')
                 self.assertEqual(campaign['identity']['config']['primaries_per_job'],1_000_000)
                 args.primaries=1000000
                 for mode in ('compact','both'):

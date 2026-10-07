@@ -3,7 +3,7 @@
 /run/verbose 0
 /event/verbose 0
 /random/setSeeds 12345 67890
-/detector/RadElement Cathodes
+/detector/RadElement CathodesPolyimide
 /isotope/AtomicNumber 83
 /isotope/MassNumber 212
 /rdecay01/timeWindow 0 s 2 h

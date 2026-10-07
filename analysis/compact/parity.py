@@ -68,7 +68,7 @@ def main():
     args=p.parse_args()
     geometry=json.loads(args.geometry.read_text())
     expected=dict(layout=geometry['layout'],geometry_hash=geometry['geometry_hash'],
-                  model='code-compatible',source_policy='historical')
+                  model='cygno-300elj-v1',source_policy='uniform-volume-v1')
     with uproot.open(args.input,array_cache=None) as file:
         requested=int(tree(file,'RunAccounting',dict.fromkeys(ACCOUNTING_FIELDS,'int32'),one=True)
                       ['RequestedEvents'].array(library='np')[0])

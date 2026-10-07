@@ -26,7 +26,7 @@ from analysis.common.reporting import write_tables
 from fixtures import raw_fixture, campaign_fixture, environment, log_for
 from compact_fixtures import fixture, difficult_rows, timed_chunk, tables_from_groups
 
-EXPECTED=dict(layout='legacy-25x3',model='code-compatible',source_policy='historical',geometry_hash='fixture')
+EXPECTED=dict(layout='legacy-25x3',model='cygno-300elj-v1',source_policy='uniform-volume-v1',geometry_hash='fixture')
 GEOMETRY=dict(gas_size_mm=[100]*3,gas_centers_mm={str(i):[0]*3 for i in range(150)})
 
 class CompactTests(unittest.TestCase):
@@ -138,7 +138,7 @@ class CompactTests(unittest.TestCase):
         results=[accumulate(stream,GEOMETRY) for stream in (canonical,compact,altered)]
         for result in results[1:]:
             for a,b in zip(results[0],result): np.testing.assert_array_equal(a,b)
-        matrix=read_matrix(rt.REPO/'config/study/thesis-table7.1.json')
+        matrix=read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')
         quantities={r['component']:dict(mass_kg=2.,pieces=750) for r in matrix['contributions']}
         spectra=[]
         for c,h,_ in results:
@@ -146,7 +146,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(spectra[0],spectra[1]);self.assertEqual(spectra[0],spectra[2])
         for i,s in enumerate(spectra):
             folder=Path(self.tmp.name)/str(i);folder.mkdir()
-            write_tables(folder,s,dict(mode='smoke',coverage='26/26',complete_matrix=True))
+            write_tables(folder,s,dict(mode='smoke',coverage='31/31',complete_matrix=True))
         for name in ('tables.json','table7.2.csv','table7.3.csv'):
             self.assertEqual((Path(self.tmp.name)/'0'/name).read_bytes(),(Path(self.tmp.name)/'1'/name).read_bytes())
         # Parity rejects a timing change even though the scientific spectrum is identical.
@@ -226,7 +226,7 @@ class NewCampaignTests(unittest.TestCase):
                 with patch.object(rt,'invoke',side_effect=invoke):
                     for row in matrix['contributions']: simulate.run_job(root,row,config,campaign,'fixture')
                 simulate.update_campaign(root,campaign,matrix)
-                self.assertEqual(len(validate_campaign(root)),26)
+                self.assertEqual(len(validate_campaign(root)),31)
                 archive=package(root)
                 with open_campaign(archive) as extracted:
                     out=Path(directory)/(mode+'-analysis')

@@ -33,7 +33,7 @@ def check_identity(path,layout):
     f=ROOT.TFile.Open(str(path));metadata=f.Get('RunMetadata')
     assert metadata and metadata.GetEntries()==1,path
     metadata.GetEntry(0)
-    for field,value in dict(Layout=layout,DetectorModel='code-compatible',SourcePolicy='historical',
+    for field,value in dict(Layout=layout,DetectorModel='cygno-300elj-v1',SourcePolicy='uniform-volume-v1',
                             GeometryHash=hashlib.sha256((repo/'common/DetectorGeometry.hh').read_bytes()).hexdigest()).items():
         assert metadata.GetLeaf(field).GetValueString()==value,(path,field)
     f.Close()
@@ -56,7 +56,7 @@ if mode=='geometry':
     audit=run([build/'validation/geometry_audit',out/'placements.tsv','overlaps'],out,'audit.log')
     from check_geometry import check
     check(out/'placements.tsv',out/'placements.tsv',same_layout=True)
-    assert len(re.findall(r'SOURCE_OK ',audit))==9
+    assert len(re.findall(r'SOURCE_OK ',audit))==10
     print('Internal overlap warnings (diagnostic):',audit.count('GeomVol1002'))
 elif mode=='layouts':
     from check_geometry import check
@@ -68,7 +68,7 @@ elif mode=='layouts':
         directory=out/profile; directory.mkdir()
         run([build/'validation/geometry_snapshot',directory/'geometry.txt',profile],directory,'snapshot.log')
         audit=run([build/'validation/geometry_audit',directory/'placements.tsv','overlaps','--layout',profile],directory,'audit.log')
-        assert len(re.findall(r'SOURCE_OK ',audit))==9
+        assert len(re.findall(r'SOURCE_OK ',audit))==10
         check(out/profiles[0]/'placements.tsv',directory/'placements.tsv',same_layout=True,profile=profile)
         # Verify the production JSON exporter against actual sensitive placements.
         run([build/'geometry_quantities',directory/'quantities.tsv',profile,directory/'geometry.json'],
@@ -81,7 +81,7 @@ elif mode=='layouts':
         assert exported['gas_size_mm']==[500,800,500]
         print(profile, 'inherited overlap warnings (diagnostic):',audit.count('GeomVol1002'))
         log=run([build/'rdecay01',repo/'validation/macros/smoke.mac','1','--layout',profile],directory,'smoke.log')
-        assert f'CYGNO layout={profile} detector_model=code-compatible source_model=historical' in log
+        assert f'CYGNO layout={profile} detector_model=cygno-300elj-v1 source_model=uniform-volume-v1' in log
         assert 'The run was 20 Po212' in log and 'FatalException' not in log
         files=list((directory/'outfiles_V2').glob('*.root'))
         assert len(files)==1
@@ -93,7 +93,7 @@ elif mode=='layouts':
             import ROOT
             f=ROOT.TFile.Open(str(processed))
             assert f.Get('CygnoLayout').GetTitle()==profile
-            assert f.Get('CygnoDetectorModel').GetTitle()=='code-compatible'
+            assert f.Get('CygnoDetectorModel').GetTitle()=='cygno-300elj-v1'
             assert f.Get('RunMetadata').GetEntries()==1
             f.Close()
     # Compare an explicit current-profile run with the backward-compatible default.

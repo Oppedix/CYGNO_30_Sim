@@ -21,15 +21,15 @@ int main(int argc, char** argv) try {
   DetectorConstruction detector(layout);
   detector.Construct();
   const std::map<G4String,std::vector<G4String>> sources{
-    {"Cathodes",detector.GetCathodesList()}, {"GEMsOuter",detector.GetGEMsOuterLists()},
-    {"GEMsCore",detector.GetGEMsInnerLists()}, {"RingSupports",detector.GetRingsSupportList()},
+    {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
+    {"GEMsPolyimide",detector.GetGEMsPolyimideList()}, {"RingSupports",detector.GetRingsSupportList()},
     {"RingStrips",detector.GetRingStripstList()}, {"Resistors",detector.GetResistorList()},
     {"Lens",detector.GetLensList()}, {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
   std::ofstream out(argv[1]);
   if (!out) throw std::runtime_error("Cannot write quantities file");
   out << std::setprecision(17)
       << "# layout: " << detector.GetLayoutProfile().name << '\n'
-      << "# detector-model: code-compatible\n# source-policy: historical\n"
+      << "# detector-model: cygno-300elj-v1\n# source-policy: uniform-volume-v1\n"
       << "# compiled-source-hash: " << cygno::build::sourceHash << '\n'
       << "# geometry-hash: " << cygno::build::geometryHash << '\n'
       << "# provenance: actual source placements; sum of logical GetMass()/kg and list size\n"
@@ -60,6 +60,8 @@ int main(int argc, char** argv) try {
     using namespace cygno::geometry;
     geometry << std::setprecision(17)
       << "{\"layout\":\"" << LayoutName(layout)
+      << "\",\"model\":\"" << cygno::geometry::detectorModel
+      << "\",\"source_policy\":\"" << cygno::geometry::sourcePolicy
       << "\",\"geometry_hash\":\"" << cygno::build::geometryHash
       << "\",\"source_hash\":\"" << cygno::build::sourceHash
       << "\",\"gas_size_mm\":[" << module.cathodeX << ',' << module.cathodeY << ',' << module.driftLength

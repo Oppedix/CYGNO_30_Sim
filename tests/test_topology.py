@@ -6,6 +6,7 @@ ROOT integration is skipped only when root-config is unavailable.
 import copy
 import math
 import os
+import re
 from pathlib import Path
 import shlex
 import shutil
@@ -135,7 +136,7 @@ def make_campaign(path, layout):
     geom=geometry(layout)
     saved_geom=rt.read(path/'geometry.json') | geom | dict(layout=layout)
     config.update(layout=layout,output_mode='compact',output_schema_version=1,primaries_per_job=10000)
-    campaign.update(schema_version=3,status='complete',coverage='26/26',job_records={})
+    campaign.update(schema_version=3,status='complete',coverage='31/31',job_records={})
     campaign['identity']['config']=config
     rt.save(path/'config.json',config); rt.save(path/'geometry.json',saved_geom)
     quantities=(path/'quantities.tsv').read_text().replace('# layout: legacy-25x3', '# layout: '+layout)
@@ -181,10 +182,29 @@ class CppTopologyTests(unittest.TestCase):
         if list(libdir.glob('libRooFitJSONInterface.*')): libraries.append('-lRooFitJSONInterface')
         subprocess.run(['c++','-O3','-std=c++17','-ffp-contract=off',str(rt.REPO/'analysis/common_c++/AnalyzeCompactCampaign.cpp'),
                         '-I'+str(rt.REPO),*flags,*libraries,'-o',str(cls.binary)],check=True,capture_output=True)
+        source=(rt.REPO/'analysis/common_c++/AnalyzeCompactCampaign.cpp').read_text()
+        source=re.sub(r'        // BEGIN additional stack figures.*?        // END additional stack figures',
+                      '',source,flags=re.S)
+        source=re.sub(r'    // BEGIN additional overlay figures.*?    // END additional overlay figures',
+                      '',source,flags=re.S)
+        baseline_source=cls.root/'without_extra_figures.cpp'; baseline_source.write_text(source)
+        cls.baseline=cls.root/'baseline'
+        subprocess.run(['c++','-O3','-std=c++17','-ffp-contract=off',str(baseline_source),
+                        '-I'+str(rt.REPO),*flags,*libraries,'-o',str(cls.baseline)],check=True,capture_output=True)
+
 
     def run_analysis(self,campaign,output,*args,binary=None):
         run=subprocess.run([str(binary or self.binary),str(campaign),str(output),*args],capture_output=True,text=True)
         self.assertEqual(run.returncode,0,run.stdout+run.stderr)
+
+    def test_figures_leave_all_histograms_and_counters_unchanged(self):
+        campaign=self.root/'figure-campaign';make_campaign(campaign,'cygno-11x7-v1')
+        before=self.root/'figure-before';after=self.root/'figure-after'
+        self.run_analysis(campaign,before,binary=self.baseline)
+        self.run_analysis(campaign,after)
+        self.check_baseline(before,after)
+        self.assertEqual(len(list((after/'figures').rglob('*.png'))),10)
+        self.assertEqual(len(list((after/'figures').rglob('*.pdf'))),10)
 
     def test_invalid_coincidence(self):
         for value in ('0','-1','nan','inf','1junk'):
@@ -218,7 +238,7 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(f['provenance/CoincidenceWindow_ns'].member('fVal'),coincidence)
             self.assertEqual(f['provenance/MultisiteDistance_mm'].member('fVal'),10.)
             new=f['SelectionEnergyWindows'].arrays(library='np'); old=f['ExactEnergyWindows'].arrays(library='np')
-            self.assertEqual(len(new['Count']),26*4*6);self.assertEqual(len(old['Count']),26*2*6)
+            self.assertEqual(len(new['Count']),31*4*6);self.assertEqual(len(old['Count']),31*2*6)
             rates=np.zeros((4,7)); raw_counts=np.zeros((4,7))
             hist=np.zeros((4,7,902)); variance=np.zeros_like(hist)
             for row,scale,counts,bins in expected:
@@ -261,7 +281,7 @@ class CppTopologyTests(unittest.TestCase):
                 np.testing.assert_array_equal(old[field],new[field][mask])
 
     def check_baseline(self,before,after):
-        for name in ('figure7.5.png','figure7.6.png'):
+        for name in ('figure7.5.png','figure7.6.png','figure_multivolume_veto.png','figure_multisite_veto.png'):
             self.assertEqual((before/name).read_bytes(),(after/name).read_bytes(),name)
         with uproot.open(before/'analysis.root') as old,uproot.open(after/'analysis.root') as new:
             for key in old.keys(recursive=True,cycle=False):

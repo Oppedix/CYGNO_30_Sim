@@ -64,9 +64,9 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
         if reference:
             raw_reference.append((row, scale, reference[0][0], reference[0][1]))
         print(f"Validated and processed {row['id']}: {processed} groups", flush=True)
-    complete = len(jobs) == 26
+    complete = len(jobs) == len(matrix["contributions"])
     summary = dict(schema_version=1, stage='analysis', campaign_fingerprint=campaign['fingerprint'],
-        campaign_identity=campaign['identity'], mode=config['mode'], coverage=f'{len(jobs)}/26',
+        campaign_identity=campaign['identity'], mode=config['mode'], coverage=f'{len(jobs)}/{len(matrix["contributions"])}',
         complete_matrix=complete, scientific_validity=(
             'software-complete; environment-preflight-passed; physical-model-and-rate-validation-pending' if complete
             else 'incomplete; partial diagnostic sums only'),

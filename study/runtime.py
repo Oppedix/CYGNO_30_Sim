@@ -28,7 +28,7 @@ RDM_SECONDS = 1.0e60 * 31536000
 LIMITATIONS = ['Smoke samples are software diagnostics, not statistically useful background estimates.',
                'Explicit RDM threshold enables long-lived decays; complete chains require preflight.',
                'Decay preflight validates this environment empirically, not all Geant4 installations.',
-               'Historical source sampling and inherited geometry/grouping limitations retained.']
+               'Uniform-volume 300ELJ model; retained mechanical assumptions and inherited grouping limitations.']
 
 
 def digest(path):
@@ -79,8 +79,8 @@ def load_config(path):
     require(set(config) == {'schema_version', 'mode', 'layout', 'model', 'source_policy',
                             'primaries_per_job', 'seed', 'timeout_seconds', 'rdm_threshold_years'}, 'Unknown/missing config field')
     require(config['schema_version'] == 1 and config['mode'] in ('smoke', 'production'), 'Mode must be smoke or production')
-    require(config['layout'] in LAYOUTS and config['model'] == 'code-compatible' and
-            config['source_policy'] == 'historical', 'Unsupported study identity')
+    require(config['layout'] in LAYOUTS and config['model'] == 'cygno-300elj-v1' and
+            config['source_policy'] == 'uniform-volume-v1', 'Unsupported study identity')
     validate_counts(config)
     require(type(config['seed']) is int and 1 <= config['seed'] <= 2_000_000_000, 'Invalid seed')
     require(type(config['timeout_seconds']) is int and config['timeout_seconds'] >= 1,
@@ -103,7 +103,7 @@ def seeds_for(seed, contribution):
 
 def macro_for(row, config):
     seeds = seeds_for(config['seed'], row['id'])
-    return '\n'.join([f"# {row['id']}: {config['mode']}; code-compatible / historical",
+    return '\n'.join([f"# {row['id']}: {config['mode']}; cygno-300elj-v1 / uniform-volume-v1",
                       RDM_COMMAND, '/run/printProgress 10000', '/run/verbose 0', '/event/verbose 0', '/tracking/verbose 0',
                       '/random/setSeeds '+' '.join(map(str, seeds)), '/output/OutFile '+config.get('output_mode','raw'),
                       *decay_commands(row), f"/run/beamOn {config['primaries_per_job']}", ''])

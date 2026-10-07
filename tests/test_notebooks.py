@@ -55,13 +55,13 @@ class ConstructedCampaignNotebookTests(unittest.TestCase):
                            check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
             geometry=rt.read(root/'geometry.json')
             self.assertEqual(set(geometry['gas_centers_mm']),{str(i) for i in range(154)})
-            self.assertEqual(geometry['gas_centers_mm']['153'],[2520,2412,-250.25])
+            self.assertEqual(geometry['gas_centers_mm']['153'],[2520,2412,-250.03])
             env=campaign['identity']['effective_environment']
             env.update(source_hash=geometry['source_hash'],geometry_hash=geometry['geometry_hash'])
             quantities=read_quantities(root/'quantities.tsv',layout=cfg['layout'],model=cfg['model'],
                                       geometry_hash=env['geometry_hash'])
-            self.assertEqual({k:v['pieces'] for k,v in quantities.items()},dict(Cathodes=77,GEMsOuter=462,
-                GEMsCore=462,RingSupports=154,RingStrips=616,Resistors=770,Lens=308,Sensors=308,Vessel=1))
+            self.assertEqual({k:v['pieces'] for k,v in quantities.items()},dict(CathodesPolyimide=77,CathodesCopper=154,GEMsCopper=924,
+                GEMsPolyimide=462,RingSupports=154,RingStrips=616,Resistors=770,Lens=308,Sensors=308,Vessel=1))
             self.assertTrue(all(v['mass_kg']>0 for v in quantities.values()))
             campaign.update(schema_version=3,quantities=quantities,fingerprint=rt.object_digest(campaign['identity']))
             rt.save(root/'config.json',cfg)

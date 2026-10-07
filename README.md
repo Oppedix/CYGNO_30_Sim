@@ -2,8 +2,12 @@
 
 Two stages reproduce the **workflow and analysis infrastructure** of Samuele
 Torelli's study: Geant4 generates raw or compact ROOT files; Python analyzes canonical groups offline.
-The canonical identity remains **legacy-25x3 / code-compatible / historical**,
-with exactly the 26 contributions in [Table 7.1](config/study/thesis-table7.1.json).
+The active model is **cygno-300elj-v1 / uniform-volume-v1**, with 31 contributions
+in the [300ELJ source matrix](config/study/cygno-300elj-radioassay-v1.json).
+The production layout is `cygno-11x7-v1`; the two existing layouts remain supported.
+GEMs and the central cathode use explicit Cu5/300ELJ50/Cu5 µm stacks.
+See [the final geometry report](docs/SINGLE_MODULE_GEOMETRY.md) for dimensions,
+constructed masses, exact sampling and retained mechanical uncertainties.
 Physics remains `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`.
 
 The privately installed **Linux x86_64 Geant4 11.3.1 serial environment** has passed
@@ -44,7 +48,7 @@ placement counts and the common gas layout; it is available with tests disabled.
 Both executables are ROOT-free. Each campaign also retains its own four-case
 preflight and refuses simulation if any case fails, independent of statistics.
 
-To run up to 16 independent Table 7.1 contributions concurrently:
+To run up to 16 independent source-matrix contributions concurrently:
 
 ```sh
 python3 study/simulate.py \
@@ -103,7 +107,8 @@ python3 study/simulate.py \
   --mode smoke --primaries 2 --jobs 8 --output-mode both --archive
 ```
 
-The four-case decay preflight remains mandatory. Table 7.1 activities are unchanged;
+The four-case decay preflight remains mandatory. GEM/cathode activities use the
+separate 300ELJ/Cu assays; other component activities retain Table 7.1 values;
 normalization uses the actual 77-module constructed masses/piece counts. This
 single-plane topology resembles Samuele's 25x3 layout, but its different module
 count and vessel/source quantities imply different total backgrounds.
@@ -206,19 +211,19 @@ cmake --build "$REFERENCE_BUILD" --target SimpleProcessEvents \
   PlotNormalizedSpectra geometry_quantities --parallel
 ```
 
-The parity test uses all three layouts, all 26 scales/categories, grouping, chunk/EOF
+The parity test uses all three layouts, all 31 scales/categories, grouping, chunk/EOF
 boundaries, exact windows, histogram edges/flows and MC variances. Linux still
-needs a fresh 4/4 preflight and 26/26 smoke after this refactor, followed by
+needs a fresh 4/4 preflight and 31/31 smoke after this refactor, followed by
 archive/offline validation and a controlled reference comparison before 1M jobs.
 No large production is launched by tests. See the [executed checks and remaining gates](docs/TWO_STAGE_VALIDATION.md).
 
-Historical limitations remain: inherited geometry overlaps and source sampling,
+Current limitations remain: retained field-cage intersections,
 process/nucleus grouping, and first-position fiducialization. **Nucleus is the most
 recently tracked ion label, not guaranteed per-hit ancestry.** Published tables
 are comparisons only, never normalization targets. Software-complete output does
 not establish a validated physical background estimate.
 
 [Code guide](docs/CODE_GUIDE.md) · [Layout](docs/LAYOUT.md) ·
-[Sources](docs/SOURCES.md) · [Table 7.1 provenance](docs/STUDY_SOURCES.md) ·
+[Sources](docs/SOURCES.md) · [Source provenance](docs/STUDY_SOURCES.md) ·
 [Raw output](docs/OUTPUT.md) · [Analysis/reference semantics](docs/ANALYSIS.md) ·
 [Validation](validation/README.md) · [License/history](legacy/README.md).

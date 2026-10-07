@@ -66,11 +66,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 {
   // Retain source lists across the application lifetime, rebuilding their contents
   // when Geant4 reconstructs geometry. Names resolve through its physical store.
-  fListCathodes.clear(); fListGEMsOuter.clear(); fListGEMsCore.clear();
+  fListCathodesPolyimide.clear(); fListCathodesCopper.clear(); fListGEMsCopper.clear(); fListGEMsPolyimide.clear();
   fListSupportRings.clear(); fListRingStrips.clear(); fListResistors.clear();
   fListLens.clear(); fListSensors.clear(); fListDetector.clear();
-  fMassMap = {{"Cathodes",0}, {"RingSupports",0}, {"RingStrips",0}, {"Resistors",0},
-              {"GEMsOuter",0}, {"GEMsCore",0}, {"Vessel",0}, {"Lens",0}, {"Sensors",0}};
+  fMassMap = {{"CathodesPolyimide",0}, {"CathodesCopper",0}, {"RingSupports",0}, {"RingStrips",0}, {"Resistors",0},
+              {"GEMsCopper",0}, {"GEMsPolyimide",0}, {"Vessel",0}, {"Lens",0}, {"Sensors",0}};
   fModuleLayout = fLayoutProfile.modules;
   fMaterials = DefineMaterials();
   auto* world = BuildWorld();
@@ -178,7 +178,8 @@ DetectorConstruction::Materials DetectorConstruction::DefineMaterials()
   CYGNO_gas->AddMaterial(He_gas, He_gas->GetDensity()/densityMix*100*perCent);
   CYGNO_gas->AddMaterial(CF4_gas, CF4_gas->GetDensity()/densityMix*100*perCent);
 
-  return {Air, Copper, Glass, PMMA, al2o3, Silicon, CYGNO_gas};
+  return {Air, Copper, Glass, PMMA, al2o3, Silicon, CYGNO_gas,
+          nist->FindOrBuildMaterial("G4_KAPTON")};
 }
 
 G4VPhysicalVolume* DetectorConstruction::BuildWorld()
@@ -207,46 +208,56 @@ G4VPhysicalVolume* DetectorConstruction::PlaceInModule(
 
 void DetectorConstruction::BuildCathodes()
 {
-  // G4Box takes half lengths. Keep the historical Z half-length and sampling
-  // depth; do not "correct" it to match neighboring offsets during this refactor.
-  fCathodeWidth = d.cathodeHalfZ*mm;
-  auto* solid = new G4Box("Cathode", d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodeHalfZ*mm);
-  auto* logical = new G4LogicalVolume(solid, fMaterials.copper, "Cathode");
-  logical->SetVisAttributes(SolidColour(G4Colour(0.6,0.4,0.2,0.0)));
+  auto* polyimide = new G4LogicalVolume(new G4Box("CathodesPolyimide",
+      d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodePolyimideThickness*mm/2),
+      fMaterials.polyimide, "CathodesPolyimide");
+  auto* copper = new G4LogicalVolume(new G4Box("CathodesCopper",
+      d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodeCopperThickness*mm/2),
+      fMaterials.copper, "CathodesCopper");
+  polyimide->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
+  copper->SetVisAttributes(SolidColour(G4Colour(0.6,0.4,0.2,0.0)));
   for (const auto& module : fModuleLayout) {
-    fPhysicalCathodes = PlaceInModule(module, logical, {}, "Cathode", 0, fListCathodes);
-    fMassMap["Cathodes"] += logical->GetMass();
+    fPhysicalCathodes = PlaceInModule(module, polyimide, {}, "CathodesPolyimide", 0, fListCathodesPolyimide);
+    fMassMap["CathodesPolyimide"] += polyimide->GetMass();
+    for (int skin=0; skin<2; ++skin) {
+      const double z = (skin == 0 ? 1 : -1)*(d.cathodePolyimideThickness+d.cathodeCopperThickness)/2;
+      PlaceInModule(module, copper, {0,0,z*mm}, "CathodesCopper", skin, fListCathodesCopper);
+      fMassMap["CathodesCopper"] += copper->GetMass();
+    }
   }
 }
 
 void DetectorConstruction::BuildGEMs()
 {
-  fGEMOuterWidth = (d.gemThickness-d.gemCavityThickness)*mm/2;
-  fGEMCoreWidth = d.gemCoreThickness*mm/2;
-  auto* outer = new G4Box("GEMOuter", d.gemX*mm/2, d.gemY*mm/2, d.gemThickness*mm/2);
-  auto* cavity = new G4Box("GEMCore", d.gemCavityX*mm/2, d.gemCavityY*mm/2, d.gemCavityThickness*mm/2);
-  // Preserve the hand-set Boolean translation and the different core/cavity
-  // thicknesses. Their existing overlap is documented in KNOWN_ISSUES.md.
-  auto* copperSolid = new G4SubtractionSolid("GEMSubSolid", outer, cavity, nullptr,
-      G4ThreeVector(0,0,-d.gemCavityThickness*mm/2+d.gemCavityShiftFraction*(d.gemCavityThickness*mm/2)));
-  auto* copperLogical = new G4LogicalVolume(copperSolid, fMaterials.copper, "logicGEM");
-  copperLogical->SetVisAttributes(SolidColour(G4Colour(0.45,0.25,0.0,0.0)));
-  auto* coreSolid = new G4Box("GEMInnner", d.gemCoreX*mm/2, d.gemCoreY*mm/2, d.gemCoreThickness*mm/2);
-  auto* coreLogical = new G4LogicalVolume(coreSolid, fMaterials.pmma, "GEMInnerLogical");
-  coreLogical->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
+  auto* polyimide = new G4LogicalVolume(new G4Box("GEMsPolyimide",
+      d.gemX*mm/2, d.gemY*mm/2, d.gemPolyimideThickness*mm/2),
+      fMaterials.polyimide, "GEMsPolyimide");
+  auto* copper = new G4LogicalVolume(new G4Box("GEMsCopper",
+      d.gemX*mm/2, d.gemY*mm/2, d.gemCopperThickness*mm/2),
+      fMaterials.copper, "GEMsCopper");
+  auto* transferGas = new G4LogicalVolume(new G4Box("GEMTransferGas",
+      d.gemX*mm/2, d.gemY*mm/2, d.gemClearGap*mm/2), fMaterials.gas, "GEMTransferGas");
+  std::vector<G4String> transferPlacements; // no radioactive source or sensitive detector
+  polyimide->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
+  copper->SetVisAttributes(SolidColour(G4Colour(0.45,0.25,0.0,0.0)));
   for (const auto& module : fModuleLayout) {
-    for (G4int side=0; side<2; ++side) {
-      const G4double sign = side == 0 ? 1 : -1;
-      for (G4int layer=0; layer<d.gemLayers; ++layer) {
-        const G4ThreeVector offset(0,0,sign*(d.cathodeHalfZ/2+d.driftLength
-                                                 +layer*d.gemGap+d.gemThickness/2)*mm);
-        const G4int localCopy = side*d.gemLayers+layer;
-        auto* copper = PlaceInModule(module, copperLogical, offset, "GEM", localCopy, fListGEMsOuter);
-        auto* core = PlaceInModule(module, coreLogical, offset, "GEMCore", localCopy, fListGEMsCore);
-        if (side == 0) { fPhysicGEMsPlus=copper; fPhysicGEMsCorePlus=core; }
-        else { fPhysicGEMsMinus=copper; fPhysicGEMsCoreMinus=core; }
-        fMassMap["GEMsOuter"] += copperLogical->GetMass();
-        fMassMap["GEMsCore"] += coreLogical->GetMass();
+    for (int side=0; side<2; ++side) {
+      const double sign = side == 0 ? 1 : -1;
+      for (int layer=0; layer<d.gemLayers; ++layer) {
+        const double z = sign*geo::GEMCentreZ(layer);
+        const int foil = side*d.gemLayers+layer;
+        if (layer<d.gemLayers-1) {
+          const double gapCentre=sign*(geo::GEMCentreZ(layer)+d.gemThickness/2+d.gemClearGap/2);
+          PlaceInModule(module, transferGas, {0,0,gapCentre*mm}, "GEMTransferGas",
+                        side*(d.gemLayers-1)+layer, transferPlacements);
+        }
+        PlaceInModule(module, polyimide, {0,0,z*mm}, "GEMsPolyimide", foil, fListGEMsPolyimide);
+        fMassMap["GEMsPolyimide"] += polyimide->GetMass();
+        for (int skin=0; skin<2; ++skin) {
+          const double offset = (skin == 0 ? 1 : -1)*(d.gemPolyimideThickness+d.gemCopperThickness)/2;
+          PlaceInModule(module, copper, {0,0,(z+offset)*mm}, "GEMsCopper", 2*foil+skin, fListGEMsCopper);
+          fMassMap["GEMsCopper"] += copper->GetMass();
+        }
       }
     }
   }

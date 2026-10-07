@@ -28,7 +28,7 @@ worker-local `SensitiveDetector` in `ConstructSDandField`.
 
 `src/source/PrimaryGeneratorAction.cc` owns isotope and source-component UI
 commands and the particle gun. `RadioactiveSourceSampler.cc` resolves a component
-list, picks a placement and samples its surface/depth model. It does not own or
+list, picks a placement and samples its uniform material volume. It does not own or
 modify detector solids. Invalid source lists fail explicitly.
 
 For each run, `RunAction` creates a new `Run` accumulator and opens an output file.

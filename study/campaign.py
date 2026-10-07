@@ -36,7 +36,8 @@ def validate_snapshots(output, campaign):
     require(f"# compiled-source-hash: {env['source_hash']}" in (output/'quantities.tsv').read_text().splitlines(),
             'Quantity source hash mismatch')
     geometry = rt.read(output/'geometry.json')
-    require(geometry['layout'] == cfg['layout'] and geometry['geometry_hash'] == env['geometry_hash'] and
+    require(geometry['model'] == cfg['model'] and geometry['source_policy'] == cfg['source_policy'] and
+            geometry['layout'] == cfg['layout'] and geometry['geometry_hash'] == env['geometry_hash'] and
             geometry['source_hash'] == env['source_hash'], 'Geometry identity mismatch')
     require(set(geometry['gas_centers_mm']) == {str(i) for i in range(2*LAYOUT_MODULE_COUNTS[cfg['layout']])},
             'Invalid gas copy map')
@@ -123,7 +124,7 @@ def validate_campaign(output, allow_partial=False):
         require(job == records[row['id']], 'Campaign/job manifest disagreement')
         if job['status'] == 'complete':
             jobs[row['id']] = validate_job(output, row, campaign)
-    require(campaign['coverage'] == f'{len(jobs)}/26' and
-            (campaign['status'] == 'complete') == (len(jobs) == 26), 'Campaign completeness mismatch')
-    require(allow_partial or len(jobs) == 26, 'Incomplete campaign; use --allow-partial for labeled diagnostics')
+    require(campaign['coverage'] == f'{len(jobs)}/{len(matrix["contributions"])}' and
+            (campaign['status'] == 'complete') == (len(jobs) == len(matrix["contributions"])), 'Campaign completeness mismatch')
+    require(allow_partial or len(jobs) == len(matrix["contributions"]), 'Incomplete campaign; use --allow-partial for labeled diagnostics')
     return jobs

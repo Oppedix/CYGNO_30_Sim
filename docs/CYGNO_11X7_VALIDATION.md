@@ -1,3 +1,6 @@
+> Historical validation record for the previous detector/source model.
+> The active 300ELJ construction and current contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
+
 # cygno-11x7-v1 layout handoff
 
 Validated 2026-09-24 on macOS/arm64, Geant4 11.4.2, starting from clean `main`

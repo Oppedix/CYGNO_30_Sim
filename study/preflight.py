@@ -28,7 +28,7 @@ def check(build, output, long_lived_only=False):
         folder = output/name; folder.mkdir()
         macro = '\n'.join(['/run/verbose 0', '/event/verbose 0', '/tracking/verbose 0',
             '/random/setSeeds 12345 67890', '/output/OutFile preflight',
-            *([RDM_COMMAND] if enabled else []), '/detector/RadElement Cathodes',
+            *([RDM_COMMAND] if enabled else []), '/detector/RadElement CathodesPolyimide',
             f'/isotope/AtomicNumber {z}', f'/isotope/MassNumber {a}',
             '/rdecay01/fullChain true', f'/stopChain/ZStopDecay {stop[0]}',
             f'/stopChain/AStopDecay {stop[1]}', f'/run/beamOn {count}', ''])

@@ -1,6 +1,6 @@
 # Validation reuses the same compiled simulation classes as the application.
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/multithreaded.txt" "${Geant4_multithreaded_FOUND}")
-foreach(tool geometry_snapshot geometry_audit chain_boundaries)
+foreach(tool geometry_snapshot geometry_audit chain_boundaries uniform_volume)
   add_executable(${tool} ${tool}.cc)
   target_link_libraries(${tool} PRIVATE cygno_sim)
 endforeach()
@@ -15,6 +15,7 @@ add_executable(layout_profiles layout_profiles.cc)
 target_compile_features(layout_profiles PRIVATE cxx_std_17)
 target_include_directories(layout_profiles PRIVATE "${PROJECT_SOURCE_DIR}")
 add_test(NAME layout_profiles COMMAND layout_profiles)
+add_test(NAME uniform_volume COMMAND uniform_volume)
 add_test(NAME chain_boundaries COMMAND chain_boundaries)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 add_test(NAME simulation_python COMMAND ${Python3_EXECUTABLE} -m unittest discover

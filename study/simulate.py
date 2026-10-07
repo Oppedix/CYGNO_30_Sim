@@ -91,8 +91,8 @@ def update_campaign(output, campaign, matrix):
         records[row['id']] = rt.read(path) if path.exists() else dict(status='not_started')
     campaign['job_records'] = records
     completed = sum(job['status'] == 'complete' for job in records.values())
-    campaign.update(coverage=f'{completed}/26', status='complete' if completed == 26 else 'incomplete',
-                    scientific_validity='raw-accounting-complete; offline-validation-required' if completed == 26
+    campaign.update(coverage=f'{completed}/{len(matrix["contributions"])}', status='complete' if completed == len(matrix["contributions"]) else 'incomplete',
+                    scientific_validity='raw-accounting-complete; offline-validation-required' if completed == len(matrix["contributions"])
                     else 'incomplete; not a full-matrix result')
     rt.save(output/'campaign.json', campaign)
 
@@ -233,7 +233,7 @@ def run(args):
                     shutil.copyfile(rt.REPO/name, destination)
             campaign = dict(schema_version=3, stage='simulation', fingerprint=fingerprint, identity=identity,
                             quantities=quantities, created_unix=time.time(), limitations=rt.LIMITATIONS,
-                            status='preflight', coverage='0/26', scientific_validity='unvalidated',
+                            status='preflight', coverage=f'0/{len(matrix["contributions"])}', scientific_validity='unvalidated',
                             job_records={r['id']: dict(status='not_started') for r in matrix['contributions']},
                             snapshots={name: rt.digest(output/name) for name in
                                 ('config.json', 'matrix.json', 'quantities.tsv', 'geometry.json')})
@@ -266,7 +266,7 @@ def run(args):
         if args.archive:
             from study.archive import package
             print('Archive: '+str(package(output)))
-        return 0 if len(jobs) == 26 else 2
+        return 0 if len(jobs) == len(matrix["contributions"]) else 2
 
 
 def positive_integer(value):
@@ -282,7 +282,7 @@ def positive_integer(value):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config', type=Path, default=rt.REPO/'config/study/samuele.json')
-    p.add_argument('--matrix', type=Path, default=rt.REPO/'config/study/thesis-table7.1.json')
+    p.add_argument('--matrix', type=Path, default=rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')
@@ -294,7 +294,7 @@ def parser():
     p.add_argument('--only', nargs='+', help='Contribution IDs; partial coverage exits 2')
     p.add_argument('--resume', action='store_true', help='Explicit spelling of the default safe resume behavior')
     p.add_argument('--retry-failed', action='store_true', help='Retry failed jobs in new attempt directories')
-    p.add_argument('--archive', action='store_true', help='Package a complete 26/26 campaign as OUTPUT.tar.gz')
+    p.add_argument('--archive', action='store_true', help='Package a complete source-matrix campaign as OUTPUT.tar.gz')
     p.add_argument('--list', '--dry-run', action='store_true', help='Print matrix macros; no simulation')
     p.add_argument('--macros-dir', type=Path, help='Export macros to a new directory; no simulation')
     return p
