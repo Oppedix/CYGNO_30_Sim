@@ -17,7 +17,7 @@ int main(int argc, char** argv) try {
     else paths.push_back(arg);
   }
   if (paths.empty() || paths.size()>2)
-    throw std::runtime_error("Usage: SimpleProcessEvents input.root [output.root] [--assume-layout PROFILE --assume-model cygno-300elj-v1]");
+    throw std::runtime_error("Usage: SimpleProcessEvents input.root [output.root] [--assume-layout PROFILE --assume-model cygno-300elj-v2]");
   const std::filesystem::path input(paths[0]);
   const std::string output=paths.size()==2 ? paths[1] : (input.parent_path()/("elab_"+input.filename().string())).string();
   if (std::filesystem::weakly_canonical(input)==std::filesystem::weakly_canonical(output) ||

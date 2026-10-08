@@ -1,7 +1,7 @@
 # Detector layout profiles
 
-All profiles use the same `cygno-300elj-v1` module and `uniform-volume-v1` sources.
-The production 11×7 config is `config/study/cygno-11x7-v1.json`. Layout identity
+All profiles use the same `cygno-300elj-v2` module and `uniform-volume-v1` sources.
+The production 11×7 config is `config/study/cygno-11x7-v2.json`. Layout identity
 is separate from detector construction and source policy. Select it before
 initialization:
 
@@ -23,12 +23,12 @@ contains the full component dimensions/materials/masses and construction map.
 
 | Profile | Module ordering and centres [mm] | Modules / sensitive gas / total placements |
 |---|---|---|
-| cygno-11x7-v1 | `m=ix*7+iy`; `((ix-5)*504,(iy-3)*804,0)` | 77 / 154 / 4237 |
-| legacy-25x3 | `m=ix*3+iy`; `((ix-12)*504,(iy-1)*804,0)` | 75 / 150 / 4127 |
-| cygno-5x5x3-v1 | `m=(ix*5+iy)*3+iz`; `((ix-2)*504,(iy-2)*804,(iz-1)*2285.42)` | 75 / 150 / 4127 |
+| cygno-11x7-v1 | `m=ix*7+iy`; `((ix-5)*504,(iy-3)*804,0)` | 77 / 154 / 10705 |
+| legacy-25x3 | `m=ix*3+iy`; `((ix-12)*504,(iy-1)*804,0)` | 75 / 150 / 10427 |
+| cygno-5x5x3-v1 | `m=(ix*5+iy)*3+iz`; `((ix-2)*504,(iy-2)*804,(iz-1)*2285.42)` | 75 / 150 / 10427 |
 
-Every module has 55 placements: cathode PI1/Cu2, GEM PI6/Cu12, transfer gas4,
-support2, strip8, resistor10, lens4, sensor4, sensitive drift2. Add one common
+Every module has 139 placements: cathode PI1/Cu2, GEM PI6/Cu12, transfer gas4,
+support2, strip50, resistor52, lens4, sensor4, sensitive drift2. Add one common
 vessel and one World. Gas copy is `side*moduleCount+m`, centred at
 `moduleCentre+(0,0,±250.030)`. Side 0 is +Z. Foil layers and transfer gaps have
 separate local copies. Physical `Prefix_copy` names are unique; copies are unique

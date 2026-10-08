@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   require(detector->GetComponentMasses().size()==sources.size(),"extra mass map keys");
   const int count=detector->GetLayoutProfile().expectedModuleCount;
   const std::map<G4String,int> perModule{{"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
-    {"RingSupports",2},{"RingStrips",8},{"Resistors",10},{"Lens",4},{"Sensors",4}};
+    {"RingSupports",2},{"RingStrips",2*cygno::geometry::module.stripCount},{"Resistors",2*(cygno::geometry::module.stripCount+1)},{"Lens",4},{"Sensors",4}};
   int event=0;
   for(const auto& source:sources) {
     require(ui->ApplyCommand("/detector/RadElement "+source.first)==0,"source command");

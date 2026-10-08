@@ -27,7 +27,7 @@ TOOLS = {'simulation': 'rdecay01', 'processor': 'analysis/SimpleProcessEvents',
 def normalization(rows, jobs, quantities, identity):
     lines = ['# normalization-format: quantity-v2', f"# layout: {identity['layout']}",
              f"# detector-model: {identity['model']}", f"# source-policy: {identity['source_policy']}",
-             '# provenance: cygno-300elj-radioassay-v1; actual construction and generated counts; chain validity and campaign coverage in summary.json']
+             '# provenance: cygno-300elj-radioassay-v2; actual construction and generated counts; chain validity and campaign coverage in summary.json']
     for row in rows:
         count = jobs[row['id']]['accounting']['GeneratedPrimaries']
         quantity = quantity_for(row, quantities)

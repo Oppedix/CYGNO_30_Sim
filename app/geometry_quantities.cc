@@ -3,6 +3,7 @@
 #include "BuildInfo.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Material.hh"
+#include "G4VSolid.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include <cmath>
@@ -29,16 +30,16 @@ int main(int argc, char** argv) try {
   if (!out) throw std::runtime_error("Cannot write quantities file");
   out << std::setprecision(17)
       << "# layout: " << detector.GetLayoutProfile().name << '\n'
-      << "# detector-model: cygno-300elj-v1\n# source-policy: uniform-volume-v1\n"
+      << "# detector-model: cygno-300elj-v2\n# source-policy: uniform-volume-v1\n"
       << "# compiled-source-hash: " << cygno::build::sourceHash << '\n'
       << "# geometry-hash: " << cygno::build::geometryHash << '\n'
       << "# provenance: actual source placements; sum of logical GetMass()/kg and list size\n"
-      << "component\tmass_kg\tpieces\tgeometry_material\n";
+      << "component\tmass_kg\tpieces\tgeometry_material\tdensity_g_cm3\tvolume_mm3\n";
   if (sources.size()!=detector.GetComponentMasses().size())
     throw std::runtime_error("Source and mass keys differ");
   std::set<G4String> seen;
   for (const auto& source : sources) {
-    double mass=0;
+    double mass=0, volume=0, density=0;
     G4String material;
     for (const auto& name : source.second) {
       if (!seen.insert(name).second) throw std::runtime_error("Duplicate source placement");
@@ -49,10 +50,13 @@ int main(int argc, char** argv) try {
       if (!material.empty() && material!=next) throw std::runtime_error("Mixed-material source list");
       material=next;
       mass+=logical->GetMass();
+      volume+=logical->GetSolid()->GetCubicVolume();
+      density=logical->GetMaterial()->GetDensity();
     }
     if (mass<=0 || std::abs(mass-detector.GetComponentMasses().at(source.first))>1e-12*mass)
       throw std::runtime_error("Constructed mass total mismatch");
-    out << source.first << '\t' << mass/kg << '\t' << source.second.size() << '\t' << material << '\n';
+    out << source.first << '\t' << mass/kg << '\t' << source.second.size() << '\t' << material
+        << '\t' << density/(g/cm3) << '\t' << volume/mm3 << '\n';
   }
   if (!out) throw std::runtime_error("Failed to write quantities");
   if (argc==4) {

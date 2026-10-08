@@ -100,7 +100,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   
   private:
   struct Materials {
-    G4Material *air, *copper, *glass, *pmma, *alumina, *silicon, *gas, *polyimide;
+    G4Material *air, *copper, *glass, *pmma, *fusedSilica, *silicon, *gas, *polyimide;
   };
   Materials DefineMaterials();
   G4VPhysicalVolume* BuildWorld();

@@ -11,7 +11,7 @@ from pathlib import Path
 # Counts are the Python file-validation contract; C++ derives placement counts.
 LAYOUT_MODULE_COUNTS = {'legacy-25x3': 75, 'cygno-5x5x3-v1': 75, 'cygno-11x7-v1': 77}
 LAYOUTS = set(LAYOUT_MODULE_COUNTS)
-COMPONENTS = {
+V1_COMPONENTS = {
     'GEMsPolyimide': ('300ELJPolyimide', 'GEMs'), 'GEMsCopper': ('LaminateCopper', 'GEMs'),
     'RingSupports': ('Acrylic', 'Field Cage'), 'RingStrips': ('EFCu', 'Field Cage'),
     'CathodesPolyimide': ('300ELJPolyimide', 'Cathodes'),
@@ -32,6 +32,48 @@ ASSAYS = {
     'LaminateCopper': {'U238': [12, 13], 'Th232': [12, 12], 'K40': [130, 180]},
 }
 RETAINED_ACTIVITIES = {'Acrylic': {'U238': 0.000296, 'Th232': 5.69e-05, 'K40': 7.12e-05}, 'EFCu': {'U238': 1.31e-07, 'Th232': 3.4e-08}, 'Silicon': {'U238': 0.002, 'Th232': 0.0028, 'K40': 0.009}, 'Suprasil': {'U238': 0.000123, 'Th232': 4.07e-05, 'K40': 0.0003}, 'Al2O3': {'U238': 1e-06, 'Th232': 1.4e-07, 'K40': 1.2e-06, 'U235': 4e-08, 'Ra226': 1.8e-07, 'Th228': 1.3e-07}}
+# v1 remains readable only through explicit historical validation.
+COMPONENTS = V1_COMPONENTS | {
+    'RingSupports': ('RadiopurePMMA', 'Field Cage'),
+    'Resistors': ('CompletedMBNLResistor', 'Resistors'),
+}
+PMMA_ACTIVITIES = {'U238': 9.05e-6, 'Th232': 5.05e-6, 'K40': 71.2e-6}
+RESISTOR_ASSAY = {'U238': [4.30, .20], 'Th232': [2.00, .16], 'K40': [7.90, .20]}
+REFERENCE_RESISTOR = dict(length_mm=17., outer_diameter_mm=6., inner_diameter_mm=4., density_g_cm3=2.20)
+PMMA_PROVENANCE = {
+    'title': 'Mass Spectrometric Assay of High Radiopurity Solid Polymer Materials for Parts in Radiation and Rare Event Physics Detectors',
+    'citation': 'I.J. Arnquist et al., NIM A 943 (2019) 162443',
+    'doi': '10.1016/j.nima.2019.162443',
+    'table': '1', 'manuscript_page': 7,
+    'row': 'second Pre- set, sample 3, 0.1527 g (ninth data row)',
+    'sample': 'UVT acrylic, Reynolds Polymer Technology, Inc.; solid 4 x 12 x 12 inch block',
+    'form': 'finished solid stock; clean band-saw cubes, not raw precursor',
+    'method': 'clean machining; detergent/DI/6M HNO3/DI cleaning; dry ashing in ULB EF-Cu boats; isotope-dilution ICP-MS with pre-ashing tracer',
+    'U238': {'pg_g': .730, 'uBq_kg': 9.05, 'uncertainty': None, 'upper_limit': False},
+    'Th232': {'pg_g': 1.23, 'uBq_kg': 5.05, 'uncertainty': None, 'upper_limit': False},
+    'interpretation': 'central measurements, uncertainties not reported for this row; conservative replicate envelope: same row has maxima for both U and Th across all 12 Cu-boat determinations; adopt published activity columns without re-rounding their concentrations',
+    'alternatives': 'Table 1 includes measured U 3.03-9.05 and Th 1.13-5.05 uBq/kg plus limits; Table 2 post-ashing agrees, pre-ashing quartz values are inflated by tracer loss (section 3.2 pp.6-8)',
+    'K40': {'measured': False, 'uBq_kg': 71.2, 'basis': 'conservative-old-K-proxy', 'reference': 'retained thesis Table 7.1 Acrylic'},
+    'design_status': 'adopted radiopure PMMA design material; not an assay of Samuele acrylic or the installed support batch',
+}
+RESISTOR_PROVENANCE = {
+    'title': 'Novel High-Radiopurity Doped Amorphous Silicon Resistors for Low-Background Detectors',
+    'citation': 'A. Anker et al., arXiv:2601.05985v2',
+    'table': '9', 'page': 19, 'row': 'Prototype 2 MBNL - 2024, Completed',
+    'radioassay_title': 'The nEXO Radioassay Program',
+    'radioassay_citation': 'R. MacLellan et al., arXiv:2604.15406v1',
+    'radioassay_table': 'IV', 'radioassay_page': 10, 'radioassay_row': 60,
+    'sample': 'MBNL Heraeus Suprasil 300, aSi CVD at 550 C, Ti and Pd end metalized',
+    'method': 'PNNL ICP-MS after full dissolution; uncertainties are analytical precision (Anker section 6 pp.17-19)',
+    'concentrations': RESISTOR_ASSAY,
+    'units': {'U238': 'ppt, early chain', 'Th232': 'ppt', 'K40': 'ppb natural K'},
+    'sample_correspondence': 'same completed MBNL component technology and matching U/Th results; Anker reference 22 explicitly points to nEXO Table IV items 55-60. No unique specimen or batch identifier establishes identity. Composite publication basis; all U/Th/K are available together in nEXO row 60, with Anker providing geometry/process context',
+    'chain_assumption': 'secular equilibrium for U/Th is a modelling assumption, not demonstrated by ICP-MS chain-head assays',
+    'reference_geometry': REFERENCE_RESISTOR,
+    'normalization': 'Bq/kg completed-component concentration times nominal reference tube mass -> effective Bq/reference-piece assigned to each compact CYGNO surrogate; coating and metal masses omitted',
+    'transport_approximation': '1.6 x 0.55 x 3.2 mm fused-silica box at 2.20 g/cm3; not mechanically identical to nEXO tube; uniform source location cannot partition silica/aSi/metallization contamination',
+}
+
 
 
 def assay_activity(isotope, concentration):
@@ -40,9 +82,32 @@ def assay_activity(isotope, concentration):
     return concentration * (1e-6 if isotope == 'K40' else 1e-9) * SPECIFIC_ACTIVITIES_BQ_G[isotope]
 
 
-def expected_contributions():
-    return {(component, isotope) for component, (material, _) in COMPONENTS.items()
-            for isotope in (ASSAYS.get(material) or RETAINED_ACTIVITIES[material])}
+def reference_resistor_mass_kg():
+    r = REFERENCE_RESISTOR
+    return math.pi*(r['outer_diameter_mm']**2-r['inner_diameter_mm']**2)/4*r['length_mm']*r['density_g_cm3']*1e-6
+
+
+def resistor_activity(isotope):
+    return assay_activity(isotope, RESISTOR_ASSAY[isotope][0])*reference_resistor_mass_kg()
+
+
+def vessel_material_comparison(vessel_mass_kg, copper_density_g_cm3, pmma_density_g_cm3):
+    """Use the actual constructed shell volume; same-volume replacement only."""
+    require(all(positive(v) for v in (vessel_mass_kg, copper_density_g_cm3, pmma_density_g_cm3)), 'Invalid vessel comparison')
+    volume_cm3 = vessel_mass_kg*1000/copper_density_g_cm3
+    pmma_mass = volume_cm3*pmma_density_g_cm3/1000
+    crossover = {i: RETAINED_ACTIVITIES['EFCu'][i]*vessel_mass_kg/pmma_mass for i in ('U238', 'Th232')}
+    return dict(volume_cm3=volume_cm3, copper_mass_kg=vessel_mass_kg, pmma_mass_kg=pmma_mass,
+                crossover_Bq_kg=crossover,
+                pmma_clears_both=all(PMMA_ACTIVITIES[i]<crossover[i] for i in crossover),
+                pmma_K_measured=PMMA_PROVENANCE['K40']['measured'], selected_material='EFCu')
+
+
+def expected_contributions(*, historical=False):
+    components = V1_COMPONENTS if historical else COMPONENTS
+    return {(component, isotope) for component, (material, _) in components.items()
+            for isotope in (PMMA_ACTIVITIES if material == 'RadiopurePMMA' else RESISTOR_ASSAY
+                            if material == 'CompletedMBNLResistor' else ASSAYS.get(material) or RETAINED_ACTIVITIES[material])}
 
 
 def require(condition, message):
@@ -61,9 +126,12 @@ def ion_name(ion):
     return name
 
 
-def validate_matrix(matrix):
+def validate_matrix(matrix, *, historical=False):
+    v1 = historical and matrix.get('matrix_id') == 'cygno-300elj-radioassay-v1'
+    components = V1_COMPONENTS if v1 else COMPONENTS
+    expected = expected_contributions(historical=v1)
     require(matrix.get('schema_version') == 1, 'Unsupported matrix schema')
-    require(matrix.get('matrix_id') == 'cygno-300elj-radioassay-v1', 'Unsupported source matrix')
+    require(matrix.get('matrix_id') == ('cygno-300elj-radioassay-v1' if v1 else 'cygno-300elj-radioassay-v2'), 'Unsupported source matrix')
     require(matrix.get('seconds_per_year') == 31536000, 'Study year convention changed')
     require(matrix.get('quantity_policy') == 'constructed-component-mass-kg-or-placement-count', 'Invalid quantity policy')
     provenance = matrix.get('provenance', {})
@@ -74,41 +142,48 @@ def validate_matrix(matrix):
     require(provenance.get('retained_reference', {}).get('matrix_id') == 'thesis-table7.1-v1' and
             provenance['retained_reference'].get('sha256') == 'de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836',
             'Missing retained Table 7.1 matrix provenance')
+    if not v1:
+        require(provenance.get('pmma') == PMMA_PROVENANCE and provenance.get('completed_resistor') == RESISTOR_PROVENANCE, 'Missing/changed v2 material provenance')
     rows = matrix.get('contributions', [])
     seen = set()
     for row in rows:
         component = row.get('component')
-        require(component in COMPONENTS, 'Unknown/ambiguous source component')
-        material, category = COMPONENTS[component]
+        require(component in components, 'Unknown/ambiguous source component')
+        material, category = components[component]
         require((row.get('assay_material'), row.get('category')) == (material, category), 'Wrong assay/category mapping')
         isotope = ion_name(row.get('chain_start'))
         key = (component, isotope)
-        require(key in expected_contributions(), 'Unsupported component isotope')
+        require(key in expected, 'Unsupported component isotope')
         require(key not in seen and row.get('id') == '_'.join(key), 'Duplicate or malformed contribution ID')
         seen.add(key)
         require(positive(row.get('activity')), 'Activity must be finite and positive; omit x entries')
         require(row.get('activity_unit') == ('Bq/piece' if component == 'Resistors' else 'Bq/kg'), 'Wrong activity unit')
         require(row.get('activity_basis') == ('separate-material-assay' if material in ASSAYS else
-                'upper-limit-used-as-value' if material == 'Acrylic' else 'table-value'), 'Wrong activity interpretation')
+                'upper-limit-used-as-value' if material == 'Acrylic' else
+                'conservative-old-K-proxy' if material == 'RadiopurePMMA' and isotope == 'K40' else
+                'measured-solid-pmma-conservative-replicate' if material == 'RadiopurePMMA' else
+                'effective-completed-component-per-piece' if material == 'CompletedMBNLResistor' else 'table-value'), 'Wrong activity interpretation')
         expected_activity = (assay_activity(isotope, ASSAYS[material][isotope][0]) if material in ASSAYS
+                             else PMMA_ACTIVITIES[isotope] if material == 'RadiopurePMMA'
+                             else resistor_activity(isotope) if material == 'CompletedMBNLResistor'
                              else RETAINED_ACTIVITIES[material].get(isotope))
         require(expected_activity is not None and row['activity'] == expected_activity, 'Wrong nominal assay activity')
         require(row.get('full_chain') is True, 'Chain transport must be enabled, including split segments')
         stop = row.get('stop_before')
-        expected_stop = {'U238': 'Ra226', 'Th232': 'Th228'}.get(isotope) if component == 'Resistors' else None
+        expected_stop = {'U238': 'Ra226', 'Th232': 'Th228'}.get(isotope) if v1 and component == 'Resistors' else None
         require((ion_name(stop) if stop is not None else None) == expected_stop, 'Wrong stop-before boundary')
         policy = ('upper-segment' if expected_stop else 'lower-segment' if isotope in ('Ra226', 'Th228')
                   else 'single-parent' if isotope == 'K40' else 'equilibrium')
         require(row.get('chain_policy') == policy, 'Wrong chain policy')
         daughters = ([{'U238': 'Ra226', 'Th232': 'Th228'}[isotope]]
-                     if component != 'Resistors' and isotope in ('U238', 'Th232') else [])
+                     if (not v1 or component != 'Resistors') and isotope in ('U238', 'Th232') else [])
         require(row.get('equilibrium_daughters') == daughters, 'Equilibrium daughters must not become separate jobs')
-    require(seen == expected_contributions(), 'Missing/extra canonical source contributions')
+    require(seen == expected, 'Missing/extra canonical source contributions')
     return matrix
 
 
-def read_matrix(path):
-    return validate_matrix(json.loads(Path(path).read_text()))
+def read_matrix(path, *, historical=False):
+    return validate_matrix(json.loads(Path(path).read_text()), historical=historical)
 
 
 def decay_commands(row):
@@ -127,7 +202,7 @@ def decay_commands(row):
 
 
 def read_quantities(path, *, layout, model, geometry_hash):
-    require(layout in LAYOUTS and model == 'cygno-300elj-v1', 'Unsupported constructed detector')
+    require(layout in LAYOUTS and model == 'cygno-300elj-v2', 'Unsupported constructed detector')
     lines = Path(path).read_text().splitlines()
     headers = {}
     for line in lines:

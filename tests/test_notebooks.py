@@ -61,7 +61,7 @@ class ConstructedCampaignNotebookTests(unittest.TestCase):
             quantities=read_quantities(root/'quantities.tsv',layout=cfg['layout'],model=cfg['model'],
                                       geometry_hash=env['geometry_hash'])
             self.assertEqual({k:v['pieces'] for k,v in quantities.items()},dict(CathodesPolyimide=77,CathodesCopper=154,GEMsCopper=924,
-                GEMsPolyimide=462,RingSupports=154,RingStrips=616,Resistors=770,Lens=308,Sensors=308,Vessel=1))
+                GEMsPolyimide=462,RingSupports=154,RingStrips=3850,Resistors=4004,Lens=308,Sensors=308,Vessel=1))
             self.assertTrue(all(v['mass_kg']>0 for v in quantities.values()))
             campaign.update(schema_version=3,quantities=quantities,fingerprint=rt.object_digest(campaign['identity']))
             rt.save(root/'config.json',cfg)

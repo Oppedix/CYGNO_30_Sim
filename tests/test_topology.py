@@ -136,7 +136,7 @@ def make_campaign(path, layout):
     geom=geometry(layout)
     saved_geom=rt.read(path/'geometry.json') | geom | dict(layout=layout)
     config.update(layout=layout,output_mode='compact',output_schema_version=1,primaries_per_job=10000)
-    campaign.update(schema_version=3,status='complete',coverage='31/31',job_records={})
+    campaign.update(schema_version=3,status='complete',coverage='28/28',job_records={})
     campaign['identity']['config']=config
     rt.save(path/'config.json',config); rt.save(path/'geometry.json',saved_geom)
     quantities=(path/'quantities.tsv').read_text().replace('# layout: legacy-25x3', '# layout: '+layout)
@@ -238,7 +238,7 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(f['provenance/CoincidenceWindow_ns'].member('fVal'),coincidence)
             self.assertEqual(f['provenance/MultisiteDistance_mm'].member('fVal'),10.)
             new=f['SelectionEnergyWindows'].arrays(library='np'); old=f['ExactEnergyWindows'].arrays(library='np')
-            self.assertEqual(len(new['Count']),31*4*6);self.assertEqual(len(old['Count']),31*2*6)
+            self.assertEqual(len(new['Count']),28*4*6);self.assertEqual(len(old['Count']),28*2*6)
             rates=np.zeros((4,7)); raw_counts=np.zeros((4,7))
             hist=np.zeros((4,7,902)); variance=np.zeros_like(hist)
             for row,scale,counts,bins in expected:

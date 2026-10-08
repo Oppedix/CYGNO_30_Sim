@@ -138,7 +138,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
     if (!detector) G4Exception("RunAction", "CYGNO_METADATA", FatalException, "Missing detector identity");
     analysisManager->FillNtupleSColumn(1,0,cygno::build::geometryHash);
     analysisManager->FillNtupleSColumn(1,1,detector->GetLayoutProfile().name);
-    analysisManager->FillNtupleSColumn(1,2,"cygno-300elj-v1");
+    analysisManager->FillNtupleSColumn(1,2,"cygno-300elj-v2");
     analysisManager->FillNtupleSColumn(1,3,"uniform-volume-v1");
     analysisManager->AddNtupleRow(1);
     analysisManager->FillNtupleSColumn(3,0,cygno::output::Mode());

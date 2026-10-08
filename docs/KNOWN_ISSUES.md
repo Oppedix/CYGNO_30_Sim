@@ -1,7 +1,7 @@
 # Known issues and scientific decisions
 
-The active detector is `cygno-300elj-v1`, with `uniform-volume-v1` sources and
-`cygno-300elj-radioassay-v1` assays. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
+The active detector is `cygno-300elj-v2`, with `uniform-volume-v1` sources and
+`cygno-300elj-radioassay-v2` assays. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
 describes the constructed geometry and masses. Software checks alone do not
 establish physical background-rate accuracy.
 
@@ -14,13 +14,13 @@ He/CF4. Uniform-volume sampling replaces the surface/inward-depth shortcut;
 deterministic containment, analytic moments, ranges and rotated placements are
 tested. Model/policy/hash gates reject earlier data rather than relabel them.
 Same-event primary placement, isotope updates, mass-map accounting, event/EOF
-flushes and output ownership checks remain in place.
+flushes and output ownership checks remain in place. Longitudinal segmentation is resolved: 25 ten-mm Cu bands, 24 ten-mm internal gaps, five-mm endpoint half-gaps, and 26 gap-centred resistors per side. Resistor transport is a compact fused-silica surrogate; completed-component assay is normalized per nominal nEXO reference piece.
 
 ## Unresolved current geometry assumptions
 
 | Component | Active implementation retained | Unresolved evidence |
 |---|---|---|
-| Field cage | 4 Cu strips/side, 44% longitudinal coverage; shifted Boolean frames retain small strip/gas and strip/support intersections | Thesis prose describes 5 bands; mechanical cross sections/alignment are unverified |
+| Field cage | 25 Cu bands/side, agreed 50% longitudinal coverage; shifted Boolean frames retain small transverse strip/gas and strip/support intersections | Transverse mechanical cross sections/alignment remain unverified |
 | Vessel | One common rectangular 5 mm copper shell, with no optical apertures; planar optics outside | Thesis prose describes 10 mm; physical enclosure/shielding paths unverified |
 | Lens | Radius 10 mm, thickness 2 mm, SiO2-like transport | Thesis prose says diameter 10 mm, thickness 1 mm |
 | Sensor | Silicon 10.6×18.8×1 mm³ | Thesis prose gives 18.0 mm in one direction |

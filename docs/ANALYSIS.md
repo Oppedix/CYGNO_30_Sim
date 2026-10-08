@@ -20,7 +20,7 @@ Without an explicit output, the processor creates `elab_<basename>` beside the
 input, including when the input has directory components. New raw worker files
 have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
 `DetectorModel` and `SourcePolicy` string leaves. `legacy-25x3`,
-`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v1` and `uniform-volume-v1`. Other detector models are unsupported.
+`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v2` and `uniform-volume-v1`. Other detector models are unsupported.
 
 Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
 `CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
@@ -33,11 +33,11 @@ policy, then explicitly identify both axes:
 
 ```sh
 /path/to/build/analysis/SimpleProcessEvents old.root processed.root \
-  --assume-layout legacy-25x3 --assume-model cygno-300elj-v1
+  --assume-layout legacy-25x3 --assume-model cygno-300elj-v2
 ```
 
 Explicit assumptions are suitable only for independently verified data generated
-with `cygno-300elj-v1 / uniform-volume-v1`. They cannot convert an older model or
+with `cygno-300elj-v2 / uniform-volume-v1`. They cannot convert an older model or
 sampler. `--assume-geometry` remains an alias of `--assume-layout`. Versioned
 metadata is never overridden. Pre-Phase-2 incomplete markers and old geometry
 hashes are rejected; there is no old-hash compatibility exception for this model.
@@ -100,7 +100,7 @@ new source-matrix studies (the format header must precede all data rows):
 ```text
 # normalization-format: quantity-v2
 # layout: legacy-25x3
-# detector-model: cygno-300elj-v1
+# detector-model: cygno-300elj-v2
 # source-policy: uniform-volume-v1
 # provenance: canonical 300ELJ/separate-Cu and retained Table 7.1 assays, matching geometry_quantities export and validated generated-primary counts
 # component isotope quantity quantity_unit activity activity_unit generated_events category input_file
@@ -114,7 +114,7 @@ have the same quantity, units and category. Unrecognized or mismatched units,
 duplicates and nonfinite scales fail before creating output. There is no implicit
 micro-/milli-Bq conversion: the matrix already supplies Bq values.
 
-Use the 31 contributions in `config/study/cygno-300elj-radioassay-v1.json` and the actual
+Use the 28 contributions in `config/study/cygno-300elj-radioassay-v2.json` and the actual
 constructed mass/piece export; see [source provenance](STUDY_SOURCES.md). The
 assay matrix has no layout or detector-model default and launches no simulations.
 The runner attaches the verified actual generated-primary count for each completed job.
@@ -124,7 +124,7 @@ is absent, with its original meaning (kg and Bq/kg) and category equal to compon
 
 ```text
 # layout: legacy-25x3
-# detector-model: cygno-300elj-v1
+# detector-model: cygno-300elj-v2
 # source-policy: uniform-volume-v1
 # provenance: identify source revision, assay source, mass basis and generated-event accounting
 # component isotope mass_kg activity_Bq_per_kg generated_events input_file
@@ -220,10 +220,12 @@ events/year = selected_MC_groups * activity * quantity * 31536000 / generated_pr
 ```
 
 Activity is canonical-matrix Bq/kg with constructed mass in kg, or Bq/piece with constructed
-placement count. All six resistor contributions use 750 pieces in the two 75-module
-layouts and 770 in `cygno-11x7-v1`. Layer assays come from the 300ELJ study; other assays and chain assumptions retain
-the thesis values. Quantities come
-from actual cygno-300elj-v1 construction, including its Boolean-solid mass estimate.
+placement count. The three resistor contributions use 3900 pieces in the two 75-module
+layouts and 4004 in `cygno-11x7-v1`, with effective activity per nominal nEXO reference component.
+PMMA U/Th adopts measured Reynolds UVT solid stock; its unmeasured K retains the old conservative proxy.
+GEM/cathode layer, EFCu, lens and sensor assays retain their previous basis;
+see [STUDY_SOURCES.md](STUDY_SOURCES.md) for the completed-resistor equilibrium assumption. Quantities come
+from actual cygno-300elj-v2 construction, including its Boolean-solid mass estimate.
 The selected production setting 10^7 comes from the thesis's approximate simulation
 count; it is never substituted for the verified denominator. The implementation uses
 a 365-day year; the thesis rounds it to 3.15e7 seconds in Eq. 7.14.
@@ -237,7 +239,7 @@ The thesis motivates the 20 mm fiducial inset; the exact implementation is the
 inherited first-position predicate: relative to the selected gas center, the first
 saved group position satisfies |x|<=230 mm, |y|<=380 mm and |z|<=230 mm.
 It does not require every step or every crossed volume to lie inside. Gas centers
-retain the cygno-300elj-v1 ±250.03 mm local offset. No reconstruction smearing,
+retain the cygno-300elj-v2 ±250.03 mm local offset. No reconstruction smearing,
 trigger efficiency, time-coincidence selection or optical response is introduced.
 
 Exact unbinned windows are all finite energies (including flows), E>10 keV,

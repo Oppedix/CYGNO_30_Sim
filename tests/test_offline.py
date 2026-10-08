@@ -24,7 +24,7 @@ class ReaderTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name)/'raw.root'
-        self.expected = dict(layout='legacy-25x3', model='cygno-300elj-v1', source_policy='uniform-volume-v1', geometry_hash='fixture')
+        self.expected = dict(layout='legacy-25x3', model='cygno-300elj-v2', source_policy='uniform-volume-v1', geometry_hash='fixture')
 
     def test_empty_and_nonempty(self):
         for rows in [[], [{}]]:
@@ -138,17 +138,17 @@ class CampaignTests(unittest.TestCase):
 
     def test_archive_and_analysis(self):
         self.populate()
-        self.assertEqual(len(validate_campaign(self.root)),31)
+        self.assertEqual(len(validate_campaign(self.root)),28)
         archive=package(self.root)
         self.assertTrue(archive.with_name(archive.name+'.sha256').exists())
         self.assertEqual(package(self.root),archive)
         with open_campaign(archive) as root:
-            self.assertEqual(len(validate_campaign(root)),31)
+            self.assertEqual(len(validate_campaign(root)),28)
             output=Path(self.tmp.name)/'analysis'
             self.assertEqual(analyze(root,output,step_size=1),0)
             for name in ['spectra.json','tables.json','table7.2.csv','table7.3.csv','figure7.5.png','figure7.5.pdf','figure7.6.png','figure7.6.pdf','analysis-manifest.json']:
                 self.assertGreater((output/name).stat().st_size,0)
-            self.assertEqual(rt.read(output/'analysis-manifest.json')['coverage'],'31/31')
+            self.assertEqual(rt.read(output/'analysis-manifest.json')['coverage'],'28/28')
             with self.assertRaises(ValueError): analyze(root,output)
 
     def test_partial_report_and_provenance(self):
@@ -157,7 +157,7 @@ class CampaignTests(unittest.TestCase):
         with self.assertRaises(ValueError): analyze(self.root,output)
         self.assertEqual(analyze(self.root,output,allow_partial=True,step_size=1),2)
         report=rt.read(output/'analysis-manifest.json')
-        self.assertFalse(report['complete_matrix']);self.assertEqual(report['coverage'],'1/31')
+        self.assertFalse(report['complete_matrix']);self.assertEqual(report['coverage'],'1/28')
         self.assertIsNone(rt.read(output/'tables.json')['table7_3'][0]['calculated_counts_per_year'])
         campaign=rt.read(self.root/'campaign.json');campaign['identity']['config']['seed']=23
         rt.save(self.root/'campaign.json',campaign)

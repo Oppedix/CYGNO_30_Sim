@@ -11,7 +11,7 @@
 
 namespace cygno {
 namespace geometry {
-inline constexpr const char* detectorModel = "cygno-300elj-v1";
+inline constexpr const char* detectorModel = "cygno-300elj-v2";
 inline constexpr const char* sourcePolicy = "uniform-volume-v1";
 constexpr double millimetre = 1.0;
 constexpr double centimetre = 10.0 * millimetre;
@@ -33,8 +33,10 @@ struct ModuleDimensions {
   double driftLength = 50 * centimetre;
   double supportThickness = 0.075 * millimetre;
   double stripThickness = 0.035 * millimetre;
-  double stripLengthZ = 5.5 * centimetre;
-  int stripCount = 4;
+  double stripLengthZ = 10 * millimetre;
+  double stripGapZ = 10 * millimetre;
+  double stripEndpointGapZ = 5 * millimetre;
+  int stripCount = 25;
   double stripShiftFractionX = 0.26;
   double booleanCutExtension = 0.5 * centimetre;
   double resistorX = 1.6 * millimetre;
@@ -51,9 +53,20 @@ struct ModuleDimensions {
 };
 constexpr ModuleDimensions module{};
 constexpr double GasOffsetZ() { return module.cathodeHalfThickness + module.driftLength/2; }
-constexpr double StripSpacing() {
-  return (module.driftLength-module.stripCount*module.stripLengthZ)/(module.stripCount+1);
+constexpr double StripCentreFromGasStart(int i) {
+  return module.stripEndpointGapZ + module.stripLengthZ/2
+       + i*(module.stripLengthZ+module.stripGapZ);
 }
+constexpr double StripCentreZ(int i) { return module.cathodeHalfThickness + StripCentreFromGasStart(i); }
+constexpr double ResistorCentreFromGasStart(int i) {
+  return i == 0 ? module.stripEndpointGapZ/2
+       : i == module.stripCount ? module.driftLength-module.stripEndpointGapZ/2
+       : StripCentreFromGasStart(i-1)+module.stripLengthZ/2+module.stripGapZ/2;
+}
+constexpr double ResistorCentreZ(int i) { return module.cathodeHalfThickness+ResistorCentreFromGasStart(i); }
+static_assert(2*module.stripEndpointGapZ+module.stripCount*module.stripLengthZ
+              +(module.stripCount-1)*module.stripGapZ == module.driftLength, "Cage must span drift");
+static_assert(module.stripCount*module.stripLengthZ/module.driftLength == 0.5, "Copper fill must be 50%");
 constexpr double GEMCentrePitch() { return module.gemThickness + module.gemClearGap; }
 constexpr double GEMStackThickness() {
   return module.gemLayers*module.gemThickness + (module.gemLayers-1)*module.gemClearGap;

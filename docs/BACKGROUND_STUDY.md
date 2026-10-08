@@ -2,20 +2,21 @@
 
 ## Scientific identity
 
-The active detector/source identity is `cygno-300elj-v1 / uniform-volume-v1`
+The active detector/source identity is `cygno-300elj-v2 / uniform-volume-v1`
 with `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`. The production configuration
-`config/study/cygno-11x7-v1.json` selects 77 modules; `samuele.json` retains the
+`config/study/cygno-11x7-v2.json` selects 77 modules; `samuele.json` retains the
 legacy-25x3 layout. All three supported layouts use the same module geometry.
 Production configurations retain 10^7 primaries/contribution; `--primaries`
 overrides statistics. The layer construction, assays and exact source sampler
 are specified in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
 
-`config/study/cygno-300elj-radioassay-v1.json` and `study/source_matrix.py` remain authoritative:
-31 contributions, ten explicit source components, seven final categories.
+`config/study/cygno-300elj-radioassay-v2.json` and `study/source_matrix.py` remain authoritative:
+28 contributions, ten explicit source components, seven final categories.
 `GEMs = GEMsCopper + GEMsPolyimide`; `Cathodes = CathodesCopper + CathodesPolyimide`;
 `Field Cage = RingStrips + RingSupports`. Each source
-is scaled before category summation. Acrylic assay upper limits remain used as
-values; omitted table entries do not become zero-rate jobs.
+is scaled before category summation. Supports use measured solid Reynolds UVT PMMA U/Th
+and retain the unmeasured-K conservative proxy; completed MBNL resistor assays
+normalize per nominal reference piece. Omitted table entries do not become zero-rate jobs.
 
 ## Stage A: simulation only
 
@@ -106,7 +107,7 @@ Changing `--jobs` on resume is allowed, including from `1` to `16`: scheduling
 concurrency is absent from config and campaign/job fingerprints. Completed
 contributions are verified and reused. As in sequential execution, an individual
 job failure is recorded while the remaining selected contributions continue;
-`--retry-failed` is still required to retry failures. Full 31/31 coverage exits 0;
+`--retry-failed` is still required to retry failures. Full 28/28 coverage exits 0;
 runner, configuration and preflight errors exit 1.
 
 Ctrl-C stops new submissions and signals all active invocations to cancel. At
@@ -130,7 +131,7 @@ build/data paths to exist. Changing source/build/data/config cannot resume it.
 
 ## Packaging and transfer
 
-`--archive` or `python3 -m study.archive --input CAMPAIGN` requires 31/31 valid
+`--archive` or `python3 -m study.archive --input CAMPAIGN` requires 28/28 valid
 complete jobs. Archives include failed earlier attempts as well as successful
 ones, probe/preflight logs, all snapshots and provenance. `SHA256SUMS.json` covers
 every packaged regular file except itself; the external `.tar.gz.sha256` checks
@@ -198,7 +199,7 @@ combined PyROOT/C++ workflow for historical comparisons; they are not imported b
 the new entry points. Old campaign schemas are not silently migrated/relabelled.
 
 `tests/test_parity.py` optionally executes the real C++ processor/plotter on uproot
-fixtures for both layouts and all 31 normalization rows, comparing group labels,
+fixtures for both layouts and all 28 normalization rows, comparing group labels,
 vectors, exact-window counts/rates, every bin/flow, variances and category sums.
 It includes all histogram edges and adjacent floating-point values. See README
 for its command. Tests require no large Monte Carlo campaign.

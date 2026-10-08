@@ -4,17 +4,18 @@ import hashlib
 import math
 from pathlib import Path
 import unittest
-from study.source_matrix import read_matrix, validate_matrix, assay_activity, expected_contributions
+from study.source_matrix import (read_matrix, validate_matrix, assay_activity, expected_contributions,
+    reference_resistor_mass_kg, resistor_activity, vessel_material_comparison)
 
 REPO=Path(__file__).resolve().parents[1]
 
 class AssaySpecificationTests(unittest.TestCase):
     def test_canonical_assays_and_historical_reference(self):
         old=REPO/'config/study/thesis-table7.1.json'
-        matrix=read_matrix(REPO/'config/study/cygno-300elj-radioassay-v1.json')
+        matrix=read_matrix(REPO/'config/study/cygno-300elj-radioassay-v2.json')
         self.assertEqual(hashlib.sha256(old.read_bytes()).hexdigest(),
                          matrix['provenance']['retained_reference']['sha256'])
-        self.assertEqual(len(expected_contributions()),31)
+        self.assertEqual(len(expected_contributions()),len(matrix['contributions']))
         self.assertEqual(len({r['category'] for r in matrix['contributions']}),7)
         self.assertAlmostEqual(assay_activity('U238',5.58),5.58e-9*12400)
         self.assertAlmostEqual(assay_activity('Th232',6.82),6.82e-9*4060)
@@ -44,3 +45,32 @@ class AssaySpecificationTests(unittest.TestCase):
             self.assertLess(abs(delta)/combined,1)
         fraction=50*1.42/(50*1.42+10*8.96)
         self.assertAlmostEqual(fraction,.44209215442092153)
+
+    def test_v2_materials_and_v1_rejection(self):
+        matrix=read_matrix(REPO/'config/study/cygno-300elj-radioassay-v2.json')
+        by_id={r['id']:r for r in matrix['contributions']}
+        self.assertEqual(by_id['RingSupports_U238']['activity'],9.05e-6)
+        self.assertEqual(by_id['RingSupports_Th232']['activity'],5.05e-6)
+        self.assertEqual(by_id['RingSupports_K40']['activity'],71.2e-6)
+        self.assertEqual(by_id['RingSupports_K40']['activity_basis'],'conservative-old-K-proxy')
+        self.assertIn('Reynolds',matrix['provenance']['pmma']['sample'])
+        self.assertEqual(matrix['provenance']['completed_resistor']['radioassay_row'],60)
+        mass=math.pi*(3**2-2**2)*17*2.2e-6
+        self.assertAlmostEqual(reference_resistor_mass_kg(),mass,places=15)
+        for isotope,concentration,specific in [('U238',4.3,12.4),('Th232',2,4.06),('K40',7.9,30.5)]:
+            self.assertAlmostEqual(resistor_activity(isotope),concentration*specific*1e-6*mass,places=18)
+            self.assertEqual(by_id['Resistors_'+isotope]['activity'],resistor_activity(isotope))
+            self.assertIsNone(by_id['Resistors_'+isotope]['stop_before'])
+        self.assertEqual({r['chain_start']['name'] for r in matrix['contributions'] if r['component']=='Resistors'}, {'U238','Th232','K40'})
+        old=REPO/'config/study/cygno-300elj-radioassay-v1.json'
+        from study.runtime import load_config
+        with self.assertRaises(ValueError): load_config(REPO/'config/study/cygno-11x7-v1.json')
+        self.assertEqual(load_config(REPO/'config/study/cygno-11x7-v2.json')['model'],'cygno-300elj-v2')
+        with self.assertRaises(ValueError): read_matrix(old)
+        self.assertEqual(len(read_matrix(old,historical=True)['contributions']),len(expected_contributions(historical=True)))
+        comparison=vessel_material_comparison(1000,8.96,1.190)
+        self.assertAlmostEqual(comparison['pmma_mass_kg'],1000*1.19/8.96)
+        self.assertAlmostEqual(comparison['crossover_Bq_kg']['U238']*1e6,.131*8.96/1.19)
+        self.assertAlmostEqual(comparison['crossover_Bq_kg']['Th232']*1e6,.034*8.96/1.19)
+        self.assertFalse(comparison['pmma_clears_both'])
+        self.assertFalse(comparison['pmma_K_measured'])

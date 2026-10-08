@@ -1,6 +1,6 @@
 # Source generation and decay policy
 
-Active identity: detector `cygno-300elj-v1`, source `uniform-volume-v1`.
+Active identity: detector `cygno-300elj-v2`, source `uniform-volume-v1`.
 The exact `/detector/RadElement` families are `GEMsPolyimide`, `GEMsCopper`,
 `CathodesPolyimide`, `CathodesCopper`, `RingSupports`, `RingStrips`, `Resistors`,
 `Vessel`, `Lens`, `Sensors`. Old ambiguous/core/outer/cathode names are rejected.
@@ -33,7 +33,7 @@ scheduling can change source histories; archive seeds, build/data and metadata.
 
 ## Assays and normalization
 
-The canonical [matrix](../config/study/cygno-300elj-radioassay-v1.json) has 31
+The canonical [matrix](../config/study/cygno-300elj-radioassay-v2.json) has 28
 contributions in seven categories. Separate 300ELJ and laminate-copper assays
 apply to GEM and cathode layers; `G4_KAPTON` supplies polyimide transport only.
 Concentration is per material mass. Whole-laminate assay is a cross-check, not a
@@ -49,9 +49,10 @@ permits full chains. `/stopChain/ZStopDecay` and `/stopChain/AStopDecay` stop th
 selected ground-state ion before radioactive decay, retaining existing excited
 state treatment. `/rdecay01/timeWindow` controls activity bookkeeping.
 
-U/Th use the existing full-chain/secular-equilibrium policy. Resistors retain
-six entries, with U238 stopping before Ra226 and Th232 before Th228; lower
-segments reset both stop controls. K40 is one parent contribution. No U235 assay
+U/Th use full-chain transport with secular equilibrium as a modelling assumption.
+The completed MBNL resistor contributes U238, Th232 and K40 only; each macro
+resets both stop controls to 0/0. K40 is one parent contribution. Historical
+Al2O3 split-chain measurements are not transferred to the new component. No U235 assay
 is invented for the laminate. Study macros set the very-long-decay threshold to
 `1e60 year`; effective settings are recorded. Four-case preflight failures,
 including environment-specific PART122, remain failures;

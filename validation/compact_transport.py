@@ -17,7 +17,7 @@ from analysis.common.spectra import accumulate, summarize, scale_for
 def run(build, output, primaries=30, contribution='GEMsPolyimide_K40', layout='legacy-25x3'):
     require(1<=primaries<=1000,'Diagnostic limited to 1..1000 primaries')
     output.mkdir(parents=True,exist_ok=False)
-    row=next(r for r in read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')['contributions'] if r['id']==contribution)
+    row=next(r for r in read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')['contributions'] if r['id']==contribution)
     config=rt.load_config(rt.REPO/'config/study/samuele.json') | dict(primaries_per_job=primaries,layout=layout)
     rt.invoke([build/'geometry_quantities',output/'quantities.tsv',config['layout'],output/'geometry.json'],
               output,'geometry',120)

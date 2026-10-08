@@ -29,7 +29,7 @@ def fixture(name, rows):
 
 def process(name,rows,expected):
     raw=fixture(name,rows); processed=out/('elab_'+name+'.root')
-    subprocess.run([str(build/'analysis/SimpleProcessEvents'),str(raw),str(processed),'--assume-layout','cygno-5x5x3-v1','--assume-model','cygno-300elj-v1'],check=True)
+    subprocess.run([str(build/'analysis/SimpleProcessEvents'),str(raw),str(processed),'--assume-layout','cygno-5x5x3-v1','--assume-model','cygno-300elj-v2'],check=True)
     f=ROOT.TFile.Open(str(processed));t=f.Get('elabHits'); got=[]
     for e in t: got.append((int(e.evNumber),list(e.VolNnum_Out),list(e.EDep_Out)))
     assert len(got)==len(expected),(name,got,expected)
@@ -51,7 +51,7 @@ process('long_label',[dict(Nucleus='Pb208[2614.522000000000000000000]')],[(0,[37
 # including their individual keys and cut stack entries. Keep original bins/cuts.
 nonempty=process('spectrum',[dict(EnergyDeposit=.02)],[(0,[37.],[.02])])
 empty=out/'elab_empty.root'
-configuration=out/'study.tsv';configuration.write_text('# layout: cygno-5x5x3-v1\n# detector-model: cygno-300elj-v1\n# source-policy: uniform-volume-v1\n# provenance: synthetic regression, unit scale; no scientific normalization claim\n'+''.join(f'{c} X 1 1 31536000 "{path}"\n' for c,path in [('A',nonempty),('B',nonempty),('C',empty),('D',empty)]))
+configuration=out/'study.tsv';configuration.write_text('# layout: cygno-5x5x3-v1\n# detector-model: cygno-300elj-v2\n# source-policy: uniform-volume-v1\n# provenance: synthetic regression, unit scale; no scientific normalization claim\n'+''.join(f'{c} X 1 1 31536000 "{path}"\n' for c,path in [('A',nonempty),('B',nonempty),('C',empty),('D',empty)]))
 for name,bins in [('PlotNormalizedSpectra',900),('PlotNormalizedSpectra_single',1200),('PlotNormalizedSpectra_GEMchain',1200)]:
     directory=out/name;directory.mkdir()
     subprocess.run([str(build/'analysis'/name),str(configuration)],cwd=directory,check=True,stdout=subprocess.DEVNULL)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Layer assays, retained table, chain partition, quantities and weighted spectra."""
 import array
+import csv
 import copy
 import hashlib
 import math
@@ -17,7 +18,7 @@ build=Path(sys.argv[1]).resolve()
 root=build/'validation-results';root.mkdir(exist_ok=True)
 out=Path(tempfile.mkdtemp(prefix='source-matrix-',dir=root))
 fingerprint=hashlib.sha256((repo/'common/DetectorGeometry.hh').read_bytes()).hexdigest()
-matrix=read_matrix(repo/'config/study/cygno-300elj-radioassay-v1.json')
+matrix=read_matrix(repo/'config/study/cygno-300elj-radioassay-v2.json')
 rows=matrix['contributions']
 
 # Independent paper conversion and retained micro-/milli-Bq Table 7.1 values.
@@ -26,27 +27,24 @@ expected={
  'GEMsCopper':([12*12.4,12*4.06,130*30.5],1e-6),
  'CathodesPolyimide':([5.58*12.4,6.82*4.06,108*30.5],1e-6),
  'CathodesCopper':([12*12.4,12*4.06,130*30.5],1e-6),
- 'RingSupports':([296,56.9,71.2],1e-6), 'RingStrips':([.131,.034],1e-6),
+ 'RingSupports':([9.05,5.05,71.2],1e-6), 'RingStrips':([.131,.034],1e-6),
  'Vessel':([.131,.034],1e-6),
  'Sensors':([2,2.8,9],1e-3), 'Lens':([123,40.7,300],1e-6),
- 'Resistors':([1,.14,1.2,.04,.18,.13],1e-6)}
+ 'Resistors':([4.30*12.4,2.00*4.06,7.90*30.5],math.pi*(3**2-2**2)*17*2.20e-12)}
 for component,(values,multiplier) in expected.items():
     component_rows=[r for r in rows if r['component']==component]
     names=['U238','Th232','K40','U235','Ra226','Th228'][:len(values)]
     assert [r['chain_start']['name'] for r in component_rows]==names
     for row,value in zip(component_rows,values):
         assert math.isclose(row['activity'],value*multiplier,rel_tol=1e-15)
-assert sum(r['activity_unit']=='Bq/piece' for r in rows)==6
-assert sum(r['activity_basis']=='upper-limit-used-as-value' for r in rows)==3
+assert sum(r['activity_unit']=='Bq/piece' for r in rows)==3
+assert sum(r['activity_basis']=='conservative-old-K-proxy' for r in rows)==1
 for parent,daughter in [('U238','Ra226'),('Th232','Th228')]:
-    upstream=next(r for r in rows if r['id']=='Resistors_'+parent)
-    downstream=next(r for r in rows if r['id']=='Resistors_'+daughter)
-    assert upstream['stop_before']==downstream['chain_start'] and downstream['stop_before'] is None
-    commands=decay_commands(upstream)
-    assert f"/stopChain/ZStopDecay {downstream['chain_start']['Z']}" in commands
-    assert f"/stopChain/AStopDecay {downstream['chain_start']['A']}" in commands
-    assert decay_commands(downstream)[-2:]==['/stopChain/ZStopDecay 0','/stopChain/AStopDecay 0']
-    assert not any(r['component']!='Resistors' and r['chain_start']['name']==daughter for r in rows)
+    resistor=next(r for r in rows if r['id']=='Resistors_'+parent)
+    assert resistor['stop_before'] is None and resistor['chain_policy']=='equilibrium'
+    assert resistor['equilibrium_daughters']==[daughter]
+    assert decay_commands(resistor)[-2:]==['/stopChain/ZStopDecay 0','/stopChain/AStopDecay 0']
+    assert not any(r['component']=='Resistors' and r['chain_start']['name'] in ('U235','Ra226','Th228') for r in rows)
 for row in rows:
     assert '/rdecay01/fullChain true' in decay_commands(row)
 
@@ -71,7 +69,7 @@ for change in ('duplicate','missing','extra_equilibrium'):
         bad['contributions'].append(row)
     rejects(lambda:validate_matrix(bad))
 bad=copy.deepcopy(matrix)
-next(r for r in bad['contributions'] if r['id']=='Resistors_U238')['stop_before']=None
+next(r for r in bad['contributions'] if r['id']=='Resistors_U238')['stop_before']=dict(name='Ra226',Z=88,A=226)
 rejects(lambda:validate_matrix(bad))
 
 # Export the actual ten source lists for all profiles, with independently
@@ -81,14 +79,26 @@ for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
     path=out/(layout+'.tsv')
     with (out/(layout+'.log')).open('w') as log:
         subprocess.run([str(build/'geometry_quantities'),str(path),layout],check=True,stdout=log,stderr=subprocess.STDOUT)
-    quantities[layout]=read_quantities(path,layout=layout,model='cygno-300elj-v1',geometry_hash=fingerprint)
+    quantities[layout]=read_quantities(path,layout=layout,model='cygno-300elj-v2',geometry_hash=fingerprint)
     q=quantities[layout]
-    counts=dict(CathodesPolyimide=75,CathodesCopper=150,GEMsCopper=900,GEMsPolyimide=450,RingSupports=150,RingStrips=600,
-                Resistors=750,Lens=300,Sensors=300,Vessel=1)
+    counts=dict(CathodesPolyimide=75,CathodesCopper=150,GEMsCopper=900,GEMsPolyimide=450,RingSupports=150,RingStrips=3750,
+                Resistors=3900,Lens=300,Sensors=300,Vessel=1)
     if layout=='cygno-11x7-v1':
-        counts=dict(CathodesPolyimide=77,CathodesCopper=154,GEMsCopper=924,GEMsPolyimide=462,RingSupports=154,RingStrips=616,
-                    Resistors=770,Lens=308,Sensors=308,Vessel=1)
+        counts=dict(CathodesPolyimide=77,CathodesCopper=154,GEMsCopper=924,GEMsPolyimide=462,RingSupports=154,RingStrips=3850,
+                    Resistors=4004,Lens=308,Sensors=308,Vessel=1)
     assert {c:v['pieces'] for c,v in q.items()}==counts
+    materials=dict(CathodesPolyimide='G4_KAPTON',CathodesCopper='G4_Cu',GEMsPolyimide='G4_KAPTON',
+                   GEMsCopper='G4_Cu',RingSupports='PMMA',RingStrips='G4_Cu',Resistors='ResistorFusedSilica',
+                   Lens='Silicon Dioxide',Sensors='G4_Si',Vessel='G4_Cu')
+    assert {c:v['geometry_material'] for c,v in q.items()}==materials
+    with path.open() as f:
+        exported={r['component']:r for r in csv.DictReader((l for l in f if not l.startswith('#')),delimiter='\t')}
+    for c,v in exported.items():
+        assert math.isclose(float(v['volume_mm3'])*float(v['density_g_cm3'])*1e-6,q[c]['mass_kg'],rel_tol=1e-12)
+    assert math.isclose(float(exported['Resistors']['density_g_cm3']),2.20,rel_tol=1e-12)
+    assert math.isclose(float(exported['RingSupports']['density_g_cm3']),1.190,rel_tol=1e-12)
+    assert math.isclose(float(exported['Lens']['density_g_cm3']),2.65,rel_tol=1e-12)
+
     full=(5560.,5644.,1028.42) if layout=='cygno-11x7-v1' else (12616.,2428.,1028.42) if layout=='legacy-25x3' else (2536.,4036.,5599.26)
     expected_vessel=(math.prod(full)-math.prod(x-10 for x in full))*8.96e-6
     # Boolean GetCubicVolume uses Geant4's deterministic Monte Carlo estimator,
@@ -98,12 +108,12 @@ for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
     assert abs(discrepancy)<.05,(layout,q['Vessel'],expected_vessel)
     print(layout,'constructed vessel kg=',q['Vessel']['mass_kg'],
           'analytic kg=',expected_vessel,'relative difference=',discrepancy)
-    assert math.isclose(q['Resistors']['mass_kg'],counts['Resistors']*1.6*.55*3.2*3.97e-6,rel_tol=1e-12)
+    assert math.isclose(q['Resistors']['mass_kg'],counts['Resistors']*1.6*.55*3.2*2.20e-6,rel_tol=1e-12)
     for row in rows:
         expected_quantity=counts['Resistors'] if row['component']=='Resistors' else q[row['component']]['mass_kg']
         assert quantity_for(row,q)==expected_quantity
     for kwargs in [dict(layout='other'),dict(model='thesis-7.3'),dict(geometry_hash='wrong')]:
-        args=dict(layout=layout,model='cygno-300elj-v1',geometry_hash=fingerprint)|kwargs
+        args=dict(layout=layout,model='cygno-300elj-v2',geometry_hash=fingerprint)|kwargs
         rejects(lambda:read_quantities(path,**args))
 assert quantities['legacy-25x3']['Vessel']!=quantities['cygno-5x5x3-v1']['Vessel']
 for component in expected.keys()-{'Vessel'}:
@@ -124,7 +134,7 @@ def fixture(layout):
             vectors[key].clear();vectors[key].push_back(value)
         t.Fill()
     t.Write()
-    for key,value in dict(CygnoLayout=layout,CygnoGeometry=fingerprint,CygnoDetectorModel='cygno-300elj-v1',CygnoSourcePolicy='uniform-volume-v1').items():
+    for key,value in dict(CygnoLayout=layout,CygnoGeometry=fingerprint,CygnoDetectorModel='cygno-300elj-v2',CygnoSourcePolicy='uniform-volume-v1').items():
         ROOT.TNamed(key,value).Write()
     f.Close();return path
 
@@ -132,7 +142,7 @@ plotters=('PlotNormalizedSpectra','PlotNormalizedSpectra_single','PlotNormalized
 for layout,q in quantities.items():
     source=fixture(layout)
     config=out/(layout+'-normalization.tsv')
-    headers=f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: cygno-300elj-v1\n# source-policy: uniform-volume-v1\n# provenance: synthetic spectra with Table 7.1 and actual constructed quantities; NOT simulated background rates\n'
+    headers=f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: cygno-300elj-v2\n# source-policy: uniform-volume-v1\n# provenance: synthetic spectra with Table 7.1 and actual constructed quantities; NOT simulated background rates\n'
     lines=[];scales={};categories={}
     for index,row in enumerate(rows):
         component=row['component'];quantity=quantity_for(row,q);unit='piece' if component=='Resistors' else 'kg'
@@ -149,7 +159,7 @@ for layout,q in quantities.items():
         f=ROOT.TFile.Open(str(directory/'NormalizedHisto.root'))
         assert f.Get('NormalizationConfiguration').GetTitle()==config.read_text()
         for suffix,factor in [('',2),('_cut',1)]:
-            assert f.Get('Hstack'+suffix).GetHists().GetSize()==31
+            assert f.Get('Hstack'+suffix).GetHists().GetSize()==len(rows)
             assert f.Get('Categories/Hstack'+suffix).GetHists().GetSize()==7
             for name,scale in scales.items():
                 h=f.Get(name+suffix)
@@ -174,4 +184,4 @@ for layout,q in quantities.items():
             result=subprocess.run([str(build/'analysis'/plotter),str(bad)],cwd=out,capture_output=True,text=True)
             assert result.returncode!=0,(index,plotter)
             assert sentinel.read_bytes()==b'keep'
-print('PASS: all 31 assays/chain starts, split/reset controls, both constructed quantity sets, per-piece normalization, weighted category sums/errors and invalid-unit rejection;',out)
+print('PASS: all v2 assays/chain starts, equilibrium/reset controls, both constructed quantity sets, per-piece normalization, weighted category sums/errors and invalid-unit rejection;',out)

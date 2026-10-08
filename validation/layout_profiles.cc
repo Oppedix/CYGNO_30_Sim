@@ -14,6 +14,25 @@ void point(geo::Point actual, geo::Point expected) {
           && std::abs(actual.z-expected.z)<1e-9);
 }
 int main() {
+  const auto& d=geo::module;
+  require(d.stripCount==25 && d.stripLengthZ==10 && d.stripGapZ==10 && d.stripEndpointGapZ==5);
+  require(d.supportThickness==.075 && d.stripThickness==.035 && d.booleanCutExtension==5);
+  require(d.resistorX==1.6 && d.resistorY==.55 && d.resistorZ==3.2);
+  for (int i=0;i<25;++i) {
+    require(geo::StripCentreFromGasStart(i)==10+20*i);
+    require(std::abs(geo::StripCentreZ(i)-(10.03+20*i))<1e-9);
+  }
+  require(geo::StripCentreFromGasStart(0)-d.stripLengthZ/2==5);
+  require(geo::StripCentreFromGasStart(24)+d.stripLengthZ/2==495);
+  require(d.stripCount*d.stripLengthZ/d.driftLength==.5);
+  for (int i=0;i<26;++i) {
+    const double center=geo::ResistorCentreFromGasStart(i);
+    const double lo=i==0 ? 0 : 15+20*(i-1);
+    const double hi=i==25 ? 500 : 5+20*i;
+    require(center==(lo+hi)/2 && center-d.resistorZ/2>lo && center+d.resistorZ/2<hi);
+  }
+  require(2*d.stripCount==50 && 77*2*d.stripCount==3850);
+  require(2*(d.stripCount+1)==52 && 77*2*(d.stripCount+1)==4004);
   for (auto id : {geo::LayoutId::Current5x5x3, geo::LayoutId::Legacy25x3, geo::LayoutId::Cygno11x7}) {
     const auto p = geo::BuildLayoutProfile(id);
     const bool legacy = id == geo::LayoutId::Legacy25x3;

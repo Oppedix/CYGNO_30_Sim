@@ -1,7 +1,7 @@
 """Small, explicitly SYNTHETIC notebook examples; never a physical rate estimate."""
 from analysis.common.model import Group
 
-IDENTITY=dict(layout='legacy-25x3',model='cygno-300elj-v1',source_policy='uniform-volume-v1',geometry_hash='synthetic')
+IDENTITY=dict(layout='legacy-25x3',model='cygno-300elj-v2',source_policy='uniform-volume-v1',geometry_hash='synthetic')
 GEOMETRY=dict(gas_size_mm=[100,120,140],gas_centers_mm={str(i):[0,0,0] for i in range(150)})
 
 

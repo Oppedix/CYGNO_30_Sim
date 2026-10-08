@@ -82,7 +82,7 @@ active reference physics list. The complete original-to-current move mapping is
 
 ## Legacy combined study entry points
 
-`study/source_matrix.py` validates the Table 7.1 matrix, isotope boundaries and
+`study/source_matrix.py` validates the v2 assay matrix (and v1 only with explicit historical opt-in), isotope boundaries and
 kg/piece quantities. `legacy/study/combined/runner.py` creates exact macros and seeds, preflights the
 effective environment, verifies actual generation/processing and preserves immutable
 attempts. `legacy/study/combined/root_io.py` validates ROOT identity/accounting and exports the

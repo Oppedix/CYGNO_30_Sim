@@ -79,7 +79,7 @@ def load_config(path):
     require(set(config) == {'schema_version', 'mode', 'layout', 'model', 'source_policy',
                             'primaries_per_job', 'seed', 'timeout_seconds', 'rdm_threshold_years'}, 'Unknown/missing config field')
     require(config['schema_version'] == 1 and config['mode'] in ('smoke', 'production'), 'Mode must be smoke or production')
-    require(config['layout'] in LAYOUTS and config['model'] == 'cygno-300elj-v1' and
+    require(config['layout'] in LAYOUTS and config['model'] == 'cygno-300elj-v2' and
             config['source_policy'] == 'uniform-volume-v1', 'Unsupported study identity')
     validate_counts(config)
     require(type(config['seed']) is int and 1 <= config['seed'] <= 2_000_000_000, 'Invalid seed')
@@ -103,7 +103,7 @@ def seeds_for(seed, contribution):
 
 def macro_for(row, config):
     seeds = seeds_for(config['seed'], row['id'])
-    return '\n'.join([f"# {row['id']}: {config['mode']}; cygno-300elj-v1 / uniform-volume-v1",
+    return '\n'.join([f"# {row['id']}: {config['mode']}; cygno-300elj-v2 / uniform-volume-v1",
                       RDM_COMMAND, '/run/printProgress 10000', '/run/verbose 0', '/event/verbose 0', '/tracking/verbose 0',
                       '/random/setSeeds '+' '.join(map(str, seeds)), '/output/OutFile '+config.get('output_mode','raw'),
                       *decay_commands(row), f"/run/beamOn {config['primaries_per_job']}", ''])

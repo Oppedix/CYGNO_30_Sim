@@ -25,7 +25,7 @@ def run(args, ok=True, cwd=out):
     assert (result.returncode==0)==ok,(args,result.stdout,result.stderr)
     return result
 
-def metadata(path, layout, model='cygno-300elj-v1', policy='uniform-volume-v1', hash_value=fingerprint,
+def metadata(path, layout, model='cygno-300elj-v2', policy='uniform-volume-v1', hash_value=fingerprint,
              rows=1, omit=()):
     f=ROOT.TFile(str(path),'UPDATE');tree=ROOT.TTree('RunMetadata','Run identity');fields={}
     for name,value in dict(Layout=layout,DetectorModel=model,SourcePolicy=policy,GeometryHash=hash_value).items():
@@ -62,11 +62,11 @@ def raw(name,layout):
 
 def identity(path,layout):
     f=ROOT.TFile.Open(str(path))
-    for key,value in dict(CygnoLayout=layout,CygnoDetectorModel='cygno-300elj-v1',CygnoSourcePolicy='uniform-volume-v1').items():
+    for key,value in dict(CygnoLayout=layout,CygnoDetectorModel='cygno-300elj-v2',CygnoSourcePolicy='uniform-volume-v1').items():
         assert f.Get(key).GetTitle()==value,(path,key)
     f.Close()
 
-def config(path,layout,inputs,model='cygno-300elj-v1',policy='uniform-volume-v1'):
+def config(path,layout,inputs,model='cygno-300elj-v2',policy='uniform-volume-v1'):
     path.write_text(f'# provenance: synthetic unit-scale layout fixture\n# layout: {layout}\n# detector-model: {model}\n# source-policy: {policy}\n'+
                     ''.join(f'{c} X 1 1 31536000 "{p}"\n' for c,p in inputs))
     return path
@@ -84,22 +84,28 @@ for layout in (current,legacy,planar):
         assert f.Get('A_X').Integral()==3 and f.Get('A_X_cut').Integral()==2
         f.Close()
     # Explicit assumptions are checked against metadata, never used to override it.
-    run([processor,source,out/'match.root','--assume-layout',layout,'--assume-model','cygno-300elj-v1'])
+    run([processor,source,out/'match.root','--assume-layout',layout,'--assume-model','cygno-300elj-v2'])
     for flags in (['--assume-layout',legacy if layout==current else current],
                   ['--assume-model','thesis-7.3']):
         sentinel=out/'reject.root';sentinel.write_bytes(b'preserve-existing-output')
         run([processor,source,sentinel,*flags],ok=False)
         assert sentinel.read_bytes()==b'preserve-existing-output'
 
+# A v1 product is rejected even if it carries the current geometry hash.
+v1=raw('v1-product',current);metadata(v1,current,model='cygno-300elj-v1')
+v1_target=out/'v1-rejected.root';v1_target.write_bytes(b'preserve-v1-rejection')
+run([processor,v1,v1_target],ok=False)
+assert v1_target.read_bytes()==b'preserve-v1-rejection'
+
 # Metadata-free old raw files require BOTH independently verified assumptions.
 unversioned=raw('unversioned',legacy)
-for flags in ([],['--assume-layout',legacy],['--assume-model','cygno-300elj-v1']):
+for flags in ([],['--assume-layout',legacy],['--assume-model','cygno-300elj-v2']):
     run([processor,unversioned,out/'absent.root',*flags],ok=False)
     assert not (out/'absent.root').exists()
-run([processor,unversioned,out/'assumed.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v1'])
+run([processor,unversioned,out/'assumed.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v2'])
 identity(out/'assumed.root',legacy)
 # Alias remains available, but also requires a model for unknown data.
-run([processor,unversioned,out/'alias.root','--assume-geometry',legacy,'--assume-model','cygno-300elj-v1'])
+run([processor,unversioned,out/'alias.root','--assume-geometry',legacy,'--assume-model','cygno-300elj-v2'])
 for flags in (['--assume-layout','typo'],['--assume-layout',legacy,'--assume-layout',legacy],
               ['--assume-model'],['--unknown'],['--assume-model','thesis-7.3']):
     run([processor,unversioned,out/'bad-option.root',*flags],ok=False)
@@ -109,7 +115,7 @@ for case,kw in [('layout',dict(layout='unknown')),('model',dict(model='thesis-7.
                 ('rows',dict(rows=2)),('zero',dict(rows=0)),('partial',dict(omit=('DetectorModel',))),
                 ('hash_only',dict(omit=('Layout','DetectorModel','SourcePolicy')))]:
     bad=raw('bad_'+case,current);metadata(bad,**(dict(layout=current)|kw))
-    run([processor,bad,out/'bad-output.root','--assume-layout',current,'--assume-model','cygno-300elj-v1'],ok=False)
+    run([processor,bad,out/'bad-output.root','--assume-layout',current,'--assume-model','cygno-300elj-v2'],ok=False)
     assert not (out/'bad-output.root').exists()
 
 # No historical geometry hash can describe the new profile.
@@ -121,17 +127,17 @@ for old_hash in (baseline,'af27bb2cdc0c3fc61ee3877c92c47756fdcd7f359866cf6ca4f79
 old=raw('old_markers',current);markers(old,hash_value=baseline)
 run([processor,old,out/'old_processed.root'],ok=False)
 markers(old,layout=legacy,hash_value=baseline)
-run([processor,old,out/'bad-output.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v1'],ok=False)
+run([processor,old,out/'bad-output.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v2'],ok=False)
 markers(old,hash_value='unknown')
 run([processor,old,out/'bad-output.root'],ok=False)
 # Phase-1 processed current files carry the current header hash and two markers.
 markers(old);run([processor,old,out/'phase1_processed.root'],ok=False)
-markers(old,model='cygno-300elj-v1') # partial new format is not an old record
+markers(old,model='cygno-300elj-v2') # partial new format is not an old record
 run([processor,old,out/'bad-output.root'],ok=False)
 # Conflicting raw/processed markers must be rejected, even with explicit assumptions.
 conflict=out/'conflict.root';shutil.copyfile(processed[current],conflict)
-markers(conflict,layout=legacy,model='cygno-300elj-v1',policy='uniform-volume-v1')
-run([processor,conflict,out/'bad-output.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v1'],ok=False)
+markers(conflict,layout=legacy,model='cygno-300elj-v2',policy='uniform-volume-v1')
+run([processor,conflict,out/'bad-output.root','--assume-layout',legacy,'--assume-model','cygno-300elj-v2'],ok=False)
 
 # Every normalized plotter preflights ALL files before replacing its output.
 for label,layout,inputs,kwargs in [

@@ -429,11 +429,11 @@ int main(int argc, char** argv) try {
     const std::string model = config["model"].val();
     const std::string policy = config["source_policy"].val();
     const std::string geometryHash = environment["geometry_hash"].val();
-    require(model == "cygno-300elj-v1" && policy == "uniform-volume-v1", "Unsupported model/source policy");
+    require(model == "cygno-300elj-v2" && policy == "uniform-volume-v1", "Unsupported model/source policy");
     require(geometry["model"].val() == model && geometry["source_policy"].val() == policy &&
             geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
             geometry["source_hash"].val() == environment["source_hash"].val(), "Geometry snapshot mismatch");
-    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == "cygno-300elj-radioassay-v1" &&
+    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == "cygno-300elj-radioassay-v2" &&
             integer(matrix["seconds_per_year"]) == 31536000 &&
             matrix["quantity_policy"].val() == "constructed-component-mass-kg-or-placement-count",
             "Unsupported matrix/year/quantity convention");
@@ -443,7 +443,7 @@ int main(int argc, char** argv) try {
         {"CathodesPolyimide",{"U238","Th232","K40"}}, {"CathodesCopper",{"U238","Th232","K40"}},
         {"RingSupports",{"U238","Th232","K40"}}, {"RingStrips",{"U238","Th232"}},
         {"Vessel",{"U238","Th232"}}, {"Lens",{"U238","Th232","K40"}},
-        {"Sensors",{"U238","Th232","K40"}}, {"Resistors",{"U238","Th232","K40","U235","Ra226","Th228"}}};
+        {"Sensors",{"U238","Th232","K40"}}, {"Resistors",{"U238","Th232","K40"}}};
     std::set<std::string> expectedContributions;
     for (const auto& [component,isotopes] : sourceIsotopes)
         for (const auto& isotope : isotopes) expectedContributions.insert(component+"_"+isotope);

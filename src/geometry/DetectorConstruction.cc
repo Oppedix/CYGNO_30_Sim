@@ -123,15 +123,13 @@ DetectorConstruction::Materials DetectorConstruction::DefineMaterials()
   G4Material* PMMA = nist->ConstructNewMaterial("PMMA", elements, natoms, PMMADensity);
 
   //
-  //definition of Al2O3
+  // Separate fused-silica surrogate: NIST G4_SILICON_DIOXIDE uses 2.32 g/cm3,
+  // whereas nominal Suprasil fused silica uses 2.20. Lens Glass stays unchanged.
   //
 
-  G4Element* elAl = nist->FindOrBuildElement("Al");
-  G4Element* elO = nist->FindOrBuildElement("O");
-  
-  G4Material* al2o3 = new G4Material("Al2O3", 3.97 * g/cm3, 2);
-  al2o3->AddElement(elAl, 2);
-  al2o3->AddElement(elO, 3);
+  G4Material* fusedSilica = new G4Material("ResistorFusedSilica", 2.20 * g/cm3, 2);
+  fusedSilica->AddElement(nist->FindOrBuildElement("Si"), 1);
+  fusedSilica->AddElement(nist->FindOrBuildElement("O"), 2);
     
   //
   //defining sensor material
@@ -178,7 +176,7 @@ DetectorConstruction::Materials DetectorConstruction::DefineMaterials()
   CYGNO_gas->AddMaterial(He_gas, He_gas->GetDensity()/densityMix*100*perCent);
   CYGNO_gas->AddMaterial(CF4_gas, CF4_gas->GetDensity()/densityMix*100*perCent);
 
-  return {Air, Copper, Glass, PMMA, al2o3, Silicon, CYGNO_gas,
+  return {Air, Copper, Glass, PMMA, fusedSilica, Silicon, CYGNO_gas,
           nist->FindOrBuildMaterial("G4_KAPTON")};
 }
 
@@ -287,7 +285,7 @@ void DetectorConstruction::BuildFieldCage()
   auto* stripLogical = new G4LogicalVolume(stripSolid,fMaterials.copper,"RingStrip");
   stripLogical->SetVisAttributes(SolidColour(G4Colour(0.5,0.5,0.5,0.4)));
   auto* resistorSolid = new G4Box("resistorShape",d.resistorX*mm/2,d.resistorY*mm/2,d.resistorZ*mm/2);
-  auto* resistorLogical = new G4LogicalVolume(resistorSolid,fMaterials.alumina,"Resistor");
+  auto* resistorLogical = new G4LogicalVolume(resistorSolid,fMaterials.fusedSilica,"Resistor");
 
   for (const auto& module : fModuleLayout) {
     for (G4int side=0; side<2; ++side) {
@@ -298,7 +296,7 @@ void DetectorConstruction::BuildFieldCage()
       if (side == 0) fPhysicRingsSupportPlus=support; else fPhysicRingsSupportMinus=support;
       fMassMap["RingSupports"] += supportLogical->GetMass();
       for (G4int ring=0; ring<d.stripCount; ++ring) {
-        const G4double z=(ring+1)*geo::StripSpacing()+0.5*d.stripLengthZ+ring*d.stripLengthZ;
+        const G4double z=geo::StripCentreZ(ring);
         auto* strip = PlaceInModule(module,stripLogical,
             G4ThreeVector(-d.stripShiftFractionX*d.stripThickness*mm,0,sign*z*mm),
             "RingStrip",side*d.stripCount+ring,fListRingStrips);
@@ -306,7 +304,7 @@ void DetectorConstruction::BuildFieldCage()
         fMassMap["RingStrips"] += stripLogical->GetMass();
       }
       for (G4int resistor=0; resistor<d.stripCount+1; ++resistor) {
-        const G4double z=resistor*geo::StripSpacing()+0.5*d.stripLengthZ+resistor*d.stripLengthZ;
+        const G4double z=geo::ResistorCentreZ(resistor);
         const G4double y=d.cathodeY/2+d.supportThickness+d.stripThickness+d.resistorY/2;
         auto* physical = PlaceInModule(module,resistorLogical,G4ThreeVector(0,y*mm,sign*z*mm),
             "Resistor",side*(d.stripCount+1)+resistor,fListResistors);

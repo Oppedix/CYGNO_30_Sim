@@ -24,7 +24,7 @@ class ReferenceParity(unittest.TestCase):
                 subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json'],
                     check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 geometry=rt.read(folder/'geometry.json')
-                expected=dict(layout=layout,model='cygno-300elj-v1',source_policy='uniform-volume-v1',geometry_hash=geometry['geometry_hash'])
+                expected=dict(layout=layout,model='cygno-300elj-v2',source_policy='uniform-volume-v1',geometry_hash=geometry['geometry_hash'])
                 center=geometry['gas_centers_mm']['0']
                 def row(**kw):
                     return dict(x_hits=center[0],y_hits=center[1],z_hits=center[2]) | kw
@@ -68,9 +68,9 @@ class ReferenceParity(unittest.TestCase):
                         for index,field in enumerate(('EDep_Out','X_Vertex','Y_Vertex','Z_Vertex')):
                             np.testing.assert_array_equal(list(c[field]),[getattr(v, ("energy","x","y","z")[index]) for v in p.volumes.values()])
                 counts,hist,_=accumulate(py,geometry)
-                matrix=read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')
-                quantities=read_quantities(folder/'quantities.tsv',layout=layout,model='cygno-300elj-v1',geometry_hash=geometry['geometry_hash'])
-                lines=['# normalization-format: quantity-v2',f'# layout: {layout}', '# detector-model: cygno-300elj-v1',
+                matrix=read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
+                quantities=read_quantities(folder/'quantities.tsv',layout=layout,model='cygno-300elj-v2',geometry_hash=geometry['geometry_hash'])
+                lines=['# normalization-format: quantity-v2',f'# layout: {layout}', '# detector-model: cygno-300elj-v2',
                        '# source-policy: uniform-volume-v1','# provenance: synthetic parity; not simulated backgrounds']
                 category_hist={}
                 from study.source_matrix import quantity_for

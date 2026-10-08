@@ -282,7 +282,7 @@ def positive_integer(value):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config', type=Path, default=rt.REPO/'config/study/samuele.json')
-    p.add_argument('--matrix', type=Path, default=rt.REPO/'config/study/cygno-300elj-radioassay-v1.json')
+    p.add_argument('--matrix', type=Path, default=rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')

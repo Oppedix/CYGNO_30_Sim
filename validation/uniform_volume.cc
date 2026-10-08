@@ -54,7 +54,7 @@ int main() {
     } else if (family=="RingSupports") {
       expected=shell({250.110,400.110,250},{250.035,400.035,250});
     } else if (family=="RingStrips") {
-      expected=shell({250.035,400.035,27.5},{250,400,27.5},{-.0175,-.0175,0});
+      expected=shell({250.035,400.035,5},{250,400,5},{-.0175,-.0175,0});
     } else {
       expected=shell({2780,2822,514.21},{2775,2817,509.21});
     }

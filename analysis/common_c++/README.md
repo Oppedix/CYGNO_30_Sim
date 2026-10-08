@@ -6,7 +6,7 @@ separate implementation. Historical Python spectra/reporting and
 `analysis/reference_cpp/` are unchanged; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked, 31-contribution campaign** produced by
+Input is a **completed, unpacked, 28-contribution campaign** produced by
 `study/simulate.py` with `output_mode=compact`, campaign schema 3, output schema 1.
 The same executable handles `legacy-25x3` and `cygno-11x7-v1` using their saved
 geometry and constructed quantities. No detector coordinates, assay activities,
@@ -110,7 +110,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all 31 physical rows,
+1. The ordered `matrix.json.contributions` array supplies all 28 physical rows,
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -307,11 +307,11 @@ the campaign matrix:
 | Vessel | Vessel: U238, Th232 | 2 |
 | Camera Sensors | Sensors: U238, Th232, K40 | 3 |
 | Cathodes | CathodesPolyimide: U238, Th232, K40; CathodesCopper: U238, Th232, K40 | 6 |
-| Resistors | Resistors: U238, Th232, K40, U235, Ra226, Th228 | 6 |
+| Resistors | Resistors: U238, Th232, K40 | 3 |
 | GEMs | GEMsPolyimide: U238, Th232, K40; GEMsCopper: U238, Th232, K40 | 6 |
 | Field Cage | RingSupports: U238, Th232, K40; RingStrips: U238, Th232 | 5 |
 
-The resistor upper/lower chain segments remain distinct matrix contributions.
+The completed MBNL resistor assay supplies U238/Th232 equilibrium-assumption jobs and one K40 job. Per-piece activity is based on the nominal 17-mm Suprasil reference tube, never the compact transport-box mass. See [material provenance](../../docs/STUDY_SOURCES.md).
 GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
 program does not implement or change decay-chain physics.
 
@@ -363,8 +363,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: 31 × 4 × 6 explicit selection windows
-ExactEnergyWindows                TTree: 31 × 2 × 6 contribution windows
+SelectionEnergyWindows            TTree: 28 × 4 × 6 explicit selection windows
+ExactEnergyWindows                TTree: 28 × 2 × 6 contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -427,10 +427,10 @@ fiducial_20mm      1     1           1          0         1         0
 ```
 
 For campaign integration, this small real transport file was reused in a
-**clearly labeled synthetic 31-job campaign fixture**, with actual exported
+**clearly labeled synthetic 28-job campaign fixture**, with actual exported
 geometry/quantities and the saved matrix activities. This exercises differing
 normalization scales and category sums; it is not a physically simulated
-31-source campaign. Attempts alternate between `attempt-0002` and
+28-source campaign. Attempts alternate between `attempt-0002` and
 `attempt-0007` to check manifest-based discovery.
 
 Comparisons require exact equality for accepted/processed counts, all six
@@ -465,7 +465,7 @@ times remain analyzable. The topology oracle rejects missing/nonfinite times
 instead of inventing them.
 
 `tests/test_topology.py` compiles the production C++ executable when `root-config`
-is available and creates synthetic 31-contribution compact campaigns for both
+is available and creates synthetic 28-contribution compact campaigns for both
 `legacy-25x3` and `cygno-11x7-v1`. It checks default/custom timing, endpoint and
 partner policies, every historical histogram edge and neighboring floats, exact
 windows, raw bins, annual rates/variances, category density/errors, cut-flow
