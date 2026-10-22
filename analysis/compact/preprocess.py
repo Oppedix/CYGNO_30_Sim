@@ -19,12 +19,12 @@ def event_rows(tree, requested, step_size):
         yield event, list(batch)
 
 
-def reconstruct(event, data, layout):
+def reconstruct(event, data, layout, *, external=False):
     groups = {}
     for row in data['Groups']:
         key = row['GroupIndex']
         require(key == len(groups), 'Duplicate/out-of-order GroupIndex')
-        require(row['ParticleName'] in ('e-','e+','alpha'), 'Invalid group particle')
+        require(bool(row['ParticleName']) if external else row['ParticleName'] in ('e-','e+','alpha'), 'Invalid group particle')
         require(row['StepCount'] >= row['TrackCount'] > 0 and
                 row['StepCount'] >= row['VolumeCount'] > 0, 'Invalid group counts')
         groups[key] = Group(event, row['ParticleName'], row['Nucleus'], row['ProcessType'],
@@ -61,30 +61,35 @@ def reconstruct(event, data, layout):
         track, key = row['ParticleID'], row['GroupIndex']
         require(track in tracks and key in groups, 'Orphan track/group relationship')
         require((track,key)>previous, 'Duplicate/out-of-order track/group relationship')
-        require(tracks[track].particle in ('e-','e+','alpha'), 'Ignored particle has group')
+        require(external or tracks[track].particle in ('e-','e+','alpha'), 'Ignored particle has group')
         tracks[track].group_indices.append(key)
         groups[key].track_ids.add(track)
         previous=(track,key)
     for key, track in tracks.items():
         links = track.group_indices
-        require(bool(links)==(track.particle in ('e-','e+','alpha')), 'Missing/unexpected track membership')
+        require(bool(links)==(external or track.particle in ('e-','e+','alpha')), 'Missing/unexpected track membership')
+        if external:
+            require(len(links)==1 and groups[links[0]].particle==track.particle and
+                    groups[links[0]].process==track.process and groups[links[0]].nucleus==track.nucleus,
+                    'External group must preserve one track identity')
         require(sentinels[key]==(-1 if not links else links[0] if len(links)==1 else -2),
                 'Track GroupIndex sentinel/relationship mismatch')
     for row in data['Groups']:
         group=groups[row['GroupIndex']]
         require(len(group.volumes)==row['VolumeCount'] and len(group.track_ids)==row['TrackCount'],
                 'Group relationship count mismatch')
+        require(not external or row['TrackCount']==1, 'External group must contain exactly one track')
     return list(groups.values()), list(tracks.values())
 
 
-def groups(trees, requested, layout, step_size='64 MB', track_sink=None):
+def groups(trees, requested, layout, step_size='64 MB', track_sink=None, *, external=False):
     streams = {name: iter(event_rows(tree, requested, step_size)) for name,tree in trees.items()}
     pending = {name: next(stream,None) for name,stream in streams.items()}
     while any(value is not None for value in pending.values()):
         event = min(value[0] for value in pending.values() if value is not None)
         data = {name: value[1] if value is not None and value[0]==event else []
                 for name,value in pending.items()}
-        canonical, tracks = reconstruct(event,data,layout)
+        canonical, tracks = reconstruct(event,data,layout,external=external)
         yield from canonical
         if track_sink is not None:
             for track in tracks:

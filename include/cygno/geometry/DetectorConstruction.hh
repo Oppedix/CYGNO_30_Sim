@@ -108,6 +108,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   void BuildGEMs();
   void BuildFieldCage();
   void BuildVessel();
+  void BuildShielding();
   void BuildOptics();
   void BuildSensitiveGasVolumes();
   G4VPhysicalVolume* PlaceInModule(const cygno::geometry::ModulePlacement& module,

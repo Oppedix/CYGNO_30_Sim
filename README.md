@@ -1,4 +1,24 @@
-# CYGNO internal-radioactivity background study
+# CYGNO-30 — common detector, internal and external backgrounds
+
+One Geant4 application and one detector geometry serve two independent scientific
+workflows:
+
+- **[Internal](internal/README.md)**: component radioactivity, existing source
+  matrices, raw/compact Python and C++ ROOT analysis. Existing paths/commands remain supported.
+- **[External](external/README.md)**: LNGS environmental gamma/neutron sources,
+  optional four-layer 20 cm copper shielding, flux-based primary-event analysis.
+  The supplied source distributions are explicitly documented proxy scenarios.
+
+Build once from this root. Detector dimensions and geometry documentation remain
+shared: [module](docs/SINGLE_MODULE_GEOMETRY.md), [layouts](docs/LAYOUT.md),
+[external shielding](docs/EXTERNAL_SHIELDING.md).
+[Repository review and directory choices](docs/INTERNAL_EXTERNAL_REVIEW.md)
+explains compatibility links and scientific boundaries. Both areas include local
+and cluster instructions. Internal is still the default `rdecay01` mode.
+
+The detailed pre-existing internal guide follows.
+
+## CYGNO internal-radioactivity background study
 
 Two stages reproduce the **workflow and analysis infrastructure** of Samuele
 Torelli's study: Geant4 generates raw or compact ROOT files; Python analyzes canonical groups offline.

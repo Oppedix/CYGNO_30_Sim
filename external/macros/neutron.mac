@@ -1,0 +1,19 @@
+# From a new working directory: rdecay01 /absolute/path/to/this.mac 1 --mode external --layout cygno-11x7-v1 --output-mode compact
+# External source: hall-c-neutron-wulandari-proxy
+# scenario; not a validated site prediction
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/run/printProgress 10000
+/random/setSeeds 587154805 698885635
+/output/OutFile compact
+/gps/particle neutron
+/gps/ene/type User
+/gps/hist/type energy
+/gps/hist/point 0 0
+/gps/hist/point 4.9999999999999998e-08 0.10619469026548671
+/gps/hist/point 0.001 0.41150442477876104
+/gps/hist/point 2.5 0.40265486725663713
+/gps/hist/point 5 0.066371681415929196
+/gps/hist/point 10 0.013274336283185839
+/run/beamOn 1000

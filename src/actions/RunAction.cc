@@ -50,6 +50,8 @@
 #include "G4ProcessTable.hh"
 #include "G4GenericIon.hh"
 #include "G4HadronicProcessType.hh"
+#include "common/SimulationMode.hh"
+#include "common/ExternalGeometry.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -89,6 +91,13 @@ RunAction::RunAction(PrimaryGeneratorAction* kin)
     manager->CreateNtupleSColumn(format,"CompactProcessingVersion");
     manager->FinishNtuple(format);
     if (cygno::output::CompactEnabled()) cygno::output::BookCompact();
+    if (cygno::simulation::external) {
+      fSimulationNtuple=manager->CreateNtuple("SimulationMetadata","External transport identity");
+      for (const auto* name : {"Mode","Shielding","PhysicsList","SourceHash","ExternalGeometryHash"})
+        manager->CreateNtupleSColumn(fSimulationNtuple,name);
+      manager->CreateNtupleDColumn(fSimulationNtuple,"SourceRadius_mm");
+      manager->FinishNtuple(fSimulationNtuple);
+    }
   }
 }
 
@@ -139,13 +148,22 @@ void RunAction::BeginOfRunAction(const G4Run*)
     analysisManager->FillNtupleSColumn(1,0,cygno::build::geometryHash);
     analysisManager->FillNtupleSColumn(1,1,detector->GetLayoutProfile().name);
     analysisManager->FillNtupleSColumn(1,2,"cygno-300elj-v2");
-    analysisManager->FillNtupleSColumn(1,3,"uniform-volume-v1");
+    analysisManager->FillNtupleSColumn(1,3,cygno::simulation::SourcePolicy());
     analysisManager->AddNtupleRow(1);
     analysisManager->FillNtupleSColumn(3,0,cygno::output::Mode());
     analysisManager->FillNtupleIColumn(3,1,cygno::output::schemaVersion);
     analysisManager->FillNtupleSColumn(3,2,cygno::output::timingDefinition);
-    analysisManager->FillNtupleSColumn(3,3,cygno::output::processingVersion);
+    analysisManager->FillNtupleSColumn(3,3,cygno::simulation::Processing());
     analysisManager->AddNtupleRow(3);
+    if (fSimulationNtuple>=0) {
+      analysisManager->FillNtupleSColumn(fSimulationNtuple,0,"external");
+      analysisManager->FillNtupleSColumn(fSimulationNtuple,1,cygno::simulation::shielded ? "copper20" : "none");
+      analysisManager->FillNtupleSColumn(fSimulationNtuple,2,cygno::simulation::Physics());
+      analysisManager->FillNtupleSColumn(fSimulationNtuple,3,cygno::build::sourceHash);
+      analysisManager->FillNtupleSColumn(fSimulationNtuple,4,cygno::build::externalGeometryHash);
+      analysisManager->FillNtupleDColumn(fSimulationNtuple,5,cygno::geometry::SourceRadiusMm(detector->GetLayoutProfile()));
+      analysisManager->AddNtupleRow(fSimulationNtuple);
+    }
   }
 
 

@@ -41,6 +41,14 @@
 #include "Randomize.hh"
 #include "G4VSolid.hh"
 #include "G4Exception.hh"
+#include "common/SimulationMode.hh"
+#include "common/ExternalGeometry.hh"
+#include "G4GeneralParticleSource.hh"
+#include "G4SingleParticleSource.hh"
+#include "G4SPSPosDistribution.hh"
+#include "G4SPSAngDistribution.hh"
+#include "G4PrimaryVertex.hh"
+#include "G4PhysicalConstants.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -52,6 +60,16 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
   
   G4int n_particle = 1;
   fParticleGun  = new G4ParticleGun(n_particle);
+  if (cygno::simulation::external) {
+    fGPS=new G4GeneralParticleSource;
+    fExternalRadius=cygno::geometry::SourceRadiusMm(Detector->GetLayoutProfile())*mm;
+    auto* source=fGPS->GetCurrentSource();
+    source->GetPosDist()->SetPosDisType("Surface");
+    source->GetPosDist()->SetPosDisShape("Sphere");
+    source->GetPosDist()->SetRadius(fExternalRadius);
+    source->GetAngDist()->SetAngDistType("cos");
+    return;
+  }
   
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition* particle = particleTable->FindParticle("geantino");  
@@ -80,6 +98,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
+  delete fGPS;
   delete fPrimaryMessenger;
   delete fSourceMessenger;
   delete fParticleGun;
@@ -90,6 +109,26 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 // Called once per event, before BeginOfEventAction, to create primary vertices.
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
+  if (fGPS) {
+    const auto* pos=fGPS->GetCurrentSource()->GetPosDist();
+    auto* ang=fGPS->GetCurrentSource()->GetAngDist();
+    if (pos->GetPosDisType()!="Surface" || pos->GetPosDisShape()!="Sphere" ||
+        pos->GetRadius()!=fExternalRadius || pos->GetCentreCoords()!=G4ThreeVector() || pos->GetConfined() ||
+        ang->GetDistType()!="cos" || ang->GetMinTheta()!=0. || ang->GetMaxTheta()!=halfpi ||
+        ang->GetMinPhi()!=0. || ang->GetMaxPhi()!=twopi)
+      G4Exception("PrimaryGeneratorAction", "CYGNO_EXTERNAL", FatalException, "Do not override the enclosing cosine source");
+    const auto particle=fGPS->GetParticleDefinition()->GetParticleName();
+    if ((particle!="gamma" && particle!="neutron") || fGPS->GetNumberofSource()!=1 ||
+        fGPS->GetNumberOfParticles()!=1)
+      G4Exception("PrimaryGeneratorAction", "CYGNO_EXTERNAL", FatalException, "External requires one gamma/neutron per event");
+    fGPS->GeneratePrimaryVertex(anEvent);
+    const auto* vertex=anEvent->GetPrimaryVertex();
+    const auto* primary=vertex->GetPrimary();
+    if (vertex->GetPosition().dot(primary->GetMomentum())>=0 || primary->GetWeight()!=1.)
+      G4Exception("PrimaryGeneratorAction", "CYGNO_EXTERNAL", FatalException, "Expected unbiased inward source");
+    ++fGeneratedPrimaries;
+    return;
+  }
 
   // Explicit isotope commands apply on the next event, including later runs.
   // A manually selected gun particle remains usable until an isotope command.

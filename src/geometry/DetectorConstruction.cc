@@ -39,6 +39,8 @@
 #include "G4UnitsTable.hh"
 #include "G4VisAttributes.hh"
 
+#include "common/SimulationMode.hh"
+#include "common/ExternalGeometry.hh"
 namespace geo = cygno::geometry;
 namespace {
 const auto& d = geo::module; // Shared values are mm; convert explicitly at Geant4 calls.
@@ -55,7 +57,11 @@ G4VisAttributes* SolidColour(const G4Colour& colour) {
 DetectorConstruction::DetectorConstruction(geo::LayoutId layout)
   : G4VUserDetectorConstruction(), fLayoutProfile(geo::BuildLayoutProfile(layout))
 {
-  const auto half = fLayoutProfile.worldHalfSize;
+  auto half = fLayoutProfile.worldHalfSize;
+  if (cygno::simulation::external) {
+    const double extent=geo::SourceRadiusMm(fLayoutProfile)+100.;
+    half={std::max(half.x,extent),std::max(half.y,extent),std::max(half.z,extent)};
+  }
   fWorldSize_x = 2*half.x*mm;
   fWorldSize_y = 2*half.y*mm;
   fWorldSize_z = 2*half.z*mm;
@@ -80,6 +86,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   BuildVessel();
   BuildOptics();
   BuildSensitiveGasVolumes();
+  if (cygno::simulation::shielded) BuildShielding();
   fPhysVolStore = G4PhysicalVolumeStore::GetInstance();
   for (const auto& entry : fMassMap)
     G4cout << "Mass of: " << entry.first << " = " << G4BestUnit(entry.second,"Mass") << G4endl;
@@ -328,6 +335,21 @@ void DetectorConstruction::BuildVessel()
   logical->SetVisAttributes(SolidColour(G4Colour(1,1,1,0.0)));
   fPhysicVessel = new G4PVPlacement(nullptr,{},logical,"Vessel",fWorldLogical,true,0);
   fMassMap["Vessel"] += logical->GetMass();
+}
+
+void DetectorConstruction::BuildShielding()
+{
+  for (int layer=0; layer<geo::shieldingLayers; ++layer) {
+    const auto a=geo::ShieldBoundary(fLayoutProfile,layer);
+    const auto b=geo::ShieldBoundary(fLayoutProfile,layer+1);
+    const auto name="ExternalCu"+std::to_string(layer);
+    auto* inner=new G4Box(name+"Inner",a.x*mm,a.y*mm,a.z*mm);
+    auto* outer=new G4Box(name+"Outer",b.x*mm,b.y*mm,b.z*mm);
+    auto* solid=new G4SubtractionSolid(name,outer,inner);
+    auto* logical=new G4LogicalVolume(solid,fMaterials.copper,name);
+    logical->SetVisAttributes(SolidColour(G4Colour(.7,.4,.15,.15)));
+    new G4PVPlacement(nullptr,{},logical,name,fWorldLogical,false,layer);
+  }
 }
 
 void DetectorConstruction::BuildOptics()

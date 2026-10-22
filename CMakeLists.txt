@@ -6,6 +6,8 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS common/DetectorGeometry.hh)
 file(SHA256 "${PROJECT_SOURCE_DIR}/common/DetectorGeometry.hh" CYGNO_GEOMETRY_HASH)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS common/ExternalGeometry.hh)
+file(SHA256 "${PROJECT_SOURCE_DIR}/common/ExternalGeometry.hh" CYGNO_EXTERNAL_GEOMETRY_HASH)
 # Record the compiled source inputs so a runner cannot label a stale binary with
 # the current checkout. Python study/config files have separate manifest hashes.
 file(GLOB_RECURSE CYGNO_BUILD_INPUTS CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"

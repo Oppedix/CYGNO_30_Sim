@@ -45,6 +45,7 @@
 
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
+#include "common/SimulationMode.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -102,6 +103,8 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   G4double Ekin = track->GetKineticEnergy();
   G4int ID      = track->GetTrackID();
   if (ID == 1) run->SetPrimary(particle, Ekin); // actual generated particle, before stopping ions
+  // Environmental recoils must retain their kinetic energy and transport.
+  if (cygno::simulation::external) return;
   
   G4bool condition = false;
   
@@ -174,6 +177,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
 // Called when that track stops; its last step supplies the decay secondaries.
 void TrackingAction::PostUserTrackingAction(const G4Track* track)
 {
+  if (cygno::simulation::external) return;
   //keep only ions
   //
   if (fCharge < 3. ) return;

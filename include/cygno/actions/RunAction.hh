@@ -58,6 +58,7 @@ class RunAction : public G4UserRunAction
     G4GenericMessenger*     fRunMessenger; 
 
     G4String fOutFileName;
+    G4int fSimulationNtuple = -1;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

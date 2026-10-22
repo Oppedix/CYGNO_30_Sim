@@ -1,8 +1,9 @@
 // One extraction, two sinks; output never calls the random engine.
 #include "cygno/output/SensitiveDetector.hh"
 #include "cygno/output/HitOutput.hh"
+#include "common/SimulationMode.hh"
 SensitiveDetector::SensitiveDetector(G4String name) : G4VSensitiveDetector(name),
-  compact(cygno::output::WriteGroup, cygno::output::WriteTrack) {}
+  compact(cygno::output::WriteGroup, cygno::output::WriteTrack, cygno::simulation::external) {}
 SensitiveDetector::~SensitiveDetector() = default;
 void SensitiveDetector::Initialize(G4HCofThisEvent*) {
   if (cygno::output::CompactEnabled()) compact.EndEvent();

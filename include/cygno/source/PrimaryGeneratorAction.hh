@@ -45,6 +45,7 @@
 #include "G4GenericMessenger.hh" 
 
 class G4Event;
+class G4GeneralParticleSource;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -66,13 +67,15 @@ public:
   void SetMassNumber(G4int value) { fAIsotope=value; fIonNeedsUpdate=true; }
 private:
   G4ParticleGun*  fParticleGun;
+  G4GeneralParticleSource* fGPS = nullptr;
+  G4double fExternalRadius = 0.;
   RadioactiveSourceSampler fSourceSampler;
   G4int fGeneratedPrimaries = 0;
   bool fIonNeedsUpdate = false;
   G4int fZIsotope;
   G4int fAIsotope;   
-  G4GenericMessenger* fPrimaryMessenger;
-  G4GenericMessenger* fSourceMessenger;
+  G4GenericMessenger* fPrimaryMessenger = nullptr;
+  G4GenericMessenger* fSourceMessenger = nullptr;
   G4String fElement = "Vessel";
   
 };

@@ -1,3 +1,10 @@
+> This is the authoritative **internal** analysis area, also exposed at
+> `internal/analysis`. Its `raw`, `compact`, `common`, `common_c++`, notebooks and
+> `reference_cpp` retain their internal scientific contracts. External has a
+> [separate analysis pipeline](../external/README.md), reusing only explicit
+> low-level schemas/models/validation. Do not use activity normalization on
+> external files.
+
 # Canonical analysis
 
 `study/analyze.py` orchestrates campaign validation and publishing. All numerical

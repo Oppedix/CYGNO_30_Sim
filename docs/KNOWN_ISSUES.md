@@ -68,3 +68,15 @@ state removal, decay-chain alteration or dataset edit is used to pass tests.
 `validation/external_decay_probe.cc` and the Bi212 macro remain diagnostic
 reproducers. Geometry tests and short passing decay tests do not certify full
 U/Th chains in this environment.
+
+## External mode qualification
+
+[External physics assumptions](../external/docs/PHYSICS.md) and
+[executed validation](../external/docs/VALIDATION.md) are separate from internal
+chain qualification. External uses HP neutron physics, preserves moving ion
+recoils and stores all gas deposits. It does not add a quenching/readout model.
+Hall C integral/shape and neutron flux-convention assumptions are explicit.
+The local macOS/arm64 Geant4 11.3.1 neutron Cu20 smoke also reproduces PART122
+while decaying a Cu-capture product to Zn66. The failed attempt is retained and
+rejected as complete; no particle-table/data patch or decay suppression is used.
+Qualify capture/recoil transport on the target Linux environment before production.

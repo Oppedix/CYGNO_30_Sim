@@ -28,11 +28,29 @@ class CompactAccumulator {
 public:
   using GroupSink=std::function<void(const GroupRecord&)>;
   using TrackSink=std::function<void(const TrackRecord&)>;
-  CompactAccumulator(GroupSink groupSink, TrackSink trackSink)
-    : emitGroup(std::move(groupSink)), emitTrack(std::move(trackSink)) {}
+  CompactAccumulator(GroupSink groupSink, TrackSink trackSink, bool external=false)
+    : emitGroup(std::move(groupSink)), emitTrack(std::move(trackSink)), external(external) {}
   void Add(const StepRecord& s) {
     if (event!=s.eventNumber) { EndEvent(); event=s.eventNumber; }
     auto& track=tracks.try_emplace(s.particleID,TrackRecord{s,{}}).first->second;
+    if (external) {
+      if (track.groups.empty()) {
+        if (trackGroups.size()>=std::numeric_limits<int>::max()) throw std::overflow_error("GroupIndex overflow");
+        track.groups.push_back(static_cast<int>(trackGroups.size()));
+        GroupRecord record;
+        record.eventNumber=event; record.groupIndex=track.groups.front();
+        record.particleName=s.particleName; record.nucleus=s.nucleus; record.processType=s.processType;
+        record.tracks.insert(s.particleID);
+        trackGroups.push_back(std::move(record));
+      }
+      auto& record=trackGroups.at(track.groups.front());
+      if (record.stepCount==std::numeric_limits<int>::max()) throw std::overflow_error("StepCount overflow");
+      ++record.stepCount;
+      const auto inserted=record.volumeIndex.emplace(s.volumeNumber,record.volumes.size());
+      if (inserted.second) record.volumes.push_back({s.volumeNumber,s.energyDeposit,s.x,s.y,s.z,s.globalTimeNs});
+      else record.volumes[inserted.first->second].energy+=s.energyDeposit;
+      return;
+    }
     if (s.particleName!="e-" && s.particleName!="e+" && s.particleName!="alpha") return;
     if (!group.volumes.empty()) {
       if (s.processType==group.processType && s.nucleus==group.nucleus && !group.ionizationSeen)
@@ -54,6 +72,8 @@ public:
   }
   void EndEvent() {
     Flush();
+    for (const auto& record:trackGroups) emitGroup(record);
+    trackGroups.clear();
     // Sort by event-local track ID for a deterministic diagnostic table.
     for (const auto& entry: tracks) emitTrack(entry.second);
     tracks.clear(); event=-1; nextGroup=0;
@@ -70,5 +90,7 @@ private:
   int event=-1, nextGroup=0;
   GroupRecord group;
   std::map<int,TrackRecord> tracks;
+  bool external;
+  std::vector<GroupRecord> trackGroups;
 };
 }

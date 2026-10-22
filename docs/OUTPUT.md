@@ -114,3 +114,13 @@ representations and standalone compact spectra. Benchmark bytes are separately
 measured files, not estimated per-tree compressed bytes. Compression ratio is a
 storage diagnostic, never a scientific acceptance criterion. No ROOT fixture is
 committed. Full campaign preflight requirements remain in force.
+
+## External mode
+
+The contract above remains the internal default. External reuses the branch
+layouts, with source policy `environmental-surface-v1`, processing convention
+`external-track-volumes-v1` and an additional `SimulationMetadata` tree. It
+retains all particle species with one track per Group. Its primary-event analysis
+and flux normalization are described in [external OUTPUT](../external/docs/OUTPUT.md).
+The existing internal readers reject its processing marker; never interpret the
+same branch layout as proof of identical grouping or physics.

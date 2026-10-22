@@ -1,4 +1,10 @@
 # Validation reuses the same compiled simulation classes as the application.
+add_executable(external_checks external_checks.cc)
+target_link_libraries(external_checks PRIVATE cygno_sim)
+foreach(layout legacy-25x3 cygno-5x5x3-v1 cygno-11x7-v1)
+  add_test(NAME external_${layout} COMMAND external_checks ${layout})
+  set_tests_properties(external_${layout} PROPERTIES TIMEOUT 180)
+endforeach()
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/multithreaded.txt" "${Geant4_multithreaded_FOUND}")
 foreach(tool geometry_snapshot geometry_audit chain_boundaries uniform_volume)
   add_executable(${tool} ${tool}.cc)

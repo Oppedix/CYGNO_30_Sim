@@ -32,6 +32,8 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "G4Types.hh"
+#include "common/SimulationMode.hh"
+#include "common/ExternalGeometry.hh"
 #include "cygno/output/StepRecord.hh"
 
 #include "G4RunManagerFactory.hh"
@@ -69,14 +71,21 @@ int main(int argc,char** argv) {
   bool layoutSpecified = false;
   bool outputSpecified = false;
   int workers = 1;
+  std::string mode="internal", shield;
+  bool modeSpecified=false, shieldSpecified=false;
   try {
     for (int i=1; i<argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "Usage: rdecay01 [macro [workers]] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both]\n";
+        std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both]\n";
         return 0;
       }
-      if (arg == "--output-mode") {
+      if (arg == "--mode" || arg == "--shield") {
+        auto& specified = arg == "--mode" ? modeSpecified : shieldSpecified;
+        if (specified || i+1==argc) throw std::invalid_argument("Specify "+arg+" exactly once with a value");
+        (arg == "--mode" ? mode : shield) = argv[++i];
+        specified=true;
+      } else if (arg == "--output-mode") {
         if (outputSpecified || i+1==argc) throw std::invalid_argument("Specify --output-mode exactly once");
         cygno::output::SetMode(argv[++i]);
         outputSpecified=true;
@@ -89,6 +98,7 @@ int main(int argc,char** argv) {
         throw std::invalid_argument("Unknown option: " + arg);
       } else positional.push_back(arg);
     }
+    cygno::simulation::Configure(mode, shieldSpecified ? shield : mode=="external" ? "copper20" : "none");
     if (positional.size() > 2) throw std::invalid_argument("Expected macro and optional worker count");
     if (positional.size() == 2) {
       std::size_t end = 0;
@@ -101,7 +111,11 @@ int main(int argc,char** argv) {
     return 1;
   }
   std::cout << "CYGNO layout=" << cygno::geometry::LayoutName(layout)
-            << " detector_model=cygno-300elj-v2 source_model=uniform-volume-v1\n";
+            << " detector_model=cygno-300elj-v2 source_model=" << cygno::simulation::SourcePolicy() << "\n";
+  if (cygno::simulation::external)
+    std::cout << "CYGNO_EXTERNAL radius_mm " << std::setprecision(17)
+              << cygno::geometry::SourceRadiusMm(cygno::geometry::BuildLayoutProfile(layout)) << "\n"
+              << "CYGNO_EXTERNAL geometry_hash " << cygno::build::externalGeometryHash << "\n";
   G4UIExecutive* ui = nullptr;
   if (positional.empty()) {
     int uiArgc = 1; // Geometry options belong to this application, not the UI.
@@ -136,11 +150,13 @@ int main(int argc,char** argv) {
 
   // This reference list is the active physics configuration. The custom
   // PhysicsList class in legacy/scaffolding/PhysicsList.cc is not used here.
-  G4VModularPhysicsList* physicsList = factory.GetReferencePhysList("QGSP_BIC_EMZ");
+  G4VModularPhysicsList* physicsList = factory.GetReferencePhysList(cygno::simulation::Physics());
   //you can modify the above to add or remove physics processes, for example to add radioactive decay:
   //physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); as done below
   physicsList->SetVerboseLevel(0);
-  physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics); 
+  // HP reference lists already include RDM; never register it twice.
+  if (!physicsList->GetPhysics("G4RadioactiveDecay"))
+    physicsList->RegisterPhysics(new G4RadioactiveDecayPhysics);
 
   runManager->SetUserInitialization(physicsList);
 
@@ -159,7 +175,7 @@ int main(int argc,char** argv) {
   std::cout << "CYGNO_ENV source_hash " << cygno::build::sourceHash << "\n"
             << "CYGNO_ENV geometry_hash " << cygno::build::geometryHash << "\n"
             << "CYGNO_ENV geant4 " << G4Version << "\n"
-            << "CYGNO_ENV physics QGSP_BIC_EMZ+G4RadioactiveDecayPhysics\n";
+            << "CYGNO_ENV physics " << cygno::simulation::Physics() << "+G4RadioactiveDecayPhysics\n";
   for (const auto* key : {"G4NEUTRONHPDATA", "G4LEDATA", "G4LEVELGAMMADATA",
        "G4RADIOACTIVEDATA", "G4PARTICLEXSDATA", "G4PIIDATA", "G4REALSURFACEDATA",
        "G4SAIDXSDATA", "G4ABLADATA", "G4INCLDATA", "G4ENSDFSTATEDATA", "G4CHANNELINGDATA"}) {

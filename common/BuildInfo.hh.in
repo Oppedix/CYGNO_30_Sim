@@ -5,5 +5,6 @@
 namespace cygno::build {
 inline constexpr char sourceHash[] = "@CYGNO_SOURCE_HASH@";
 inline constexpr char geometryHash[] = "@CYGNO_GEOMETRY_HASH@";
+inline constexpr char externalGeometryHash[] = "@CYGNO_EXTERNAL_GEOMETRY_HASH@";
 }
 #endif

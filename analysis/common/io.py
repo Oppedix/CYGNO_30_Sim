@@ -35,7 +35,7 @@ FORMAT_SCHEMA = dict(OutputFormat='string', OutputSchemaVersion='int32', TimingD
                      CompactProcessingVersion='string')
 
 
-def output_metadata(file, expected_mode=None, expected_version=None):
+def output_metadata(file, expected_mode=None, expected_version=None, *, processing=PROCESSING_VERSION):
     if 'OutputMetadata' not in file:
         # Explicit legacy contract: old 12-column raw files only; schema checked by raw reader.
         require('Hits' in file and not any(k in file for k in ('Groups','GroupVolumes','Tracks','TrackGroups')),
@@ -48,7 +48,7 @@ def output_metadata(file, expected_mode=None, expected_version=None):
         require(result['OutputFormat'] in ('raw','compact','both'), 'Unknown output format')
         require(result['OutputSchemaVersion']==OUTPUT_SCHEMA_VERSION, 'Unsupported output schema version')
         require(result['TimingDefinition']==TIMING_DEFINITION and
-                result['CompactProcessingVersion']==PROCESSING_VERSION, 'Unsupported timing/processing definition')
+                result['CompactProcessingVersion']==processing, 'Unsupported timing/processing definition')
         mode=result['OutputFormat']
         require(('Hits' in file)==(mode!='compact'), 'Hits/output format disagreement')
         for key in ('Groups','GroupVolumes','Tracks','TrackGroups'):

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <iomanip>
 using namespace cygno::output;
-int main(int argc,char**) {
+int main(int argc,char** argv) {
   std::cout << std::setprecision(17);
   CompactAccumulator a([](const GroupRecord& g) {
     std::cout << "G " << g.eventNumber << ' ' << g.groupIndex << ' ' << std::quoted(g.particleName)
@@ -19,7 +19,7 @@ int main(int argc,char**) {
       << ' ' << std::quoted(s.particleName) << ' ' << std::quoted(s.nucleus) << ' ' << std::quoted(s.processType)
       << ' ' << (t.groups.empty() ? -1 : t.groups.size()==1 ? t.groups[0] : -2) << '\n';
     for(int g:t.groups) std::cout << "L " << s.eventNumber << ' ' << s.particleID << ' ' << g << '\n';
-  });
+  },argc>1 && std::string(argv[1])=="--external");
   StepRecord s; int event=-1;
   while(std::cin >> s.eventNumber >> s.particleID >> s.particleTag >> s.parentID >> s.volumeNumber
       >> std::quoted(s.particleName) >> std::quoted(s.nucleus) >> std::quoted(s.processType)

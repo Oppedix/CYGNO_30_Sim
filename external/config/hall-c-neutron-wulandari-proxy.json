@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "mode": "external",
+  "layout": "cygno-11x7-v1",
+  "shield": "copper20",
+  "output_mode": "compact",
+  "primaries": 1000,
+  "seed": 17423,
+  "timeout_seconds": 3600,
+  "scientific_status": "scenario; not a validated site prediction",
+  "id": "hall-c-neutron-wulandari-proxy",
+  "particle": "neutron",
+  "hall": "C",
+  "flux_cm2_s": 2.26e-06,
+  "flux_convention": "scalar",
+  "energy_edges_MeV": [
+    0,
+    5e-08,
+    0.001,
+    2.5,
+    5,
+    10
+  ],
+  "bin_probabilities": [
+    0.10619469026548671,
+    0.41150442477876104,
+    0.40265486725663713,
+    0.0663716814159292,
+    0.013274336283185839
+  ],
+  "shape_assumption": "Wulandari Table 8 Hall C dry bin integrals; uniform WITHIN each broad bin is an unvalidated proxy. No muon-induced tail.",
+  "reference": "https://doi.org/10.1016/j.astropartphys.2004.07.005; Table 8; scalar-flux interpretation is provisional and requires confirmation of tally convention."
+}
