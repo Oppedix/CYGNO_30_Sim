@@ -20,6 +20,40 @@ class WorkflowTests(unittest.TestCase):
             self.assertIsNone(provenance['revision'])
             self.assertEqual(provenance['files_sha256'], {'study/analyze.py': rt.digest(source/'study/analyze.py')})
 
+    def test_v3_cli_selects_matching_matrix_and_transport(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d);template=base/'template'
+            config,_,_=campaign_fixture(template,'cygno-acrylic-v3')
+            config_path=base/'config.json';rt.save(config_path,config)
+            build=base/'build';build.mkdir()
+            for name in ('rdecay01','geometry_quantities','CMakeCache.txt'):
+                (build/name).write_text('fixture')
+            env=environment();seen=[]
+            def invoke(command,cwd,label,timeout,**options):
+                self.assertEqual(command[-2:],['--model','cygno-acrylic-v3'])
+                seen.append(label)
+                if label=='environment':return '\n'.join('CYGNO_ENV '+k+' '+v for k,v in env.items())
+                if label=='quantities':
+                    Path(command[1]).write_bytes((template/'quantities.tsv').read_bytes())
+                    Path(command[3]).write_bytes((template/'geometry.json').read_bytes())
+                    return ''
+                return fake_invoke(command,cwd,label,timeout,**options)
+            def preflight(build,output,model):
+                self.assertEqual(model,'cygno-acrylic-v3')
+                output.mkdir();rt.save(output/'preflight.json',rt.read(template/'preflight/preflight.json'))
+                return 0
+            args=simulate.parser().parse_args(['--config',str(config_path),'--build',str(build),
+                '--output',str(base/'campaign'),'--only','Lens_K40'])
+            with patch.object(rt,'invoke',side_effect=invoke),patch.object(rt,'dataset_state',return_value={}), \
+                 patch.object(rt,'source_state',return_value={'files_sha256':{}}), \
+                 patch.object(rt,'compiled_source_hash',return_value=env['source_hash']), \
+                 patch('study.preflight.check',side_effect=preflight):
+                self.assertEqual(simulate.run(args),2)
+            document=rt.read(args.output/'campaign.json')
+            self.assertEqual(document['coverage'],'1/26')
+            self.assertEqual(document['identity']['matrix']['matrix_id'],'cygno-300elj-radioassay-v3')
+            self.assertEqual(seen,['environment','quantities','simulation'])
+
     def test_cli_statistics_resume_identity_and_gate(self):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)

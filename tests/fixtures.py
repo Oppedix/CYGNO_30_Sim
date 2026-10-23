@@ -5,7 +5,7 @@ import numpy as np
 import uproot
 from study import runtime as rt
 from analysis.raw.io import LEGACY_HITS_SCHEMA as HITS_SCHEMA, METADATA
-from study.source_matrix import COMPONENTS, read_matrix
+from study.source_matrix import COMPONENTS, read_matrix, MATRIX_MODELS
 
 
 def chunk(rows):
@@ -47,10 +47,11 @@ def log_for(env, requested):
         RunID=0, RequestedEvents=requested, GeneratedPrimaries=requested, ProcessedEvents=requested, AbortedEvents=0))+'\n')
 
 
-def campaign_fixture(root):
+def campaign_fixture(root, model='cygno-300elj-v2'):
     root.mkdir()
-    cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | dict(mode='smoke', primaries_per_job=2)
-    matrix = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
+    cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | dict(mode='smoke', primaries_per_job=2, model=model)
+    matrix_id = next(k for k,v in MATRIX_MODELS.items() if v == model)
+    matrix = read_matrix(rt.REPO/'config/study'/(matrix_id+'.json'))
     env = environment()
     identity = dict(config=cfg, matrix=matrix, effective_environment=env, source={'files_sha256': {}})
     rt.save(root/'config.json', cfg)
@@ -59,8 +60,8 @@ def campaign_fixture(root):
     geometry = dict(layout=cfg['layout'], model=cfg['model'], source_policy=cfg['source_policy'], geometry_hash=env['geometry_hash'], source_hash=env['source_hash'],
                     gas_size_mm=[100,100,100], gas_centers_mm={str(i):[0,0,0] for i in range(150)})
     rt.save(root/'geometry.json', geometry)
-    quantities = {name:dict(mass_kg=2., pieces=3, geometry_material='fixture') for name in COMPONENTS}
-    (root/'quantities.tsv').write_text(f"# layout: {cfg['layout']}\n# detector-model: cygno-300elj-v2\n# source-policy: uniform-volume-v1\n# geometry-hash: {env['geometry_hash']}\n# compiled-source-hash: {env['source_hash']}\n# provenance: synthetic fixture\ncomponent\tmass_kg\tpieces\tgeometry_material\n"+''.join(f'{name}\t2\t3\tfixture\n' for name in COMPONENTS))
+    quantities = {name:dict(mass_kg=2., pieces=3, geometry_material='PMMA' if model == 'cygno-acrylic-v3' and name in ('GEMsPolyimide','CathodesPolyimide') else 'fixture') for name in COMPONENTS}
+    (root/'quantities.tsv').write_text(f"# layout: {cfg['layout']}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# geometry-hash: {env['geometry_hash']}\n# compiled-source-hash: {env['source_hash']}\n# provenance: synthetic fixture\ncomponent\tmass_kg\tpieces\tgeometry_material\n"+''.join(f'{name}\t2\t3\t{quantities[name]["geometry_material"]}\n' for name in COMPONENTS))
     checks = {name:dict(status='passed', PART122=False, environment=env) for name in
               ('u238-default', 'u238-enabled', 'th232-full', 'bi212-full')}
     preflight = root/'preflight'; preflight.mkdir()

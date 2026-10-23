@@ -18,7 +18,7 @@ struct FileIdentity {
 };
 inline void ValidateIdentity(const FileIdentity& identity) {
   geometry::ParseLayoutId(identity.layout);
-  if (identity.model != "cygno-300elj-v2")
+  if (identity.model != "cygno-300elj-v2" && identity.model != "cygno-acrylic-v3")
     throw std::runtime_error("Unsupported detector model: " + identity.model);
   if (identity.sourcePolicy != "uniform-volume-v1")
     throw std::runtime_error("Unsupported source policy: " + identity.sourcePolicy);

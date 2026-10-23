@@ -1,3 +1,11 @@
+> Internal v3 (preferred) uses physical PMMA50 cores with Table 7.1 Acrylic/EFCu
+> activities, 26 contributions; v2 retains Kapton50/Arnquist and 28 contributions.
+> Both analyses preserve the simulation matrix and separately record
+> `normalization-scenario.json`. v3 needs new transport for all contributions;
+> v2 ROOT files must not be relabeled. See [source comparison](STUDY_SOURCES.md)
+> and [cluster commands](../internal/README.md). The v2 normalization examples
+> below remain versioned reference examples.
+
 # Analysis and normalization
 
 The normal offline entry point is now `study/analyze.py` (uproot/numpy/matplotlib,

@@ -151,6 +151,23 @@ class CampaignTests(unittest.TestCase):
             self.assertEqual(rt.read(output/'analysis-manifest.json')['coverage'],'28/28')
             with self.assertRaises(ValueError): analyze(root,output)
 
+    def test_acrylic_v3_analysis_preserves_simulation(self):
+        self.root=Path(self.tmp.name)/'acrylic-campaign'
+        self.cfg,self.matrix,self.campaign=campaign_fixture(self.root,'cygno-acrylic-v3')
+        self.populate()
+        self.assertEqual(len(validate_campaign(self.root)),26)
+        before={p:p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+        output=Path(self.tmp.name)/'acrylic-analysis'
+        self.assertEqual(analyze(self.root,output),0)
+        self.assertEqual(rt.read(output/'matrix.json'),self.matrix)
+        scenario=rt.read(output/'normalization-scenario.json')
+        self.assertEqual(scenario['scenario_id'],self.matrix['matrix_id'])
+        self.assertEqual(scenario['detector_model'],'cygno-acrylic-v3')
+        self.assertEqual(rt.read(output/'analysis-manifest.json')['normalization_scenario'],scenario)
+        self.assertEqual(before,{p:p.read_bytes() for p in before})
+        self.assertEqual(rt.read(output/'analysis-manifest.json')['coverage'],'26/26')
+        self.assertNotIn('CathodesCopper_K40',rt.read(output/'analysis-manifest.json')['inputs'])
+
     def test_partial_report_and_provenance(self):
         self.populate([self.matrix['contributions'][0]])
         output=Path(self.tmp.name)/'partial'

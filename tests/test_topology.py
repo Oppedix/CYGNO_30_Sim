@@ -131,12 +131,12 @@ class TopologyTests(unittest.TestCase):
             np.testing.assert_array_equal(hist[:2],old_hist)
 
 
-def make_campaign(path, layout):
-    config,matrix,campaign=campaign_fixture(path)
+def make_campaign(path, layout, model='cygno-300elj-v2'):
+    config,matrix,campaign=campaign_fixture(path,model)
     geom=geometry(layout)
     saved_geom=rt.read(path/'geometry.json') | geom | dict(layout=layout)
     config.update(layout=layout,output_mode='compact',output_schema_version=1,primaries_per_job=10000)
-    campaign.update(schema_version=3,status='complete',coverage='28/28',job_records={})
+    campaign.update(schema_version=3,status='complete',coverage=f'{len(matrix["contributions"])}/{len(matrix["contributions"])}',job_records={})
     campaign['identity']['config']=config
     rt.save(path/'config.json',config); rt.save(path/'geometry.json',saved_geom)
     quantities=(path/'quantities.tsv').read_text().replace('# layout: legacy-25x3', '# layout: '+layout)
@@ -227,6 +227,31 @@ class CppTopologyTests(unittest.TestCase):
                         before=self.root/(layout+'-before');self.run_analysis(campaign,before,binary=baseline)
                         self.check_baseline(before,output)
 
+    def test_acrylic_v3_parity_and_model_rejection(self):
+        campaign=self.root/'acrylic-campaign'
+        geom,inputs=make_campaign(campaign,'cygno-11x7-v1','cygno-acrylic-v3')
+        output=self.root/'acrylic-analysis'
+        snapshots={p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()}
+        self.run_analysis(campaign,output)
+        expected=[(row,scale,*oracle(groups,geom)) for row,scale,groups in inputs]
+        self.check_output(output,expected,1.)
+        scenario=rt.read(output/'normalization-scenario.json')
+        self.assertEqual(scenario['detector_model'],'cygno-acrylic-v3')
+        self.assertEqual(scenario['scenario_id'],'cygno-300elj-radioassay-v3')
+        with uproot.open(output/'analysis.root') as f:
+            self.assertEqual(str(f['provenance/matrix.json']), (campaign/'matrix.json').read_text())
+            self.assertEqual(f['provenance/NormalizationScenario'].member('fTitle'),scenario['scenario_id'])
+        self.assertEqual(snapshots,{p:p.read_bytes() for p in snapshots})
+        # Even internally consistent manifests cannot relabel v3 sources as v2 transport.
+        config=rt.read(campaign/'config.json'); config['model']='cygno-300elj-v2'
+        rt.save(campaign/'config.json',config)
+        document=rt.read(campaign/'campaign.json');document['identity']['config']=config
+        rt.save(campaign/'campaign.json',document)
+        rejected=self.root/'acrylic-rejected'
+        run=subprocess.run([str(self.binary),str(campaign),str(rejected)],capture_output=True,text=True)
+        self.assertNotEqual(run.returncode,0)
+        self.assertFalse(rejected.exists())
+
     def check_output(self, output, expected, coincidence):
         for name in ('figure7.5','figure7.6','figure_multivolume_veto','figure_multisite_veto'):
             for ext in ('png','pdf'): self.assertGreater((output/(name+'.'+ext)).stat().st_size,100)
@@ -238,7 +263,7 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(f['provenance/CoincidenceWindow_ns'].member('fVal'),coincidence)
             self.assertEqual(f['provenance/MultisiteDistance_mm'].member('fVal'),10.)
             new=f['SelectionEnergyWindows'].arrays(library='np'); old=f['ExactEnergyWindows'].arrays(library='np')
-            self.assertEqual(len(new['Count']),28*4*6);self.assertEqual(len(old['Count']),28*2*6)
+            self.assertEqual(len(new['Count']),len(expected)*4*6);self.assertEqual(len(old['Count']),len(expected)*2*6)
             rates=np.zeros((4,7)); raw_counts=np.zeros((4,7))
             hist=np.zeros((4,7,902)); variance=np.zeros_like(hist)
             for row,scale,counts,bins in expected:

@@ -71,13 +71,14 @@ int main(int argc,char** argv) {
   bool layoutSpecified = false;
   bool outputSpecified = false;
   int workers = 1;
-  std::string mode="internal", shield;
+  std::string mode="internal", shield, model="cygno-300elj-v2";
+  bool modelSpecified=false;
   bool modeSpecified=false, shieldSpecified=false;
   try {
     for (int i=1; i<argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both]\n";
+        std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both] [--model cygno-300elj-v2|cygno-acrylic-v3]\n";
         return 0;
       }
       if (arg == "--mode" || arg == "--shield") {
@@ -85,6 +86,10 @@ int main(int argc,char** argv) {
         if (specified || i+1==argc) throw std::invalid_argument("Specify "+arg+" exactly once with a value");
         (arg == "--mode" ? mode : shield) = argv[++i];
         specified=true;
+      } else if (arg == "--model") {
+        if (modelSpecified || i+1==argc) throw std::invalid_argument("Specify --model exactly once");
+        model = argv[++i];
+        modelSpecified = true;
       } else if (arg == "--output-mode") {
         if (outputSpecified || i+1==argc) throw std::invalid_argument("Specify --output-mode exactly once");
         cygno::output::SetMode(argv[++i]);
@@ -98,7 +103,7 @@ int main(int argc,char** argv) {
         throw std::invalid_argument("Unknown option: " + arg);
       } else positional.push_back(arg);
     }
-    cygno::simulation::Configure(mode, shieldSpecified ? shield : mode=="external" ? "copper20" : "none");
+    cygno::simulation::Configure(mode, shieldSpecified ? shield : mode=="external" ? "copper20" : "none", model);
     if (positional.size() > 2) throw std::invalid_argument("Expected macro and optional worker count");
     if (positional.size() == 2) {
       std::size_t end = 0;
@@ -111,7 +116,7 @@ int main(int argc,char** argv) {
     return 1;
   }
   std::cout << "CYGNO layout=" << cygno::geometry::LayoutName(layout)
-            << " detector_model=cygno-300elj-v2 source_model=" << cygno::simulation::SourcePolicy() << "\n";
+            << " detector_model=" << cygno::simulation::DetectorModel() << " source_model=" << cygno::simulation::SourcePolicy() << "\n";
   if (cygno::simulation::external)
     std::cout << "CYGNO_EXTERNAL radius_mm " << std::setprecision(17)
               << cygno::geometry::SourceRadiusMm(cygno::geometry::BuildLayoutProfile(layout)) << "\n"

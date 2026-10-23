@@ -1,6 +1,7 @@
 // Export quantities from actual constructed source placements; no transport.
 #include "cygno/geometry/DetectorConstruction.hh"
 #include "BuildInfo.hh"
+#include "common/SimulationMode.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Material.hh"
 #include "G4VSolid.hh"
@@ -15,7 +16,11 @@
 #include <stdexcept>
 
 int main(int argc, char** argv) try {
-  if (argc!=3 && argc!=4) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json]");
+  if (argc!=3 && argc!=4 && argc!=6) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json [--model MODEL]]");
+  if (argc==6) {
+    if (std::string(argv[4]) != "--model") throw std::runtime_error("Expected --model");
+    cygno::simulation::Configure("internal", "none", argv[5]);
+  }
   const auto layout=cygno::geometry::ParseLayoutId(argv[2]);
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
@@ -30,7 +35,7 @@ int main(int argc, char** argv) try {
   if (!out) throw std::runtime_error("Cannot write quantities file");
   out << std::setprecision(17)
       << "# layout: " << detector.GetLayoutProfile().name << '\n'
-      << "# detector-model: cygno-300elj-v2\n# source-policy: uniform-volume-v1\n"
+      << "# detector-model: " << cygno::simulation::DetectorModel() << "\n# source-policy: uniform-volume-v1\n"
       << "# compiled-source-hash: " << cygno::build::sourceHash << '\n'
       << "# geometry-hash: " << cygno::build::geometryHash << '\n'
       << "# provenance: actual source placements; sum of logical GetMass()/kg and list size\n"
@@ -59,12 +64,12 @@ int main(int argc, char** argv) try {
         << '\t' << density/(g/cm3) << '\t' << volume/mm3 << '\n';
   }
   if (!out) throw std::runtime_error("Failed to write quantities");
-  if (argc==4) {
+  if (argc>=4) {
     std::ofstream geometry(argv[3]);
     using namespace cygno::geometry;
     geometry << std::setprecision(17)
       << "{\"layout\":\"" << LayoutName(layout)
-      << "\",\"model\":\"" << cygno::geometry::detectorModel
+      << "\",\"model\":\"" << cygno::simulation::DetectorModel()
       << "\",\"source_policy\":\"" << cygno::geometry::sourcePolicy
       << "\",\"geometry_hash\":\"" << cygno::build::geometryHash
       << "\",\"source_hash\":\"" << cygno::build::sourceHash

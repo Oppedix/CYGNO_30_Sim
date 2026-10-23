@@ -16,7 +16,7 @@ import time
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from study import runtime as rt
-from study.source_matrix import read_matrix, read_quantities, require
+from study.source_matrix import read_matrix, read_quantities, require, validate_matrix_model, MATRIX_MODELS
 
 
 def needs_attempt(previous, retry):
@@ -59,7 +59,8 @@ def run_job(output, row, config, campaign, simulation, retry=False, cancel=None)
         rt.console('[START] '+row['id'])
         (attempt/'run.mac').write_text(macro)
         log = rt.invoke([simulation, attempt/'run.mac', '1', '--layout', config['layout'],
-                         '--output-mode', config.get('output_mode','raw')],
+                         '--output-mode', config.get('output_mode','raw'),
+                         *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])],
                         attempt, 'simulation', config['timeout_seconds'], cancel=cancel,
                         contribution=row['id'], primaries=config['primaries_per_job'])
         manifest['accounting'] = rt.validate_simulation_log(
@@ -172,7 +173,9 @@ def run(args):
     # Statistics are independent of chain completeness and diagnostic labeling.
     require(type(config['primaries_per_job']) is int and 1 <= config['primaries_per_job'] <= 2_147_483_647,
             'Primaries must be 1..2147483647')
-    matrix = read_matrix(args.matrix)
+    matrix_path = args.matrix or rt.REPO/'config/study'/(next(k for k,v in MATRIX_MODELS.items() if v == config['model'])+'.json')
+    matrix = read_matrix(matrix_path)
+    validate_matrix_model(matrix, config['model'])
     selected = set(args.only or [r['id'] for r in matrix['contributions']])
     require(selected <= {r['id'] for r in matrix['contributions']}, 'Unknown --only contribution')
     if args.list or args.macros_dir:
@@ -195,7 +198,8 @@ def run(args):
         probe.mkdir(parents=True)
         (probe/'environment.mac').write_text(rt.RDM_COMMAND+'\n/control/echo CYGNO_ENVIRONMENT_PROBE\n')
         environment = rt.parse_environment(rt.invoke([tools['simulation'], probe/'environment.mac', '1',
-                '--layout', config['layout']], probe, 'environment', config['timeout_seconds']))
+                '--layout', config['layout'],
+                *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])], probe, 'environment', config['timeout_seconds']))
         require(math.isclose(float(environment['radioactive_decay_time_threshold_s']), rt.RDM_SECONDS, rel_tol=1e-12),
                 'Incorrect effective radioactive-decay threshold')
         require(environment['source_hash'] == rt.compiled_source_hash(), 'Stale compiled source; rebuild')
@@ -215,7 +219,8 @@ def run(args):
                     campaign['identity'] == identity, 'Campaign identity changed; use a new output directory')
         else:
             require(not (output/'jobs').exists(), 'Orphan jobs without campaign manifest')
-            rt.invoke([tools['quantities'], probe/'quantities.tsv', config['layout'], probe/'geometry.json'],
+            rt.invoke([tools['quantities'], probe/'quantities.tsv', config['layout'], probe/'geometry.json',
+                       *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])],
                       probe, 'quantities', config['timeout_seconds'])
             require(f"# compiled-source-hash: {environment['source_hash']}" in (probe/'quantities.tsv').read_text().splitlines(),
                     'Stale quantity exporter')
@@ -243,7 +248,7 @@ def run(args):
         if 'preflight' not in campaign:
             from study.preflight import check
             folder = probe/'decay-preflight'
-            check(build, folder)
+            check(build, folder, **({'model': config['model']} if config['model'] != 'cygno-300elj-v2' else {}))
             campaign['preflight'] = str((folder/'preflight.json').relative_to(output))
             campaign['preflight_artifacts'] = rt.artifacts(folder)
             rt.save(path, campaign)
@@ -282,7 +287,7 @@ def positive_integer(value):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config', type=Path, default=rt.REPO/'config/study/samuele.json')
-    p.add_argument('--matrix', type=Path, default=rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
+    p.add_argument('--matrix', type=Path, help='Defaults to the matrix matching the configured transport model')
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')

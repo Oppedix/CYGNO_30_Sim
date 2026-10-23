@@ -7,6 +7,14 @@
 
 # Canonical analysis
 
+Preferred internal v3 uses physical PMMA50 cores and Table 7.1 Acrylic/EFCu
+activities (26 contributions). Retained v2 uses Kapton50/Arnquist layer assays
+(28 contributions). Both pipelines require a matching saved matrix/transport
+model, preserve the simulation matrix, and record `normalization-scenario.json`
+separately. Physical v3 requires new transport for every contribution; v2 ROOT
+files cannot be converted by changing activities. See
+[source provenance](../docs/STUDY_SOURCES.md) and [cluster commands](../internal/README.md).
+
 `study/analyze.py` orchestrates campaign validation and publishing. All numerical
 analysis is here. No CERN ROOT or Geant4 installation is needed for Stage B.
 

@@ -1,9 +1,12 @@
-# Single-module geometry: final active 300ELJ model
+# Single-module geometry: v2 and internal Acrylic v3
 
-Use this report for the final active v2 detector. “What is actually simulated now?” Model `cygno-300elj-v2`, source policy
-`uniform-volume-v1`, canonical matrix `cygno-300elj-radioassay-v2`.
-Layout remains `cygno-11x7-v1`; production configuration is
-`config/study/cygno-11x7-v2.json`.
+The dimensions below are common to **v2** (`cygno-300elj-v2`, Kapton cores;
+external/default executable) and **v3 (preferred internal)** (`cygno-acrylic-v3`,
+PMMA cores). Source policy is `uniform-volume-v1` for internal; v3 uses
+`config/study/cygno-11x7-v3.json` and `cygno-300elj-radioassay-v3.json` (26 jobs),
+while v2 retains its original config/matrix (28 jobs). Layout is `cygno-11x7-v1`.
+v3 changes only core transport/material activities and GEM/cathode copper assays;
+new ROOT campaigns are mandatory. See [source/version comparison](STUDY_SOURCES.md).
 Lengths below are millimetres unless explicitly marked µm. Exported quantities
 were obtained with Geant4 11.4.2 and fixed Ranecu seed 12345 using the final
 `geometry_quantities` build. Re-export for a different Geant4/data environment.
@@ -20,7 +23,7 @@ apertures. In a planar layout the lenses and sensors are outside it.
 
 ```text
  -Z                              module z=0                              +Z
- sensors lens GEM3--2--GEM2--2--GEM1 | 500 drift | Cu5/PI50/Cu5 | 500 drift | GEM1--2--GEM2--2--GEM3 lens sensors
+ sensors lens GEM3--2--GEM2--2--GEM1 | 500 drift | Cu5/core50/Cu5 | 500 drift | GEM1--2--GEM2--2--GEM3 lens sensors
           [each GEM is 0.060 mm]                 [µm]                     [clear gap is 2.000 mm]
  cathode faces:                    -0.030, +0.030
  drift boundaries:       [-500.030,-0.030]          [0.030,500.030]
@@ -52,9 +55,9 @@ and masses are in the second table.
 
 | Component | Transport material | Outer primitive/envelope | Subtracted inner primitive | Inner-cut translation | Resulting constructed solid | Physical wall/thickness/Z extent | Pieces/module | Pieces/11×7 |
 |---|---|---|---|---|---|---|---:|---:|
-| Cathode centre | G4_KAPTON | box 500 × 800 × 0.050 | — | — | solid slab | 50 µm Z | 1 | 77 |
+| Cathode centre, v2 / v3 | G4_KAPTON / PMMA | box 500 × 800 × 0.050 | — | — | solid slab | 50 µm Z | 1 | 77 |
 | Cathode skin | G4_Cu | box 500 × 800 × 0.005 | — | — | solid slab | 5 µm Z | 2 | 154 |
-| GEM centre | G4_KAPTON | box 500 × 800 × 0.050 | — | — | solid slab; no holes | 50 µm Z | 6 | 462 |
+| GEM centre, v2 / v3 | G4_KAPTON / PMMA | box 500 × 800 × 0.050 | — | — | solid slab; no holes | 50 µm Z | 6 | 462 |
 | GEM skin | G4_Cu | box 500 × 800 × 0.005 | — | — | solid slab; no holes | 5 µm Z | 12 | 924 |
 | Support frame | PMMA | box 500.220 × 800.220 × 500 | box 500.070 × 800.070 × 510 | centered | open four-wall rectangular frame | nominal 75 µm transverse walls; 500 Z | 2 | 154 |
 | Copper strip frame | G4_Cu | box 500.070 × 800.070 × 10 | box 500 × 800 × (10 + 2×5) | (−0.0175, −0.0175, 0) | hollow rectangular Cu ring/frame | 10 Z; walls 17.5/52.5 µm on −/+X and −/+Y | 50 | 3850 |
@@ -67,10 +70,12 @@ and masses are in the second table.
 
 | Component | Density [g/cm³] | Material volume/piece [mm³] | kg/piece | kg/module | kg/11×7 | Source family | Assay provenance | Status/approximation | Construction source |
 |---|---:|---:|---:|---:|---:|---|---|---|---|
-| Cathode centre | 1.42 | 20000 | 0.0284 | 0.0284 | 2.1868 | `CathodesPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
-| Cathode skin | 8.96 | 2000 | 0.01792 | 0.03584 | 2.75968 | `CathodesCopper` | Arnquist 1910.04317 Table 5, separate Cu | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
-| GEM centre | 1.42 | 20000 | 0.0284 | 0.1704 | 13.1208 | `GEMsPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
-| GEM skin | 8.96 | 2000 | 0.01792 | 0.21504 | 16.55808 | `GEMsCopper` | Arnquist 1910.04317 Table 5, separate Cu | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
+| Cathode core v2 | 1.42 | 20000 | 0.0284 | 0.0284 | 2.1868 | `CathodesPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
+| Cathode core **v3 (preferred internal)** | 1.19 | 20000 | 0.0238 | 0.0238 | 1.8326 | `CathodesPolyimide` (stable ID) | Table 7.1 Acrylic, extended from GEM core | solid PMMA50 slab; new transport | `DetectorConstruction.cc::BuildCathodes` |
+| Cathode skin | 8.96 | 2000 | 0.01792 | 0.03584 | 2.75968 | `CathodesCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
+| GEM core v2 | 1.42 | 20000 | 0.0284 | 0.1704 | 13.1208 | `GEMsPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
+| GEM core **v3 (preferred internal)** | 1.19 | 20000 | 0.0238 | 0.1428 | 10.9956 | `GEMsPolyimide` (stable ID) | Table 7.1 Acrylic | solid PMMA50 slab, no microscopic holes; new transport | `DetectorConstruction.cc::BuildGEMs` |
+| GEM skin | 8.96 | 2000 | 0.01792 | 0.21504 | 16.55808 | `GEMsCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
 | Support frame | 1.19 | 97271.7713051 | 0.115753407853 | 0.231506815706 | 17.8260248094 | `RingSupports` | Arnquist 2019 Table 1 p.7 Pre-3 (second set); K Table 7.1 proxy | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
 | Copper strip frame | 8.96 | 913.089816217 | 0.0081812847533 | 0.409064237665 | 31.4979463002 | `RingStrips` | retained thesis Table 7.1 EFCu | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
 | Resistor | 2.2 | 2.816 | 6.1952e-06 | 0.0003221504 | 0.0248055808 | `Resistors` | Anker Table 9 p.19; nEXO Table IV row 60 p.10 | effective completed-component assay on compact box | `DetectorConstruction.cc::BuildFieldCage` |
@@ -100,11 +105,11 @@ constexpr double GasOffsetZ() { return module.cathodeHalfThickness + module.drif
 ```
 
 `src/geometry/DetectorConstruction.cc`, `BuildCathodes()` constructs a
-50 µm `G4_KAPTON` box centred at 0 and two independent 5 µm `G4_Cu` boxes at
+50 µm core box centred at 0 (`G4_KAPTON` in v2, PMMA in v3) and two independent 5 µm `G4_Cu` boxes at
 Z=±0.0275. Their boundaries are `[-0.030,-0.025]`, `[-0.025,0.025]`,
-`[0.025,0.030]`. They touch exactly without overlap. The polyimide transport
-composition/density is NIST `G4_KAPTON`, approximately 1.42 g/cm³; the assay
-is measured 300ELJ. Copper is never mixed into that transport material.
+`[0.025,0.030]`. They touch exactly without overlap. In v2 the core transport
+composition/density is NIST `G4_KAPTON`, 1.42 g/cm³, with the 300ELJ assay.
+Internal v3 uses PMMA at 1.190 g/cm³ with historical Table 7.1 Acrylic U/Th/K. Copper is never mixed into that transport material.
 
 ```cpp
 const double z = (skin == 0 ? 1 : -1)*(d.cathodePolyimideThickness+d.cathodeCopperThickness)/2;
@@ -136,7 +141,8 @@ CYGNO_gas->AddMaterial(CF4_gas, CF4_gas->GetDensity()/densityMix*100*perCent);
 
 ## Triple-GEM system
 
-Each foil is 500×800 mm², Cu5/300ELJ50/Cu5 µm. `BuildGEMs()` places six
+Each foil is 500×800 mm²: Cu5/Kapton50/Cu5 µm in v2,
+Cu5/PMMA50/Cu5 µm in internal v3. `BuildGEMs()` places six
 polyimide boxes and twelve independent copper boxes per module. There is no
 Boolean cavity/core construction and no microscopic hole pattern. The modelled
 material fill factor in the foil plane is **100%**; a real perforation fraction
@@ -335,7 +341,7 @@ exercises this convention.
 return {volume->GetObjectRotationValue()*local+volume->GetObjectTranslation(),volume};
 ```
 
-The researcher's specified layer assays agree with Table 5 of
+The retained **v2** layer assays agree with Table 5 of
 [Arnquist et al., Ultra-low radioactivity Kapton and copper-Kapton laminates](https://arxiv.org/abs/1910.04317v1).
 Whole laminate data are from Table 4 and are provenance only.
 
@@ -367,7 +373,7 @@ convention; the nominal matrix deliberately follows the paper consistently.
 return concentration * (1e-6 if isotope == 'K40' else 1e-9) * SPECIFIC_ACTIVITIES_BQ_G[isotope]
 ```
 
-| Physical layer assay | U238 [Bq/kg] | Th232 [Bq/kg] | K40 [Bq/kg] |
+| v2 physical layer assay | U238 [Bq/kg] | Th232 [Bq/kg] | K40 [Bq/kg] |
 |---|---:|---:|---:|
 | 300ELJ polyimide | 6.9192e-5 | 2.76892e-5 | 3.294e-3 |
 | Laminate copper | 1.488e-4 | 4.872e-5 | 3.965e-3 |
@@ -379,8 +385,10 @@ batch identification for Samuele's original acrylic. Resistors have exactly
 U238/Th232/K40 jobs with full-chain equilibrium assumed for U/Th and a single
 K40 parent; no old Al2O3 U235/Ra226/Th228 or split-chain assays transfer.
 `thesis-table7.1.json` and `cygno-300elj-radioassay-v1.json` remain unchanged
-historical references. Production rejects v1 model/matrix products.
-The schema derives **28 contributions**: 12 layer + 3 support + 2 strip +
+historical references. Production rejects v1 model/matrix products. Preferred internal v3 uses
+Table 7.1 Acrylic for both cores and EFCu U/Th for the skins; see
+[STUDY_SOURCES](STUDY_SOURCES.md).
+The **v2** schema derives **28 contributions** (v3 omits the two copper K jobs): 12 layer + 3 support + 2 strip +
 2 vessel + 3 lens + 3 sensor + 3 resistor, in seven reporting categories.
 
 Normalization is unchanged:

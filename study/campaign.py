@@ -2,7 +2,7 @@
 import math
 from pathlib import Path, PurePosixPath
 from study import runtime as rt
-from study.source_matrix import require, read_matrix, read_quantities, LAYOUT_MODULE_COUNTS
+from study.source_matrix import require, read_matrix, read_quantities, LAYOUT_MODULE_COUNTS, validate_matrix_model
 
 
 def inside(root, name):
@@ -81,6 +81,10 @@ def validate_job(output, row, campaign):
     receipt = rt.read(attempt/'simulation.command.json')
     require(receipt.get('returncode') == 0 and not receipt.get('timed_out') and not receipt.get('interrupted'),
             'Incomplete simulation receipt')
+    if config['model'] == 'cygno-acrylic-v3':
+        command = receipt['command']
+        require(command.count('--model') == 1 and command.index('--model')+1 < len(command) and
+                command[command.index('--model')+1] == config['model'], 'v3 transport model receipt mismatch')
     accounting = rt.validate_simulation_log((attempt/'simulation.log').read_text(errors='replace'),
         campaign['identity']['effective_environment'], config['primaries_per_job'])
     require(job['accounting'] == accounting and job['generated_primaries'] == accounting['GeneratedPrimaries'],
@@ -115,6 +119,7 @@ def validate_campaign(output, allow_partial=False):
     validate_snapshots(output, campaign)
     validate_preflight(output, campaign)
     matrix = read_matrix(output/'matrix.json')
+    validate_matrix_model(matrix, campaign['identity']['config']['model'])
     jobs = {}
     records = campaign['job_records']
     require(set(records) == {r['id'] for r in matrix['contributions']}, 'Invalid campaign job coverage')

@@ -215,7 +215,7 @@ void DetectorConstruction::BuildCathodes()
 {
   auto* polyimide = new G4LogicalVolume(new G4Box("CathodesPolyimide",
       d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodePolyimideThickness*mm/2),
-      fMaterials.polyimide, "CathodesPolyimide");
+      cygno::simulation::acrylicCore ? fMaterials.pmma : fMaterials.polyimide, "CathodesPolyimide");
   auto* copper = new G4LogicalVolume(new G4Box("CathodesCopper",
       d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodeCopperThickness*mm/2),
       fMaterials.copper, "CathodesCopper");
@@ -236,7 +236,7 @@ void DetectorConstruction::BuildGEMs()
 {
   auto* polyimide = new G4LogicalVolume(new G4Box("GEMsPolyimide",
       d.gemX*mm/2, d.gemY*mm/2, d.gemPolyimideThickness*mm/2),
-      fMaterials.polyimide, "GEMsPolyimide");
+      cygno::simulation::acrylicCore ? fMaterials.pmma : fMaterials.polyimide, "GEMsPolyimide");
   auto* copper = new G4LogicalVolume(new G4Box("GEMsCopper",
       d.gemX*mm/2, d.gemY*mm/2, d.gemCopperThickness*mm/2),
       fMaterials.copper, "GEMsCopper");

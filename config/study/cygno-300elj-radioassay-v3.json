@@ -1,0 +1,700 @@
+{
+  "schema_version": 1,
+  "matrix_id": "cygno-300elj-radioassay-v3",
+  "provenance": {
+    "assay_reference": "https://arxiv.org/abs/1910.04317v1",
+    "assay_table": "5",
+    "separate_assays": {
+      "300ELJPolyimide": {
+        "U238": [
+          5.58,
+          0.16
+        ],
+        "Th232": [
+          6.82,
+          0.09
+        ],
+        "K40": [
+          108,
+          38
+        ]
+      },
+      "LaminateCopper": {
+        "U238": [
+          12,
+          13
+        ],
+        "Th232": [
+          12,
+          12
+        ],
+        "K40": [
+          130,
+          180
+        ]
+      }
+    },
+    "specific_activities_Bq_g": {
+      "U238": 12400.0,
+      "Th232": 4060.0,
+      "K40": 30.5
+    },
+    "conversion_reference": "Arnquist et al., section 2.2; pg/g U/Th, ng/g natural K",
+    "retained_reference": {
+      "matrix_id": "thesis-table7.1-v1",
+      "path": "config/study/thesis-table7.1.json",
+      "sha256": "de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836",
+      "thesis": {
+        "reference": "local_refs/context_solarnuwithcygno.pdf",
+        "sha256": "33d8b3c099c88bec4c7b1acaf0944305b0a85229ab4264e8f76445092c0d8825",
+        "table": "7.1",
+        "printed_pages": [
+          186,
+          187,
+          188
+        ],
+        "figure_7_5_input_revision": "unresolved",
+        "notes": [
+          "Acrylic upper limits are used as stated values, following the thesis.",
+          "Entries marked x are omitted, not represented as zero-activity jobs.",
+          "Assay material labels do not assert that code-compatible geometry matches the thesis materials or dimensions.",
+          "No generated-primary counts or geometry quantities are inferred from the thesis production statement."
+        ]
+      }
+    },
+    "whole_laminate_cross_check": {
+      "type": "300ELJ+Cu laminate",
+      "vendor": "DuPont R&D",
+      "polyimide_thickness_um": 76.2,
+      "copper_thickness_um_each": 17.0,
+      "polyimide_mass_fraction": 0.26,
+      "copper_mass_fraction": 0.74,
+      "U238": [
+        8.6,
+        3.6
+      ],
+      "Th232": [
+        20,
+        14
+      ],
+      "K40": [
+        164,
+        82
+      ],
+      "role": "provenance only; never applied to a layer"
+    },
+    "notes": [
+      "v2 separate layer assays and laminate cross-check are retained as superseded provenance only; v3 uses historical_layers for GEM/cathode.",
+      "Both 50 um cores are physical PMMA at 1.190 g/cm3; existing Polyimide component IDs are retained for source-list compatibility, not material identity.",
+      "Historical Table 7.1 Acrylic upper limits are adopted as values for both cores. Assigning them to the cathode core is an explicit extension of the historical solid-copper cathode.",
+      "GEM and cathode copper use Table 7.1 EFCu U/Th only; absent K is omitted, not measured zero.",
+      "Other v2 assays, source controls and geometry dimensions are unchanged. New Geant4 transport is required for all contributions.",
+      "No claim that PMMA is the material of real CYGNO GEMs, or that the historical assay measures this hypothetical core batch."
+    ],
+    "pmma": {
+      "title": "Mass Spectrometric Assay of High Radiopurity Solid Polymer Materials for Parts in Radiation and Rare Event Physics Detectors",
+      "citation": "I.J. Arnquist et al., NIM A 943 (2019) 162443",
+      "doi": "10.1016/j.nima.2019.162443",
+      "table": "1",
+      "manuscript_page": 7,
+      "row": "second Pre- set, sample 3, 0.1527 g (ninth data row)",
+      "sample": "UVT acrylic, Reynolds Polymer Technology, Inc.; solid 4 x 12 x 12 inch block",
+      "form": "finished solid stock; clean band-saw cubes, not raw precursor",
+      "method": "clean machining; detergent/DI/6M HNO3/DI cleaning; dry ashing in ULB EF-Cu boats; isotope-dilution ICP-MS with pre-ashing tracer",
+      "U238": {
+        "pg_g": 0.73,
+        "uBq_kg": 9.05,
+        "uncertainty": null,
+        "upper_limit": false
+      },
+      "Th232": {
+        "pg_g": 1.23,
+        "uBq_kg": 5.05,
+        "uncertainty": null,
+        "upper_limit": false
+      },
+      "interpretation": "central measurements, uncertainties not reported for this row; conservative replicate envelope: same row has maxima for both U and Th across all 12 Cu-boat determinations; adopt published activity columns without re-rounding their concentrations",
+      "alternatives": "Table 1 includes measured U 3.03-9.05 and Th 1.13-5.05 uBq/kg plus limits; Table 2 post-ashing agrees, pre-ashing quartz values are inflated by tracer loss (section 3.2 pp.6-8)",
+      "K40": {
+        "measured": false,
+        "uBq_kg": 71.2,
+        "basis": "conservative-old-K-proxy",
+        "reference": "retained thesis Table 7.1 Acrylic"
+      },
+      "design_status": "adopted radiopure PMMA design material; not an assay of Samuele acrylic or the installed support batch"
+    },
+    "completed_resistor": {
+      "title": "Novel High-Radiopurity Doped Amorphous Silicon Resistors for Low-Background Detectors",
+      "citation": "A. Anker et al., arXiv:2601.05985v2",
+      "table": "9",
+      "page": 19,
+      "row": "Prototype 2 MBNL - 2024, Completed",
+      "radioassay_title": "The nEXO Radioassay Program",
+      "radioassay_citation": "R. MacLellan et al., arXiv:2604.15406v1",
+      "radioassay_table": "IV",
+      "radioassay_page": 10,
+      "radioassay_row": 60,
+      "sample": "MBNL Heraeus Suprasil 300, aSi CVD at 550 C, Ti and Pd end metalized",
+      "method": "PNNL ICP-MS after full dissolution; uncertainties are analytical precision (Anker section 6 pp.17-19)",
+      "concentrations": {
+        "U238": [
+          4.3,
+          0.2
+        ],
+        "Th232": [
+          2.0,
+          0.16
+        ],
+        "K40": [
+          7.9,
+          0.2
+        ]
+      },
+      "units": {
+        "U238": "ppt, early chain",
+        "Th232": "ppt",
+        "K40": "ppb natural K"
+      },
+      "sample_correspondence": "same completed MBNL component technology and matching U/Th results; Anker reference 22 explicitly points to nEXO Table IV items 55-60. No unique specimen or batch identifier establishes identity. Composite publication basis; all U/Th/K are available together in nEXO row 60, with Anker providing geometry/process context",
+      "chain_assumption": "secular equilibrium for U/Th is a modelling assumption, not demonstrated by ICP-MS chain-head assays",
+      "reference_geometry": {
+        "length_mm": 17.0,
+        "outer_diameter_mm": 6.0,
+        "inner_diameter_mm": 4.0,
+        "density_g_cm3": 2.2
+      },
+      "normalization": "Bq/kg completed-component concentration times nominal reference tube mass -> effective Bq/reference-piece assigned to each compact CYGNO surrogate; coating and metal masses omitted",
+      "transport_approximation": "1.6 x 0.55 x 3.2 mm fused-silica box at 2.20 g/cm3; not mechanically identical to nEXO tube; uniform source location cannot partition silica/aSi/metallization contamination"
+    },
+    "historical_layers": {
+      "reference_matrix_id": "thesis-table7.1-v1",
+      "reference_matrix_sha256": "de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836",
+      "core_activity_Bq_kg": {
+        "U238": 0.000296,
+        "Th232": 5.69e-05,
+        "K40": 7.12e-05
+      },
+      "copper_activity_Bq_kg": {
+        "U238": 1.31e-07,
+        "Th232": 3.4e-08
+      },
+      "core_transport": "PMMA, 1.190 g/cm3, 50 um; both GEM and cathode",
+      "extension": "Table 7.1 GEMsCore Acrylic also assigned to the cathode core; historical cathode was solid copper",
+      "copper_K40": "omitted table x; not a measured zero",
+      "scope": "new internal transport campaign required; not a normalization override for v2 ROOT files"
+    }
+  },
+  "seconds_per_year": 31536000,
+  "thesis_rounded_seconds_per_year": 31500000,
+  "quantity_policy": "constructed-component-mass-kg-or-placement-count",
+  "contributions": [
+    {
+      "id": "GEMsPolyimide_U238",
+      "component": "GEMsPolyimide",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 0.000296,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "GEMsPolyimide_Th232",
+      "component": "GEMsPolyimide",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 5.69e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "GEMsPolyimide_K40",
+      "component": "GEMsPolyimide",
+      "category": "GEMs",
+      "assay_material": "Acrylic",
+      "activity": 7.12e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "GEMsCopper_U238",
+      "component": "GEMsCopper",
+      "category": "GEMs",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "GEMsCopper_Th232",
+      "component": "GEMsCopper",
+      "category": "GEMs",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "CathodesPolyimide_U238",
+      "component": "CathodesPolyimide",
+      "category": "Cathodes",
+      "assay_material": "Acrylic",
+      "activity": 0.000296,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "CathodesPolyimide_Th232",
+      "component": "CathodesPolyimide",
+      "category": "Cathodes",
+      "assay_material": "Acrylic",
+      "activity": 5.69e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "CathodesPolyimide_K40",
+      "component": "CathodesPolyimide",
+      "category": "Cathodes",
+      "assay_material": "Acrylic",
+      "activity": 7.12e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "upper-limit-used-as-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "CathodesCopper_U238",
+      "component": "CathodesCopper",
+      "category": "Cathodes",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "CathodesCopper_Th232",
+      "component": "CathodesCopper",
+      "category": "Cathodes",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "RingSupports_U238",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "RadiopurePMMA",
+      "activity": 9.05e-06,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "measured-solid-pmma-conservative-replicate",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "RingSupports_Th232",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "RadiopurePMMA",
+      "activity": 5.05e-06,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "measured-solid-pmma-conservative-replicate",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "RingSupports_K40",
+      "component": "RingSupports",
+      "category": "Field Cage",
+      "assay_material": "RadiopurePMMA",
+      "activity": 7.12e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "conservative-old-K-proxy",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "RingStrips_U238",
+      "component": "RingStrips",
+      "category": "Field Cage",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "RingStrips_Th232",
+      "component": "RingStrips",
+      "category": "Field Cage",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Vessel_U238",
+      "component": "Vessel",
+      "category": "Vessel",
+      "assay_material": "EFCu",
+      "activity": 1.31e-07,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Vessel_Th232",
+      "component": "Vessel",
+      "category": "Vessel",
+      "assay_material": "EFCu",
+      "activity": 3.4e-08,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Sensors_U238",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.002,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Sensors_Th232",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.0028,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Sensors_K40",
+      "component": "Sensors",
+      "category": "Camera Sensors",
+      "assay_material": "Silicon",
+      "activity": 0.009,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Lens_U238",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 0.000123,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Lens_Th232",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 4.07e-05,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Lens_K40",
+      "component": "Lens",
+      "category": "Camera Lenses",
+      "assay_material": "Suprasil",
+      "activity": 0.0003,
+      "activity_unit": "Bq/kg",
+      "activity_basis": "table-value",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    },
+    {
+      "id": "Resistors_U238",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "CompletedMBNLResistor",
+      "activity": 3.1324317694119256e-08,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "effective-completed-component-per-piece",
+      "chain_start": {
+        "name": "U238",
+        "Z": 92,
+        "A": 238
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Ra226"
+      ]
+    },
+    {
+      "id": "Resistors_Th232",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "CompletedMBNLResistor",
+      "activity": 4.770319948916886e-09,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "effective-completed-component-per-piece",
+      "chain_start": {
+        "name": "Th232",
+        "Z": 90,
+        "A": 232
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "equilibrium",
+      "equilibrium_daughters": [
+        "Th228"
+      ]
+    },
+    {
+      "id": "Resistors_K40",
+      "component": "Resistors",
+      "category": "Resistors",
+      "assay_material": "CompletedMBNLResistor",
+      "activity": 1.4155278222802016e-07,
+      "activity_unit": "Bq/piece",
+      "activity_basis": "effective-completed-component-per-piece",
+      "chain_start": {
+        "name": "K40",
+        "Z": 19,
+        "A": 40
+      },
+      "stop_before": null,
+      "full_chain": true,
+      "chain_policy": "single-parent",
+      "equilibrium_daughters": []
+    }
+  ]
+}

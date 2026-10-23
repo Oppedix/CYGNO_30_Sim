@@ -27,6 +27,10 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 add_test(NAME simulation_python COMMAND ${Python3_EXECUTABLE} -m unittest discover
   -s tests -p test_simulation.py -v)
 set_tests_properties(simulation_python PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+add_test(NAME acrylic_geometry COMMAND ${Python3_EXECUTABLE} -m unittest discover
+  -s tests -p test_acrylic.py -v)
+set_tests_properties(acrylic_geometry PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+  ENVIRONMENT "CYGNO_ACRYLIC_BUILD=${PROJECT_BINARY_DIR}" TIMEOUT 180)
 option(CYGNO_TEST_PYTHON_ANALYSIS "Test uproot analysis (install study/requirements-analysis.txt)" OFF)
 if(CYGNO_TEST_PYTHON_ANALYSIS)
   add_test(NAME offline_python COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -v)

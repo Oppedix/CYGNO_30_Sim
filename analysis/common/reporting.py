@@ -22,6 +22,8 @@ def write_tables(directory, spectra, summary):
     directory = Path(directory)
     status = f"{summary['mode'].upper()} | {summary['coverage']} contributions | " + (
         'software-complete; physics unvalidated' if summary['complete_matrix'] else 'INCOMPLETE; partial sums only')
+    if 'normalization_scenario' in summary:
+        status += ' | '+summary['normalization_scenario']['scenario_id']
     totals = {(x['window'], x['fiducial']): x for x in spectra['totals']}
     categories = {(x['category'], x['window'], x['fiducial']): x for x in spectra['categories']}
     table72, table73 = [], []

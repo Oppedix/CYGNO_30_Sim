@@ -6,12 +6,29 @@ separate implementation. Historical Python spectra/reporting and
 `analysis/reference_cpp/` are unchanged; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked, 28-contribution campaign** produced by
+Input is a **completed, unpacked, v2 (28 contributions) or v3 (26 contributions) campaign** produced by
 `study/simulate.py` with `output_mode=compact`, campaign schema 3, output schema 1.
 The same executable handles `legacy-25x3` and `cygno-11x7-v1` using their saved
-geometry and constructed quantities. No detector coordinates, assay activities,
-component masses, resistor counts, primary counts, are compiled into the program. The canonical source/isotope schema is checked
-explicitly; activities and normalization quantities come from campaign snapshots.
+geometry and constructed quantities. No detector coordinates, component masses, resistor counts or primary counts
+are compiled into the program. Normalization uses the saved matrix activities
+and constructed quantities; v3 layer activities are additionally checked against
+the fixed Table 7.1 values. The canonical source/isotope schema is checked.
+
+## Versioned internal inputs
+
+| Scenario | Required transport | Contributions |
+|---|---|---:|
+| v2, retained | `cygno-300elj-v2`, Kapton50 | 28 |
+| **v3 (preferred internal)** | `cygno-acrylic-v3`, PMMA50 | 26 |
+
+The matrix/model pair must match. v3 cannot relabel or reweight a v2 campaign:
+all v3 contributions need new Geant4 transport. Other components keep v2 assays.
+The input `matrix.json` remains the original simulation matrix, embedded verbatim
+under `provenance/`. The separate `normalization-scenario.json` is written both
+beside `analysis.root` and under `provenance/`, with scenario ID, detector model,
+simulation matrix ID and interpretation. `NormalizationScenario` and
+`DetectorModel` are also ROOT TNamed markers. Python records the same descriptor.
+See [source comparison and new-run limits](../../docs/STUDY_SOURCES.md).
 
 ## Compile
 
@@ -72,12 +89,12 @@ analysis/common_c++/AnalyzeCompactCampaign \
     ./analysis-25x3 --coincidence-ns 1
 ```
 
-For the 11×7 campaign, with the **same executable**:
+For a new physical v3 11×7 campaign, with the **same executable**:
 
 ```bash
 analysis/common_c++/AnalyzeCompactCampaign \
-    /cnaf/cygno-sim/Users/goppedis/SolarNu/11x7Samuele-1M \
-    ./analysis-11x7 --coincidence-ns 1
+    /cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete \
+    ./analysis-11x7-v3-NEW --coincidence-ns 1
 ```
 
 The output directory must not exist and must be outside the input campaign.
@@ -110,7 +127,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all 28 physical rows,
+1. The ordered `matrix.json.contributions` array supplies all saved physical rows (28 v2 / 26 v3),
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -363,8 +380,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: 28 × 4 × 6 explicit selection windows
-ExactEnergyWindows                TTree: 28 × 2 × 6 contribution windows
+SelectionEnergyWindows            TTree: N × 4 × 6 (N=26 v3 / 28 v2) explicit selection windows
+ExactEnergyWindows                TTree: N × 2 × 6 (N=26 v3 / 28 v2) contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -465,7 +482,7 @@ times remain analyzable. The topology oracle rejects missing/nonfinite times
 instead of inventing them.
 
 `tests/test_topology.py` compiles the production C++ executable when `root-config`
-is available and creates synthetic 28-contribution compact campaigns for both
+is available and creates synthetic v2 28-contribution and v3 26-contribution compact campaigns, including both
 `legacy-25x3` and `cygno-11x7-v1`. It checks default/custom timing, endpoint and
 partner policies, every historical histogram edge and neighboring floats, exact
 windows, raw bins, annual rates/variances, category density/errors, cut-flow

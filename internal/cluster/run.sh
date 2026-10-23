@@ -5,7 +5,7 @@ set -euo pipefail
 if [[ -n ${G4LAB:-} ]]; then source "$G4LAB/activate.sh"; fi
 cd "$CYGNO_SRC"
 exec "${CYGNO_PYTHON:-python3}" internal/study/simulate.py \
-  --config "${CYGNO_CONFIG:-$CYGNO_SRC/internal/config/study/cygno-11x7-v2.json}" \
+  --config "${CYGNO_CONFIG:-$CYGNO_SRC/internal/config/study/cygno-11x7-v3.json}" \
   --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/$CYGNO_CAMPAIGN" \
   --primaries "$CYGNO_PRIMARIES" --jobs "${CYGNO_JOBS:-1}" \
   --output-mode "${CYGNO_OUTPUT_MODE:-compact}" "$@"

@@ -429,21 +429,32 @@ int main(int argc, char** argv) try {
     const std::string model = config["model"].val();
     const std::string policy = config["source_policy"].val();
     const std::string geometryHash = environment["geometry_hash"].val();
-    require(model == "cygno-300elj-v2" && policy == "uniform-volume-v1", "Unsupported model/source policy");
+    const bool acrylic = model == "cygno-acrylic-v3";
+    require((model == "cygno-300elj-v2" || acrylic) && policy == "uniform-volume-v1", "Unsupported model/source policy");
     require(geometry["model"].val() == model && geometry["source_policy"].val() == policy &&
             geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
             geometry["source_hash"].val() == environment["source_hash"].val(), "Geometry snapshot mismatch");
-    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == "cygno-300elj-radioassay-v2" &&
+    const std::string scenarioId = acrylic ? "cygno-300elj-radioassay-v3" : "cygno-300elj-radioassay-v2";
+    require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == scenarioId &&
             integer(matrix["seconds_per_year"]) == 31536000 &&
             matrix["quantity_policy"].val() == "constructed-component-mass-kg-or-placement-count",
             "Unsupported matrix/year/quantity convention");
     const auto& rows = matrix["contributions"];
-    const std::map<std::string,std::vector<std::string>> sourceIsotopes{
+    std::map<std::string,std::vector<std::string>> sourceIsotopes{
         {"GEMsPolyimide",{"U238","Th232","K40"}}, {"GEMsCopper",{"U238","Th232","K40"}},
         {"CathodesPolyimide",{"U238","Th232","K40"}}, {"CathodesCopper",{"U238","Th232","K40"}},
         {"RingSupports",{"U238","Th232","K40"}}, {"RingStrips",{"U238","Th232"}},
         {"Vessel",{"U238","Th232"}}, {"Lens",{"U238","Th232","K40"}},
         {"Sensors",{"U238","Th232","K40"}}, {"Resistors",{"U238","Th232","K40"}}};
+    if (acrylic) {
+        sourceIsotopes["GEMsCopper"] = {"U238","Th232"};
+        sourceIsotopes["CathodesCopper"] = {"U238","Th232"};
+        const auto& reference = matrix["provenance"]["historical_layers"];
+        require(reference["reference_matrix_id"].val() == "thesis-table7.1-v1" &&
+                reference["reference_matrix_sha256"].val() ==
+                    "de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836",
+                "Missing v3 Table 7.1 provenance");
+    }
     std::set<std::string> expectedContributions;
     for (const auto& [component,isotopes] : sourceIsotopes)
         for (const auto& isotope : isotopes) expectedContributions.insert(component+"_"+isotope);
@@ -485,6 +496,8 @@ int main(int argc, char** argv) try {
         }
         require(fields.size() == columns.size(), "Malformed quantity row");
         const auto component = fields.at(columns.at("component"));
+        if (acrylic && (component == "GEMsPolyimide" || component == "CathodesPolyimide"))
+            require(fields.at(columns.at("geometry_material")) == "PMMA", "v3 core transport must be PMMA");
         size_t usedMass = 0, usedPieces = 0;
         const auto& massText = fields.at(columns.at("mass_kg"));
         const auto& piecesText = fields.at(columns.at("pieces"));
@@ -555,6 +568,16 @@ int main(int argc, char** argv) try {
         componentUnits[component] = result.unit;
         require(result.unit == "Bq/kg" || result.unit == "Bq/piece", "Unsupported activity unit");
         result.activity = number(row["activity"]);
+        if (acrylic && (result.category == "GEMs" || result.category == "Cathodes")) {
+            const bool core = component == "GEMsPolyimide" || component == "CathodesPolyimide";
+            const std::map<std::string,double> activities = core
+                ? std::map<std::string,double>{{"U238",.000296},{"Th232",5.69e-5},{"K40",7.12e-5}}
+                : std::map<std::string,double>{{"U238",1.31e-7},{"Th232",3.4e-8}};
+            require(result.unit == "Bq/kg" && result.activity == activities.at(row["chain_start"]["name"].val()) &&
+                    row["assay_material"].val() == (core ? "Acrylic" : "EFCu") &&
+                    row["activity_basis"].val() == (core ? "upper-limit-used-as-value" : "table-value"),
+                    "Changed v3 historical layer activity/basis");
+        }
         result.quantity = quantities.at(component)[result.unit == "Bq/kg" ? 0 : 1];
         require(result.activity > 0., "Activity must be positive");
         const auto directory = inside(campaignPath, "jobs/" + result.id);
@@ -762,6 +785,17 @@ int main(int argc, char** argv) try {
     TNamed("CampaignPath", campaignPath.c_str()).Write();
     TNamed("Layout", layout.c_str()).Write();
     TNamed("CampaignFingerprint", campaign["fingerprint"].val().c_str()).Write();
+    TNamed("NormalizationScenario", scenarioId.c_str()).Write();
+    TNamed("DetectorModel", model.c_str()).Write();
+    const std::string normalizationScenario = "{\"schema_version\":1,\"scenario_id\":\"" + scenarioId +
+        "\",\"detector_model\":\"" + model + "\",\"simulation_matrix_id\":\"" + scenarioId +
+        "\",\"interpretation\":\"simulation-matrix-activities-on-matching-transport\"}\n";
+    TObjString(normalizationScenario.c_str()).Write("normalization-scenario.json");
+    std::ofstream scenarioFile(staged / "normalization-scenario.json");
+    scenarioFile << normalizationScenario;
+    scenarioFile.close();
+    require(bool(scenarioFile), "Normalization scenario write failure");
+    summary << "Normalization scenario: " << scenarioId << "\nDetector model: " << model << "\n\n";
     TNamed("ROOTVersion", gROOT->GetVersion()).Write();
     TParameter<double>("CoincidenceWindow_ns", parameters.coincidenceNs).Write();
     TParameter<double>("MultisiteDistance_mm", parameters.distanceMm).Write();
@@ -894,7 +928,8 @@ int main(int argc, char** argv) try {
         legend.Draw();
         TPaveText caption(.12, cut < 2 ? .875 : .835, .96, cut < 2 ? .925 : .875, "NDC");
         caption.SetFillStyle(0); caption.SetBorderSize(0); caption.SetTextFont(42); caption.SetTextSize(.022);
-        caption.AddText((layout + " | " + config["mode"].val() + " | " + coverage + " contributions | physics unvalidated").c_str());
+        caption.AddText((layout + " | " + config["mode"].val() + " | " + coverage +
+            " contributions | physics unvalidated" + (acrylic ? " | " + scenarioId : "")).c_str());
         caption.Draw();
         TPaveText topologyNote(.12, .885, .96, .925, "NDC");
         if (cut >= 2) {

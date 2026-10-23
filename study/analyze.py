@@ -44,6 +44,9 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
     expected['geometry_hash'] = env['geometry_hash']
     geometry = rt.read(root/'geometry.json')
     matrix = read_matrix(root/'matrix.json')
+    normalization_scenario = dict(schema_version=1, scenario_id=matrix['matrix_id'],
+        detector_model=config['model'], simulation_matrix_id=matrix['matrix_id'],
+        interpretation='simulation-matrix-activities-on-matching-transport')
     results, inputs, raw_reference = [], {}, []
     for row in matrix['contributions']:
         if row['id'] not in jobs:
@@ -74,7 +77,8 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
             'Nucleus is the most recently tracked ion label, not guaranteed per-hit ancestry.',
             'Historical grouping and first-position fiducialization retained; group Poisson errors are not primary-level errors.',
             'Published tables are reference comparisons only; geometry/source limitations are unchanged.'],
-        inputs=inputs, python=sys.version, analysis_source=analysis_source_state(),
+        inputs=inputs, normalization_scenario=normalization_scenario,
+        python=sys.version, analysis_source=analysis_source_state(),
         packages={name: importlib.metadata.version(name) for name in ('uproot','awkward','numpy','matplotlib')},
         step_size=step_size, processing_version='event-boundaries-and-eof-v2')
     spectra = summarize(results)
@@ -91,6 +95,8 @@ def analyze(root, output, allow_partial=False, step_size='64 MB'):
         staged.mkdir()
         rt.save(staged/'spectra.json', spectra)
         rt.save(staged/'campaign.json', campaign)
+        (staged/'matrix.json').write_bytes((root/'matrix.json').read_bytes())
+        rt.save(staged/'normalization-scenario.json', normalization_scenario)
         render(staged, spectra, summary)
         summary['output_sha256'] = rt.artifacts(staged)
         rt.save(staged/'analysis-manifest.json', summary)

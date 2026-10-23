@@ -22,10 +22,15 @@ The detailed pre-existing internal guide follows.
 
 Two stages reproduce the **workflow and analysis infrastructure** of Samuele
 Torelli's study: Geant4 generates raw or compact ROOT files; Python analyzes canonical groups offline.
-The active model is **cygno-300elj-v2 / uniform-volume-v1**, with 28 contributions
-in the [300ELJ source matrix](config/study/cygno-300elj-radioassay-v2.json).
+The preferred internal model is **cygno-acrylic-v3 / uniform-volume-v1**, with
+26 contributions in the [v3 source matrix](config/study/cygno-300elj-radioassay-v3.json).
+It uses physical PMMA50 cores and historical Table 7.1 Acrylic/EFCu activities.
+The retained v2 model has Kapton50 cores, Arnquist layer assays and 28 contributions;
+external stays v2. Physical v3 needs new ROOT transport for every contribution;
+old campaigns remain analyzable without editing manifests. See the
+[v2/v3 source comparison](docs/STUDY_SOURCES.md) and [internal cluster guide](internal/README.md).
 The production layout is `cygno-11x7-v1`; the two existing layouts remain supported.
-GEMs and the central cathode use explicit Cu5/300ELJ50/Cu5 µm stacks.
+GEMs and the central cathode use Cu5/core50/Cu5 µm stacks (PMMA core in v3).
 See [the final geometry report](docs/SINGLE_MODULE_GEOMETRY.md) for dimensions,
 constructed masses, exact sampling and retained mechanical uncertainties.
 Physics remains `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`.
@@ -57,10 +62,10 @@ cmake -S . -B "$CYGNO_BUILD" \
   -DGeant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
 cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities --parallel
 
-python3 study/preflight.py --build "$CYGNO_BUILD" \
+python3 study/preflight.py --build "$CYGNO_BUILD" --model cygno-acrylic-v3 \
   --output "$CYGNO_RUNS/preflight-NEW"
-python3 study/simulate.py --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/smoke" --mode smoke --primaries 2
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" \
+  --output "$CYGNO_RUNS/v3-smoke-NEW" --mode smoke --primaries 2
 ```
 
 The exporter `geometry_quantities` uses actual constructed component masses,
@@ -71,7 +76,7 @@ preflight and refuses simulation if any case fails, independent of statistics.
 To run up to 16 independent source-matrix contributions concurrently:
 
 ```sh
-python3 study/simulate.py \
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json \
   --build "$CYGNO_BUILD" \
   --output "$CYGNO_RUNS/samuele-100k" \
   --primaries 100000 \
@@ -87,7 +92,7 @@ Only as many jobs as selected runnable contributions are launched.
 After the Linux smoke/archive/offline/parity gates, the first statistics check is:
 
 ```sh
-python3 study/simulate.py --build "$CYGNO_BUILD" \
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" \
   --output "$CYGNO_RUNS/samuele-1M" --primaries 1000000 --archive
 ```
 
@@ -121,14 +126,14 @@ Use the separate configuration and fresh campaign directory for a tiny diagnosti
 
 ```sh
 python3 study/simulate.py \
-  --config config/study/cygno-11x7-v2.json \
+  --config config/study/cygno-11x7-v3.json \
   --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/11x7-smoke" \
+  --output "$CYGNO_RUNS/11x7-v3-smoke-NEW" \
   --mode smoke --primaries 2 --jobs 8 --output-mode both --archive
 ```
 
-The four-case decay preflight remains mandatory. GEM/cathode activities use the
-separate 300ELJ/Cu assays; supports adopt Reynolds UVT PMMA U/Th with retained K proxy,
+The four-case decay preflight remains mandatory. v3 GEM/cathode activities use
+Table 7.1 Acrylic/EFCu assays; supports adopt Reynolds UVT PMMA U/Th with retained K proxy,
 and resistors adopt completed-MBNL per-reference-piece assays; other activities retain Table 7.1 values;
 normalization uses the actual 77-module constructed masses/piece counts. This
 single-plane topology resembles Samuele's 25x3 layout, but its different module
@@ -143,11 +148,11 @@ provenance. Both writes both representations from the same Geant4 transport.
 
 ```sh
 # canonical raw
-python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/raw-NEW" --primaries 1000 --output-mode raw
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/raw-NEW" --primaries 1000 --output-mode raw
 # production compact, after parity validation
-python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/compact-NEW" --primaries 100000 --output-mode compact --jobs 16
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/compact-NEW" --primaries 100000 --output-mode compact --jobs 16
 # parity validation
-python3 study/simulate.py --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/both-NEW" --primaries 1000 --output-mode both
+python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/both-NEW" --primaries 1000 --output-mode both
 # common analysis (automatically dispatches; verifies parity for both)
 python3 study/analyze.py --input "$CYGNO_RUNS/compact-NEW" --output "$CYGNO_RUNS/compact-analysis-NEW"
 ```

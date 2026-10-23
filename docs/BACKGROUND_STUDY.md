@@ -2,7 +2,19 @@
 
 ## Scientific identity
 
-The active detector/source identity is `cygno-300elj-v2 / uniform-volume-v1`
+**Preferred internal v3** selects `cygno-acrylic-v3` and the 26-contribution
+`cygno-300elj-radioassay-v3.json`: physical PMMA50 cores for GEM and cathode,
+Table 7.1 Acrylic U/Th/K, and EFCu skins U/Th. Use
+`--config config/study/cygno-11x7-v3.json` with the commands below; the runner
+selects the matching matrix and passes the transport model to Geant4/exporter.
+All v3 contributions require new transport. v2 campaigns remain unmodified and
+analyzable; no provenance check is disabled. Both analyses keep the original
+simulation matrix plus a separate `normalization-scenario.json` descriptor.
+Full comparison and cluster commands: [STUDY_SOURCES](STUDY_SOURCES.md),
+[internal README](../internal/README.md).
+
+
+The retained v2 detector/source identity is `cygno-300elj-v2 / uniform-volume-v1`
 with `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`. The production configuration
 `config/study/cygno-11x7-v2.json` selects 77 modules; `samuele.json` retains the
 legacy-25x3 layout. All three supported layouts use the same module geometry.

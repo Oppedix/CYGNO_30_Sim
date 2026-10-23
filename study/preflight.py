@@ -10,11 +10,12 @@ import time
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from study.runtime import invoke, parse_environment, save, REPO, RDM_COMMAND, RDM_SECONDS, parse_accounting
-from study.source_matrix import require
+from study.source_matrix import require, MATRIX_MODELS
 
 
 
-def check(build, output, long_lived_only=False):
+def check(build, output, long_lived_only=False, model='cygno-300elj-v2'):
+    require(model in MATRIX_MODELS.values(), 'Unsupported preflight model')
     output = output.resolve()
     require(not output.is_relative_to(REPO), 'Preflight outputs must be outside the repository')
     output.mkdir(parents=True, exist_ok=False)
@@ -35,7 +36,8 @@ def check(build, output, long_lived_only=False):
         (folder/'run.mac').write_text(macro)
         result = dict(requested_primaries=count, status='failed')
         try:
-            log = invoke([build.resolve()/'rdecay01', folder/'run.mac', '1', '--layout', 'legacy-25x3'],
+            log = invoke([build.resolve()/'rdecay01', folder/'run.mac', '1', '--layout', 'legacy-25x3',
+                          *(['--model', model] if model != 'cygno-300elj-v2' else [])],
                          folder, 'simulation', 120)
             environment = parse_environment(log)
             result['environment'] = environment
@@ -75,8 +77,9 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='New directory, retained on failure')
     parser.add_argument('--long-lived-only', action='store_true')
+    parser.add_argument('--model', choices=tuple(MATRIX_MODELS.values()), default='cygno-300elj-v2')
     args = parser.parse_args()
-    return check(args.build, args.output, args.long_lived_only)
+    return check(args.build, args.output, args.long_lived_only, args.model)
 
 
 if __name__ == '__main__':

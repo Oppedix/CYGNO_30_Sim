@@ -21,6 +21,8 @@ V1_COMPONENTS = {
 }
 IONS = {'U238': (92, 238), 'Th232': (90, 232), 'K40': (19, 40),
         'U235': (92, 235), 'Ra226': (88, 226), 'Th228': (90, 228)}
+MATRIX_MODELS = {'cygno-300elj-radioassay-v2': 'cygno-300elj-v2',
+                 'cygno-300elj-radioassay-v3': 'cygno-acrylic-v3'}
 
 
 # Arnquist et al., arXiv:1910.04317v1, sec. 2.2: specific activities in
@@ -36,6 +38,20 @@ RETAINED_ACTIVITIES = {'Acrylic': {'U238': 0.000296, 'Th232': 5.69e-05, 'K40': 7
 COMPONENTS = V1_COMPONENTS | {
     'RingSupports': ('RadiopurePMMA', 'Field Cage'),
     'Resistors': ('CompletedMBNLResistor', 'Resistors'),
+}
+ACRYLIC_COMPONENTS = COMPONENTS | {
+    'GEMsPolyimide': ('Acrylic', 'GEMs'), 'GEMsCopper': ('EFCu', 'GEMs'),
+    'CathodesPolyimide': ('Acrylic', 'Cathodes'), 'CathodesCopper': ('EFCu', 'Cathodes'),
+}
+HISTORICAL_LAYERS = {
+    'reference_matrix_id': 'thesis-table7.1-v1',
+    'reference_matrix_sha256': 'de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836',
+    'core_activity_Bq_kg': {'U238': .000296, 'Th232': 5.69e-5, 'K40': 7.12e-5},
+    'copper_activity_Bq_kg': {'U238': 1.31e-7, 'Th232': 3.4e-8},
+    'core_transport': 'PMMA, 1.190 g/cm3, 50 um; both GEM and cathode',
+    'extension': 'Table 7.1 GEMsCore Acrylic also assigned to the cathode core; historical cathode was solid copper',
+    'copper_K40': 'omitted table x; not a measured zero',
+    'scope': 'new internal transport campaign required; not a normalization override for v2 ROOT files',
 }
 PMMA_ACTIVITIES = {'U238': 9.05e-6, 'Th232': 5.05e-6, 'K40': 71.2e-6}
 RESISTOR_ASSAY = {'U238': [4.30, .20], 'Th232': [2.00, .16], 'K40': [7.90, .20]}
@@ -103,8 +119,8 @@ def vessel_material_comparison(vessel_mass_kg, copper_density_g_cm3, pmma_densit
                 pmma_K_measured=PMMA_PROVENANCE['K40']['measured'], selected_material='EFCu')
 
 
-def expected_contributions(*, historical=False):
-    components = V1_COMPONENTS if historical else COMPONENTS
+def expected_contributions(*, historical=False, acrylic=False):
+    components = V1_COMPONENTS if historical else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
     return {(component, isotope) for component, (material, _) in components.items()
             for isotope in (PMMA_ACTIVITIES if material == 'RadiopurePMMA' else RESISTOR_ASSAY
                             if material == 'CompletedMBNLResistor' else ASSAYS.get(material) or RETAINED_ACTIVITIES[material])}
@@ -128,10 +144,11 @@ def ion_name(ion):
 
 def validate_matrix(matrix, *, historical=False):
     v1 = historical and matrix.get('matrix_id') == 'cygno-300elj-radioassay-v1'
-    components = V1_COMPONENTS if v1 else COMPONENTS
-    expected = expected_contributions(historical=v1)
+    acrylic = matrix.get('matrix_id') == 'cygno-300elj-radioassay-v3'
+    components = V1_COMPONENTS if v1 else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
+    expected = expected_contributions(historical=v1, acrylic=acrylic)
     require(matrix.get('schema_version') == 1, 'Unsupported matrix schema')
-    require(matrix.get('matrix_id') == ('cygno-300elj-radioassay-v1' if v1 else 'cygno-300elj-radioassay-v2'), 'Unsupported source matrix')
+    require(matrix.get('matrix_id') in ({'cygno-300elj-radioassay-v1'} if v1 else MATRIX_MODELS), 'Unsupported source matrix')
     require(matrix.get('seconds_per_year') == 31536000, 'Study year convention changed')
     require(matrix.get('quantity_policy') == 'constructed-component-mass-kg-or-placement-count', 'Invalid quantity policy')
     provenance = matrix.get('provenance', {})
@@ -144,6 +161,8 @@ def validate_matrix(matrix, *, historical=False):
             'Missing retained Table 7.1 matrix provenance')
     if not v1:
         require(provenance.get('pmma') == PMMA_PROVENANCE and provenance.get('completed_resistor') == RESISTOR_PROVENANCE, 'Missing/changed v2 material provenance')
+    if acrylic:
+        require(provenance.get('historical_layers') == HISTORICAL_LAYERS, 'Missing/changed v3 layer provenance')
     rows = matrix.get('contributions', [])
     seen = set()
     for row in rows:
@@ -186,6 +205,10 @@ def read_matrix(path, *, historical=False):
     return validate_matrix(json.loads(Path(path).read_text()), historical=historical)
 
 
+def validate_matrix_model(matrix, model):
+    require(MATRIX_MODELS.get(matrix['matrix_id']) == model, 'Source matrix/transport model mismatch; use a new matching campaign')
+
+
 def decay_commands(row):
     """Controls only; explicitly reset a previous split-chain boundary to 0/0.
 
@@ -202,7 +225,7 @@ def decay_commands(row):
 
 
 def read_quantities(path, *, layout, model, geometry_hash):
-    require(layout in LAYOUTS and model == 'cygno-300elj-v2', 'Unsupported constructed detector')
+    require(layout in LAYOUTS and model in MATRIX_MODELS.values(), 'Unsupported constructed detector')
     lines = Path(path).read_text().splitlines()
     headers = {}
     for line in lines:
@@ -220,6 +243,8 @@ def read_quantities(path, *, layout, model, geometry_hash):
         require(component in COMPONENTS and component not in result, 'Unknown/duplicate quantity component')
         mass, pieces = float(row['mass_kg']), int(row['pieces'])
         require(positive(mass) and pieces > 0 and row['geometry_material'], 'Invalid constructed quantity')
+        if model == 'cygno-acrylic-v3' and component in ('GEMsPolyimide', 'CathodesPolyimide'):
+            require(row['geometry_material'] == 'PMMA', 'v3 core transport must be PMMA')
         result[component] = dict(mass_kg=mass, pieces=pieces, geometry_material=row['geometry_material'])
     require(result.keys() == COMPONENTS.keys(), 'Incomplete constructed quantities')
     return result

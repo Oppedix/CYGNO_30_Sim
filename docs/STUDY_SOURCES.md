@@ -1,13 +1,108 @@
 # Current radioactive-source matrix and normalization provenance
 
-Canonical specification:
+Preferred **internal v3**: [`cygno-300elj-radioassay-v3.json`](../config/study/cygno-300elj-radioassay-v3.json),
+physical model `cygno-acrylic-v3`, 26 contributions. **v2** remains supported with
 [`cygno-300elj-radioassay-v2.json`](../config/study/cygno-300elj-radioassay-v2.json),
-validated by `study/source_matrix.py`. Detector `cygno-300elj-v2`, source policy
-`uniform-volume-v1`; layout is independent. The original
-[`thesis-table7.1.json`](../config/study/thesis-table7.1.json) is preserved as a
-reference transcription, not rewritten or accepted for new production.
+physical model `cygno-300elj-v2`, 28 contributions. Both use `uniform-volume-v1`.
+`study/source_matrix.py` validates each version and rejects matrix/model mixing.
+External keeps its v2 detector and independent normalization.
 
-## Layer assays
+## Historical activities: original C++ versus Table 7.1
+
+The authority for v3 is the preserved [`thesis-table7.1.json`](../config/study/thesis-table7.1.json),
+SHA256 `de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836`.
+It was the production matrix at commit `990a287`, before the 300ELJ material
+change in `35e4eb0`. Do not confuse `thesis-table7.1-v1` with the later
+`cygno-300elj-radioassay-v1`: that later v1 already uses Arnquist layer assays.
+
+The upstream [Samuele PlotNormalizedSpectra.cpp](https://github.com/SamueleTorelli/CYGNO_30_Sim/blob/master/analysis/PlotNormalizedSpectra.cpp)
+(blob `543796a833f58c1c078c9fd890f2e890aa87753f`) has different, lumped assays:
+
+| Reference/component | U238 [µBq/kg] | Th232 [µBq/kg] | K40 [µBq/kg] |
+|---|---:|---:|---:|
+| Upstream C++ GEMs, lumped | 13200 | 5450 | 63100 |
+| Upstream C++ Cathodes | 12 | 4.1 | 61 |
+| Table 7.1 GEMsCore Acrylic | 296 | 56.9 | 71.2 |
+| Table 7.1 GEMsOuter and Cathodes EFCu | 0.131 | 0.034 | omitted (x) |
+
+The upstream C++ additionally lists GEM U235/Co60/Cs137 and cathode Co60/Cs137.
+Those are not the chosen Table 7.1 model; no such source is silently added or
+approximated. Reproducing those extra terms would require their own definitions
+and new transport, since v2 does not simulate them in these components.
+
+The upstream [DetectorConstruction.cc](https://github.com/SamueleTorelli/CYGNO_30_Sim/blob/master/src/DetectorConstruction.cc)
+(blob `5a09d4da657f802f922175d66081697e4d4063f0`) constructs a **29 µm PMMA GEM
+core**, a Boolean copper GEM exterior and a **1 mm solid copper cathode** (the
+cathode G4Box receives 0.05 cm as half-Z). The historical source matrix therefore
+has no polymer cathode core. v3 deliberately retains the v2 **50 µm core plus
+two 5 µm copper skins** for both GEM and cathode, changes the two core transport
+materials to PMMA at 1.190 g/cm³, and assigns the historical GEM-core Acrylic
+assay to the cathode core too. This cathode extension is an explicit study
+choice, not a Table 7.1 cathode measurement. Acrylic upper limits are used as
+stated values, following the old pipeline; they are not a new batch assay.
+
+| Internal scenario | GEM core | Cathode core | Copper activity | Jobs |
+|---|---|---|---|---:|
+| v2, retained comparison | Kapton50; Arnquist Table 5 | Kapton50; Arnquist Table 5 | separate laminate Cu U/Th/K | 28 |
+| **v3 (preferred for this internal study)** | PMMA50; Table 7.1 Acrylic U/Th/K | PMMA50; same Acrylic U/Th/K | Table 7.1 EFCu U/Th; K omitted | 26 |
+
+`GEMsPolyimide` and `CathodesPolyimide` remain stable **source identifiers** in
+v3 for compatibility with the sampler and source lists; their actual exported
+material is **PMMA**, not polyimide. `GEMsCopper_K40` and `CathodesCopper_K40`
+are absent from the v3 matrix, not zero-activity jobs. Cage, supports, resistors,
+vessel, optics, source sampling, isotope controls and geometry dimensions retain
+v2 behavior. The historical Acrylic core assay differs from the newer radiopure
+PMMA support assay; the latter is not transferred to the cores.
+
+PMMA50 is a historical-material study scenario, not a claim about installed
+CYGNO GEM composition. The collaboration's [December 2025 material inventory,
+slide 16](https://agenda.infn.it/event/48480/contributions/274879/attachments/144292/219180/25_12_18_CYGNO_collaboration_meeting.pdf#page=16)
+identifies GEM and cathode as Kapton+Cu. GEM microscopic holes remain absent in
+both versions; the cathode is unperforated. No new hole model is implied.
+
+## Campaign reuse, normalization and new transport
+
+**The selected physical v3 cannot be obtained by reweighting v2 ROOT files.**
+Changing Kapton to PMMA changes composition, density, source mass and transport.
+All **26 v3 contributions** need new Geant4 runs: particles from the other
+components also traverse the changed cores. There is no new isotope requirement
+for the selected v3; its source heads are a subset of v2. A 29 µm core, old
+Boolean copper shape, solid-copper historical cathode or physical GEM holes would
+also require new transport and are not implemented here.
+
+Old campaigns remain analyzable as v2, without editing their matrices/manifests,
+relabeling metadata, modifying fingerprints or disabling preflight/checksums.
+The runner chooses the matrix from the configured model and rejects an explicit
+mismatched `--matrix`. Use a **new** v3 campaign directory; resume only with the
+same identity. Each analysis keeps the original simulation matrix and separately
+records `normalization-scenario.json`; Python also records it in
+`analysis-manifest.json`, native ROOT in `provenance/`. There is no activity
+replacement switch that could pass v2 transport off as physical v3.
+
+The scale stays `activity * constructed mass-or-piece-count * 31536000 / actual
+generated primaries`, applied independently before category sums, with statistical
+variances scaled quadratically. Both analyses use the matching saved matrix and
+actual masses; their shared historical two selections are regression checked.
+The extra topology selections remain specific to the native ROOT analysis.
+Reports always use a new output directory. Cluster commands are in
+[internal README](../internal/README.md) and [native ROOT guide](../analysis/common_c++/README.md).
+
+For a 500×800 mm² foil, core50 weighs 28.4 g in Kapton or 23.8 g in PMMA.
+Each module has six GEMs and one cathode; its copper skins weigh 250.88 g.
+A same-EFCu-copper source-head comparison gives:
+
+| Core/scenario, per module | U238 [µBq] | Th232 [µBq] | K40 [µBq] | Sum [µBq] |
+|---|---:|---:|---:|---:|
+| Kapton50, v2 core assays + EFCu skins | 13.788235 | 5.513143 | 654.847200 | 674.148578 |
+| PMMA50, v3 Acrylic assays + EFCu skins | 49.346465 | 9.488070 | 11.861920 | 70.696455 |
+
+This first comparison row already substitutes EFCu for v2's laminate copper to
+isolate the core choice. The total source-head sum falls by 9.53582×, dominated
+by K; U and Th increase. It is not a detector-rate prediction and does not sum
+all daughter decays. The corresponding v3 77-module GEM+cathode sum is
+5.44362705 mBq. Actual exports, not rounded table entries, normalize analyses.
+
+## v2 layer assays (retained reference)
 
 GEM and cathode transport is Cu5/G4_KAPTON50/Cu5 µm. Separate-material assays
 from [Arnquist et al., arXiv:1910.04317v1, Table 5](https://arxiv.org/abs/1910.04317v1)
@@ -119,7 +214,7 @@ vessel2, lens3, sensor3, resistor3. Ten physical families map to the same seven
 categories. Equilibrium daughters travel in parent jobs; they are not additional
 jobs. Missing assays are not measured zeroes. Original v1 matrix and
 `config/study/cygno-11x7-v1.json` are preserved as historical references;
-production uses v2 and rejects v1. `read_matrix(..., historical=True)` is required
+v2 production rejects v1; preferred internal v3 uses the separate 26-row matrix above. `read_matrix(..., historical=True)` is required
 to validate the old matrix as a reference.
 
 ## Constructed quantities and normalization
