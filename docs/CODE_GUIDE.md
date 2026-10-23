@@ -1,6 +1,6 @@
 # Architecture and event lifecycle
 
-Start with `config/study/samuele.json` and a generated study macro, then follow this path:
+For preferred internal v3, start with `config/study/cygno-11x7-v3.json` and a generated study macro, then follow this path:
 
 ```text
 macro → primary sampler → Geant4 transport/TrackingAction → sensitive gas StepRecord
@@ -15,8 +15,8 @@ macro → primary sampler → Geant4 transport/TrackingAction → sensitive gas 
 ```
 
 `app/rdecay01.cc` chooses interactive/batch mode, the Ranecu RNG, the run manager,
-`DetectorConstruction`, the active `QGSP_BIC_EMZ` reference list plus
-`G4RadioactiveDecayPhysics`, and `ActionInitialization`. It initializes the kernel
+`DetectorConstruction`, the internal `QGSP_BIC_EMZ` (external `QGSP_BIC_HP_EMZ`) reference list
+plus `G4RadioactiveDecayPhysics`, and `ActionInitialization`. It initializes the kernel
 before executing the macro. Batch macro errors now return a failure status.
 
 `src/geometry/DetectorConstruction.cc` defines materials, builds named solids and
@@ -82,7 +82,7 @@ active reference physics list. The complete original-to-current move mapping is
 
 ## Legacy combined study entry points
 
-`study/source_matrix.py` validates the v2 assay matrix (and v1 only with explicit historical opt-in), isotope boundaries and
+`study/source_matrix.py` validates the matching v2/v3 assay matrix (and v1 only with explicit historical opt-in), isotope boundaries and
 kg/piece quantities. `legacy/study/combined/runner.py` creates exact macros and seeds, preflights the
 effective environment, verifies actual generation/processing and preserves immutable
 attempts. `legacy/study/combined/root_io.py` validates ROOT identity/accounting and exports the

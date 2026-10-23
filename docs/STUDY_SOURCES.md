@@ -7,6 +7,10 @@ physical model `cygno-300elj-v2`, 28 contributions. Both use `uniform-volume-v1`
 `study/source_matrix.py` validates each version and rejects matrix/model mixing.
 External keeps its v2 detector and independent normalization.
 
+The [geometry report](SINGLE_MODULE_GEOMETRY.md#component-activities-v2-and-v3)
+places the v2/v3 activities beside constructed masses, materials and densities.
+This page retains the detailed bibliographic basis and interpretation.
+
 ## Historical activities: original C++ versus Table 7.1
 
 The authority for v3 is the preserved [`thesis-table7.1.json`](../config/study/thesis-table7.1.json),
@@ -104,7 +108,7 @@ all daughter decays. The corresponding v3 77-module GEM+cathode sum is
 
 ## v2 layer assays (retained reference)
 
-GEM and cathode transport is Cu5/G4_KAPTON50/Cu5 µm. Separate-material assays
+In **v2**, GEM and cathode transport is Cu5/G4_KAPTON50/Cu5 µm. Separate-material assays
 from [Arnquist et al., arXiv:1910.04317v1, Table 5](https://arxiv.org/abs/1910.04317v1)
 apply independently to polyimide and each copper skin. Table 4 whole-laminate
 values serve only as provenance/cross-check. The complete concentration table,
@@ -196,8 +200,9 @@ assay cannot quantitatively partition it among silica/aSi/metals. No explicit
 nanometre layers are constructed. U238 and Th232 each have one full-chain job;
 secular equilibrium is an assumption for ICP-MS chain heads, not an assay result.
 K40 is a single parent. Old resistor U235, Ra226, Th228 and split-chain assays
-are absent from v2. GEM/cathode/gas/optics, decay physics, cuts, grouping and
-normalization formulas are unchanged.
+are absent from v2 and v3. The resistor update itself does not change
+GEM/cathode/gas/optics, decay physics, cuts, grouping or normalization formulas;
+the separate v3 core-material change is described above.
 
 ## Active assay membership
 
@@ -209,7 +214,7 @@ normalization formulas are unchanged.
 | Sensors | 2e-3 | 2.8e-3 | 9e-3 | Bq/kg; retained Table 7.1 Silicon |
 | Resistors | derived 3.13243176941e-8 | derived 4.770319949e-9 | derived 1.41552782228e-7 | Bq/reference-piece; completed row 60 |
 
-The schema derives **28 rows**: four layer families ×3, support3, strip2,
+The **v2** schema derives **28 rows**: four layer families ×3, support3, strip2,
 vessel2, lens3, sensor3, resistor3. Ten physical families map to the same seven
 categories. Equilibrium daughters travel in parent jobs; they are not additional
 jobs. Missing assays are not measured zeroes. Original v1 matrix and
@@ -219,10 +224,22 @@ to validate the old matrix as a reference.
 
 ## Constructed quantities and normalization
 
-```sh
-/path/to/build/geometry_quantities /path/to/quantities.tsv cygno-11x7-v1 /path/to/geometry.json
-python3 study/source_matrix.py config/study/cygno-300elj-radioassay-v2.json
+Activate Geant4 and define paths via [common setup](SETUP.md). Export each
+model explicitly to a fresh diagnostic directory outside campaigns:
+
+```bash
+# Directory: repository root; common Geant4 environment/build active.
+cd "$CYGNO_SRC"
+mkdir -p "$CYGNO_RUNS/geometry-v3-NEW" "$CYGNO_RUNS/geometry-v2-NEW"
+"$CYGNO_BUILD/geometry_quantities" "$CYGNO_RUNS/geometry-v3-NEW/quantities.tsv" \
+  cygno-11x7-v1 "$CYGNO_RUNS/geometry-v3-NEW/geometry.json" --model cygno-acrylic-v3
+"$CYGNO_BUILD/geometry_quantities" "$CYGNO_RUNS/geometry-v2-NEW/quantities.tsv" \
+  cygno-11x7-v1 "$CYGNO_RUNS/geometry-v2-NEW/geometry.json" --model cygno-300elj-v2
 ```
+
+Do not replace a campaign's saved quantities/geometry with these diagnostics.
+Omitting `--model` on the exporter retains v2 for compatibility. Matrix validation
+is performed by the runner; `study/source_matrix.py` is a library, not a CLI.
 
 Actual source lists and `GetMass()` sums produce the ten separate component rows.
 The exporter verifies source/mass-map equality and records layout, model, policy,

@@ -1,12 +1,16 @@
 # Detector layout profiles
 
-All profiles use the same `cygno-300elj-v2` module and `uniform-volume-v1` sources.
-The production 11×7 config is `config/study/cygno-11x7-v2.json`. Layout identity
-is separate from detector construction and source policy. Select it before
+All profiles share module dimensions; internal sources use `uniform-volume-v1`.
+Preferred internal v3 uses `cygno-acrylic-v3` and
+`config/study/cygno-11x7-v3.json`; supported v2 uses `cygno-300elj-v2` and
+`config/study/cygno-11x7-v2.json`. External retains v2 with its own source policy.
+Layout identity is separate from detector construction and source policy. Select it before
 initialization:
 
 ```sh
-/path/to/build/rdecay01 /absolute/path/to/run.mac 1 --layout cygno-11x7-v1
+# Directory: shared build; run.mac is an operator-supplied diagnostic macro here.
+cd "$CYGNO_BUILD"
+./rdecay01 "$CYGNO_BUILD/run.mac" 1 --layout cygno-11x7-v1 --model cygno-acrylic-v3
 ```
 
 `legacy-25x3` and `cygno-5x5x3-v1` remain supported; the application's omitted
@@ -27,7 +31,7 @@ contains the full component dimensions/materials/masses and construction map.
 | legacy-25x3 | `m=ix*3+iy`; `((ix-12)*504,(iy-1)*804,0)` | 75 / 150 / 10427 |
 | cygno-5x5x3-v1 | `m=(ix*5+iy)*3+iz`; `((ix-2)*504,(iy-2)*804,(iz-1)*2285.42)` | 75 / 150 / 10427 |
 
-Every module has 139 placements: cathode PI1/Cu2, GEM PI6/Cu12, transfer gas4,
+Every module has 139 placements: cathode core1/Cu2, GEM core6/Cu12, transfer gas4,
 support2, strip50, resistor52, lens4, sensor4, sensitive drift2. Add one common
 vessel and one World. Gas copy is `side*moduleCount+m`, centred at
 `moduleCentre+(0,0,±250.030)`. Side 0 is +Z. Foil layers and transfer gaps have

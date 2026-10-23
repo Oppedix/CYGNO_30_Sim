@@ -32,70 +32,83 @@ See [source comparison and new-run limits](../../docs/STUDY_SOURCES.md).
 
 ## Compile
 
-From the repository root:
+Activate the analysis machine's actual ROOT environment first (`root-config`
+and runtime libraries must be available). Use the
+[local/private Linux/CNAF path setup](../../docs/SETUP.md); `CYGNO_SRC` is the
+repository root, `CYGNO_RUNS` is the campaign parent on **this** machine, and
+`CYGNO_ANALYSIS_BIN` is a configurable binary directory outside the checkout.
+No detector rebuild, Geant4, Python, Jupyter, CMake or extra JSON package is
+needed. The include path is the repository root, not a generated build header.
+
+For **ROOT 6.30.02 on CNAF**:
 
 ```bash
-g++ -O3 -std=c++17 -ffp-contract=off \
-    analysis/common_c++/AnalyzeCompactCampaign.cpp \
-    -I. \
-    $(root-config --cflags --libs) \
-    -lRooFitHS3 \
-    -lRooFitJSONInterface \
-    -o analysis/common_c++/AnalyzeCompactCampaign
+# Directory: repository root on the ROOT analysis worker.
+cd "$CYGNO_SRC"
+export CYGNO_ANALYSIS_BIN="${CYGNO_ANALYSIS_BIN:-$CYGNO_BUILD/root-analysis}"
+mkdir -p "$CYGNO_ANALYSIS_BIN"
+root-config --version
+c++ -O3 -std=c++17 -ffp-contract=off \
+  internal/analysis/common_c++/AnalyzeCompactCampaign.cpp -I"$CYGNO_SRC" \
+  $(root-config --cflags --libs) -lRooFitHS3 -lRooFitJSONInterface \
+  -o "$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign"
 ```
 
-On ROOT 6.40.04 builds without a separate `libRooFitJSONInterface`, omit
-`-lRooFitJSONInterface`; the JSON interface is supplied by HS3 there.
+For the tested **ROOT 6.40.04** installation, JSON is supplied by HS3 without a
+separate `libRooFitJSONInterface`. After the same path setup, use:
 
-This command has been verified with ROOT **6.30.02 on CNAF**. Requirements are a
-C++17-capable compiler and ROOT with its RooFit/HS3 JSON support. The program has
-also been tested with ROOT **6.40.04** and Apple Clang. `root-config` must be on
-`PATH`, with ROOT's normal runtime library environment available. Use the
-compiler/standard compatible with your ROOT installation; `root-config --cflags`
-supplies that installation's flags.
+```bash
+# Directory: repository root on the ROOT 6.40 analysis machine.
+cd "$CYGNO_SRC"
+export CYGNO_ANALYSIS_BIN="${CYGNO_ANALYSIS_BIN:-$CYGNO_BUILD/root-analysis}"
+mkdir -p "$CYGNO_ANALYSIS_BIN"
+c++ -O3 -std=c++17 -ffp-contract=off \
+  internal/analysis/common_c++/AnalyzeCompactCampaign.cpp -I"$CYGNO_SRC" \
+  $(root-config --cflags --libs) -lRooFitHS3 \
+  -o "$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign"
+```
 
-`-lRooFitJSONInterface` is required on ROOT 6.30.02 because the program uses
-ROOT's RooFit JSON support (`RooFit::Detail::JSONTree`) to read campaign JSON
-metadata. Link it alongside `-lRooFitHS3` as shown above. This avoids vendoring
-a JSON library or writing a custom parser. The source requires
-`RooFit/Detail/JSONInterface.h` and the matching RooFit JSON libraries from that
-ROOT installation; a minimal ROOT build without HS3 is insufficient. This is a ROOT
-**Detail** interface, so a future ROOT API change may require a small adjustment
-to the metadata reader. No RooFit modeling or fitting is performed.
+The 6.30.02 command was previously verified on CNAF; 6.40.04 was tested with
+Apple Clang. Use the compiler/standard compatible with your ROOT installation;
+`root-config --cflags` supplies its flags. The source requires
+`RooFit/Detail/JSONInterface.h` and matching RooFit JSON libraries; minimal ROOT
+without HS3 is insufficient. `RooFit::Detail::JSONTree` is a ROOT **Detail**
+interface, so future ROOT changes may require adjusting metadata reading.
+No RooFit modeling/fitting is performed.
 
-**Keep `-ffp-contract=off` and do not enable `-ffast-math`/`-Ofast`.** Separate
-multiplication and addition, and their order, must match the canonical Python
-floating-point operations. Fast-math builds are explicitly rejected.
-
-There is no Geant4, Python, Jupyter, CMake, or extra JSON-package requirement for
-compiling or running this analysis. The include path is the repository root;
-no generated geometry header is needed.
+**Keep `-ffp-contract=off`; do not enable `-ffast-math`/`-Ofast`.** Multiplication,
+addition and their order must match canonical Python floating-point operations.
+Fast-math builds are explicitly rejected.
 
 ## Run
 
-The interface takes two paths and an optional, positive finite coincidence window.
-**The default is 1 ns**; this is an explicit feasibility assumption, not a
-scientifically privileged detector timing resolution:
+The interface is `AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR
+[--coincidence-ns VALUE]`, with a positive finite window. **Default: 1 ns**,
+an explicit feasibility assumption, not an established detector time resolution.
+For the compact v3 production campaign from the Internal guide:
 
 ```bash
-analysis/common_c++/AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR [--coincidence-ns VALUE]
+# Directory: $CYGNO_SRC; ROOT runtime active, complete unpacked input present here.
+cd "$CYGNO_SRC"
+"$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign" \
+  "$CYGNO_RUNS/internal-v3-production-NEW" \
+  "$CYGNO_RUNS/internal-v3-root-NEW" --coincidence-ns 1
 ```
 
-For the 25×3 campaign:
+Both paths are on the analysis machine after transfer if needed. The same
+executable supports saved v2 campaigns. For the documented historical CNAF
+25×3 input (verify that it is complete compact data before running):
 
 ```bash
-analysis/common_c++/AnalyzeCompactCampaign \
-    /cnaf/cygno-sim/Users/goppedis/SolarNu/25x3Samuele-1M \
-    ./analysis-25x3 --coincidence-ns 1
+# Directory: $CYGNO_SRC on the CNAF ROOT analysis worker.
+cd "$CYGNO_SRC"
+"$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign" \
+  /cnaf/cygno-sim/Users/goppedis/SolarNu/25x3Samuele-1M \
+  /cnaf/cygno-sim/Users/goppedis/SolarNu/analysis-25x3-NEW --coincidence-ns 1
 ```
 
-For a new physical v3 11×7 campaign, with the **same executable**:
-
-```bash
-analysis/common_c++/AnalyzeCompactCampaign \
-    /cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete \
-    ./analysis-11x7-v3-NEW --coincidence-ns 1
-```
+A path such as `/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete`
+is a configurable v3 transfer destination, not a documented existing campaign.
 
 The output directory must not exist and must be outside the input campaign.
 The program reads the campaign without modifying it. It does not accept an
@@ -318,15 +331,16 @@ The reporting order is that of `analysis/common/reporting.py`. Current matrix
 membership is shown for explanation only; the executable reads membership from
 the campaign matrix:
 
-| Reporting category | Physical components | Contributions |
-|---|---|---:|
-| Camera Lenses | Lens: U238, Th232, K40 | 3 |
-| Vessel | Vessel: U238, Th232 | 2 |
-| Camera Sensors | Sensors: U238, Th232, K40 | 3 |
-| Cathodes | CathodesPolyimide: U238, Th232, K40; CathodesCopper: U238, Th232, K40 | 6 |
-| Resistors | Resistors: U238, Th232, K40 | 3 |
-| GEMs | GEMsPolyimide: U238, Th232, K40; GEMsCopper: U238, Th232, K40 | 6 |
-| Field Cage | RingSupports: U238, Th232, K40; RingStrips: U238, Th232 | 5 |
+| Reporting category | Physical components | v2 contributions | v3 contributions |
+|---|---|---:|---:|
+| Camera Lenses | Lens: U238, Th232, K40 | 3 | 3 |
+| Vessel | Vessel: U238, Th232 | 2 | 2 |
+| Camera Sensors | Sensors: U238, Th232, K40 | 3 | 3 |
+| Cathodes | Core: U238, Th232, K40; copper: U238, Th232 (+K40 only in v2) | 6 | 5 |
+| Resistors | Resistors: U238, Th232, K40 | 3 | 3 |
+| GEMs | Core: U238, Th232, K40; copper: U238, Th232 (+K40 only in v2) | 6 | 5 |
+| Field Cage | RingSupports: U238, Th232, K40; RingStrips: U238, Th232 | 5 | 5 |
+| **Total** | Stable core source IDs retain `Polyimide` in v3 | **28** | **26** |
 
 The completed MBNL resistor assay supplies U238/Th232 equilibrium-assumption jobs and one K40 job. Per-piece activity is based on the nominal 17-mm Suprasil reference tube, never the compact transport-box mass. See [material provenance](../../docs/STUDY_SOURCES.md).
 GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
@@ -402,10 +416,10 @@ by category or across contributions; do not derive exact windows from bins.
 The `Normalization` tree and raw contribution histograms also permit independent
 reconstruction of each normalized contribution without rereading the campaign.
 
-For example, in ROOT:
+For example, in ROOT started from `$CYGNO_RUNS` (the analysis output parent):
 
 ```cpp
-TFile file("analysis-25x3/analysis.root");
+TFile file("internal-v3-root-NEW/analysis.root");
 file.Get<TH1D>("no_cut/total")->Draw("HIST");
 file.Get<TTree>("ExactEnergyWindows")->Scan("Contribution:Window:Count:RatePerYear", "Fiducial==1");
 ```
@@ -470,6 +484,8 @@ and PNG/PDF exports were also checked.
 ### Reproducible topology validation
 
 ```bash
+# Directory: repository root; shared Python analysis venv installed.
+cd "$CYGNO_SRC"
 .venv-analysis/bin/python -m unittest discover -s tests -p 'test_topology.py' -v
 .venv-analysis/bin/python -m unittest discover -s tests -v
 ```

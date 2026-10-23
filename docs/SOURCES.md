@@ -1,6 +1,8 @@
 # Source generation and decay policy
 
-Active identity: detector `cygno-300elj-v2`, source `uniform-volume-v1`.
+Internal identities: **preferred v3** `cygno-acrylic-v3` and supported v2
+`cygno-300elj-v2`, both with source `uniform-volume-v1`. External has a
+[separate environmental source contract](../external/docs/PHYSICS.md).
 The exact `/detector/RadElement` families are `GEMsPolyimide`, `GEMsCopper`,
 `CathodesPolyimide`, `CathodesCopper`, `RingSupports`, `RingStrips`, `Resistors`,
 `Vessel`, `Lens`, `Sensors`. Old ambiguous/core/outer/cathode names are rejected.
@@ -33,9 +35,13 @@ scheduling can change source histories; archive seeds, build/data and metadata.
 
 ## Assays and normalization
 
-The canonical [matrix](../config/study/cygno-300elj-radioassay-v2.json) has 28
-contributions in seven categories. Separate 300ELJ and laminate-copper assays
-apply to GEM and cathode layers; `G4_KAPTON` supplies polyimide transport only.
+The preferred [v3 matrix](../config/study/cygno-300elj-radioassay-v3.json) has
+26 contributions in seven categories: GEM/cathode PMMA50 cores use Table 7.1
+Acrylic upper limits as values; Cu skins use EFCu U/Th with K omitted. All
+contributions need new transport. Stable `Polyimide` source IDs denote PMMA
+in v3. The retained [v2 matrix](../config/study/cygno-300elj-radioassay-v2.json)
+has 28 contributions: separate 300ELJ/laminate-Cu assays apply to the layers,
+with `G4_KAPTON` providing polyimide transport.
 Concentration is per material mass. Whole-laminate assay is a cross-check, not a
 layer concentration. [STUDY_SOURCES.md](STUDY_SOURCES.md) and
 [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md) give assays, uncertainties,

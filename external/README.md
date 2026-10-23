@@ -1,86 +1,119 @@
-# External — environmental gamma and neutrons at LNGS
+# External — LNGS gamma and neutrons with Cu20
 
-A separate scientific workflow using the **same** Geant4 detector construction,
-materials and layouts as [internal](../internal/README.md). The active detector is
-analytical Geant4 geometry, not an imported CYGNO-04 CAD. No detector or CAD is
-copied here. Start with [physics and source provenance](docs/PHYSICS.md),
-[cluster usage](docs/WORKFLOW.md), and [output/analysis semantics](docs/OUTPUT.md).
+An independent workflow using the [common Geant4 build](../README.md), geometry
+and materials. External retains the **v2 detector** and rejects internal PMMA v3.
+Default shielding is **20 cm Cu in four adjacent 5 cm closed layers**.
+The supplied Hall C gamma and neutron inputs are explicit **proxy scenarios**,
+not validated site predictions. See [physics and source provenance](docs/PHYSICS.md).
 
-| Path | Purpose |
-|---|---|
-| `config/` | Explicit flux convention, hall, energy probabilities and source provenance |
-| `macros/` | Small standalone gamma/neutron examples; exact campaign macros are generated |
-| `study/simulate.py` | ROOT-free runner, receipts, immutable attempts and complete accounting |
-| `analysis/common_c++/AnalyzeExternal.cpp` | Preferred standalone compact ROOT analysis |
-| `analysis/raw/`, `analysis/compact/`, `analysis/analyze.py` | Python raw/compact readers, parity and primary-event spectra |
-| `cluster/run.sh` | Configurable batch entry point |
-| `docs/` | External scientific contract, usage, limitations and validation evidence |
+## Checkout and common build
 
-## Build and simulate locally
+Follow [setup](../docs/SETUP.md) in order: connect/open a terminal, clone in the
+chosen parent, define `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS`, activate Geant4,
+and compile `rdecay01` plus `geometry_quantities` once. Separate examples cover
+local, private Linux and CNAF. Reuse the Internal build on the same machine.
+Simulation needs Python ≥3.10 and matching Geant4 datasets including G4NDL,
+not CERN ROOT. All commands below start from the repository root.
 
-Build **once from the parent repository root**, exactly as in internal. Simulation
-requires Geant4 11, matching datasets including G4NDL, C++17, CMake and Python ≥3.10.
-It does not need CERN ROOT, uproot or notebooks.
+## Smoke simulation
+
+Gamma and neutrons are separate campaigns, one source spectrum and one worker
+each. Qualify **both** on the target machine:
 
 ```bash
-export CYGNO_SRC=/path/to/CYGNO_30_Sim
-export CYGNO_BUILD=/path/to/build/cygno-common
-export CYGNO_RUNS=/path/to/runs/external
-cmake -S "$CYGNO_SRC" -B "$CYGNO_BUILD" -DCMAKE_BUILD_TYPE=Release \
-  -DWITH_GEANT4_UIVIS=OFF -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
-  -DGeant4_DIR=/path/to/geant4/lib/cmake/Geant4
-cmake --build "$CYGNO_BUILD" --parallel
+# Directory: $CYGNO_SRC; common Geant4 environment/build from setup.
 cd "$CYGNO_SRC"
 python3 external/study/simulate.py --config external/config/hall-c-gamma-2026-proxy.json \
-  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/gamma-smoke-NEW" --primaries 1000
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/external-gamma-smoke-NEW" \
+  --primaries 1000 --output-mode compact
 python3 external/study/simulate.py --config external/config/hall-c-neutron-wulandari-proxy.json \
-  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/neutron-smoke-NEW" --primaries 1000
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/external-neutron-smoke-NEW" \
+  --primaries 1000 --output-mode compact
 ```
 
-Both provided configurations are **explicit proxy scenarios**, not validated
-predictions at the actual installation point. Gamma uses the 2026 Hall C integral
-with a cropped historical shape; neutrons use broad Hall C dry Wulandari bin
-integrals with a provisional scalar-flux interpretation. Do not transfer Hall C
-rates to Hall F or assume the source shape is measured in 2026.
+Defaults are Cu20, `QGSP_BIC_HP_EMZ + G4RadioactiveDecayPhysics`, and an inward
+Lambert/cosine GPS source on a sphere outside all shielding corners. For an
+unshielded control, choose a new campaign and add `--shield none`; the source
+radius and incoming flux stay the same. `--output-mode both` enables Python
+same-transport parity checks in a separate diagnostic campaign. `--dry-run`
+prints the macro without transporting particles.
 
-External defaults: 20 cm Cu in four adjacent 5 cm closed layers,
-`QGSP_BIC_HP_EMZ + G4RadioactiveDecayPhysics`, inward Lambert/cosine GPS source
-on a sphere outside all shielding corners. For the unshielded control use a new
-output and `--shield none`. `--output-mode both` enables same-transport Python
-parity validation; `--dry-run` prints the exact macro without Geant4. One source
-spectrum and one worker per campaign; run gamma and neutron campaigns independently.
-Repeat the same command to verify/reuse a completed result; use `--retry-failed`
-for a fresh attempt after failure/interruption. No existing attempt is overwritten.
+## Production campaigns
 
-## Analyze with C++ ROOT (preferred)
-
-ROOT with RooFit/HS3 JSON support is required; Geant4 and Python are not:
+After geometry/GPS, gamma **and neutron** smoke, accounting, raw/compact parity
+and physical-input review on the target environment, choose explicit statistics.
+The 1M counts below are **configurable examples**, not a validated precision
+target; the supplied configs default to only 1000 primaries.
 
 ```bash
-c++ -O3 -std=c++17 -ffp-contract=off external/analysis/common_c++/AnalyzeExternal.cpp \
-  $(root-config --cflags --libs) -lRooFitHS3 -lRooFitJSONInterface \
-  -o "$CYGNO_BUILD/AnalyzeExternal"
-"$CYGNO_BUILD/AnalyzeExternal" "$CYGNO_RUNS/gamma-smoke-NEW" "$CYGNO_RUNS/gamma-root-NEW"
+# Directory: $CYGNO_SRC; qualified common environment, two fresh campaign directories.
+cd "$CYGNO_SRC"
+python3 external/study/simulate.py --config external/config/hall-c-gamma-2026-proxy.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/external-gamma-production-NEW" \
+  --primaries 1000000 --output-mode compact
+python3 external/study/simulate.py --config external/config/hall-c-neutron-wulandari-proxy.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/external-neutron-production-NEW" \
+  --primaries 1000000 --output-mode compact
 ```
 
-On ROOT 6.40 installations without `libRooFitJSONInterface`, omit that library.
-Input is a complete, unpacked external campaign containing **compact** data
-(`compact` or `both`; Python checks raw/compact parity for `both`). Output is
-`analysis.root`, `spectra.tsv`, `windows.tsv`, `summary.txt`, `spectra.png/.pdf`.
-It sums the whole detector's deposited energy per primary, separately for total,
-e-/e+, charged hadrons/ions, and other particles. It does not apply internal
-Samuele grouping, activity normalization or detector reconstruction cuts.
+Review the configured 3600 s timeout before scaling statistics; a changed config
+requires a new campaign. Repeat an identical command to verify/reuse complete
+output; add `--retry-failed` after failure/interruption. A separate `--seed` and
+new output allow independent replicates. There is no external `--mode production`
+or internal decay preflight. See [validation](docs/VALIDATION.md); the local
+macOS neutron Cu-capture failure remains open.
 
-Python also supports raw, compact and both, performs full artifact/source checks,
-and validates compact track relationships. Both mode checks raw/compact parity:
+## Cluster
+
+Use [the cluster recipe](docs/WORKFLOW.md#cluster-entry-point), which defines every
+wrapper variable and invokes **`external/cluster/run.sh`**. It uses the same
+build/configs and one CPU per invocation. Private Linux activation is known;
+CNAF login, scheduler and Geant4 activation must come from the site.
+
+## C++ ROOT compact analysis
+
+The standalone [native ROOT guide](analysis/common_c++/README.md#compile) gives
+complete compile/run commands, including CNAF ROOT 6.30.02 and ROOT 6.40.04
+link differences. It compiles `AnalyzeExternal` separately from Geant4 into
+`CYGNO_ANALYSIS_BIN`; no Geant4 or Python is needed on the ROOT worker.
+
+Use a complete **unpacked** external compact/both campaign and a new analysis
+directory. Output: `analysis.root`, `spectra.tsv`, `windows.tsv`, `summary.txt`,
+`spectra.png/.pdf`. Deposits are summed over the whole detector per primary,
+separately for total, e-/e+, charged hadrons/ions and other particles. Native
+checks are structural/identity checks; Python performs the full SHA256/track
+relationship audit and raw/compact parity.
+
+## Python analysis
+
+Create/activate the [shared Python environment](../docs/SETUP.md#python-analysis-environment-either-workflow),
+then analyze both complete campaigns:
 
 ```bash
-python3 -m pip install -r "$CYGNO_SRC/study/requirements-analysis.txt"
-python3 external/analysis/analyze.py --input "$CYGNO_RUNS/gamma-smoke-NEW" \
-  --output "$CYGNO_RUNS/gamma-python-NEW"
+# Directory: $CYGNO_SRC on the analysis machine; Python venv active.
+cd "$CYGNO_SRC"
+python external/analysis/analyze.py --input "$CYGNO_RUNS/external-gamma-production-NEW" \
+  --output "$CYGNO_RUNS/external-gamma-python-NEW"
+python external/analysis/analyze.py --input "$CYGNO_RUNS/external-neutron-production-NEW" \
+  --output "$CYGNO_RUNS/external-neutron-python-NEW"
 ```
 
-No quenching, detector response, signal efficiency, trigger, or calibrated NR/ER
-discrimination is included. The charged-hadron channel includes nuclear recoils
-**and reaction products**. Small/zero samples cannot constrain a shielded rate.
-See [validation](docs/VALIDATION.md) before interpreting annual numbers.
+Python accepts raw/compact/both **unpacked directories**, not internal archives;
+it checks raw/compact parity for both. [Transfer instructions](docs/WORKFLOW.md#provenance-attempts-and-transfer)
+retain the entire campaign and verify an ordinary archive before unpacking.
+
+## Scientific references and boundaries
+
+- [Physics/flux provenance](docs/PHYSICS.md), [output/normalization](docs/OUTPUT.md), [validation and limitations](docs/VALIDATION.md).
+- [Common geometry](../docs/SINGLE_MODULE_GEOMETRY.md) and [Cu20 shielding](../docs/EXTERNAL_SHIELDING.md).
+- `config/` holds flux/hall/energy probabilities; `macros/` holds standalone examples; the runner generates exact campaign macros.
+- `study/`, `analysis/raw/`, `analysis/compact/` and `analysis/common_c++/` own the external workflow. No detector or CAD is copied here.
+
+Gamma combines a 2026 Hall C integral with a cropped historical shape; neutron
+bins use Hall C dry Wulandari integrals with a provisional scalar-flux convention.
+Do not transfer rates to Hall F or claim a 2026 measured spectral shape.
+Normalization uses saved flux/surface conventions and actual generated primaries,
+never internal component activities/masses or Samuele grouping. No quenching,
+response, efficiency, trigger or calibrated NR/ER discrimination is included.
+Charged hadrons include recoil nuclei **and reaction products**. Small/zero
+samples cannot constrain a shielded rate; software success alone is insufficient.

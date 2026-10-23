@@ -22,8 +22,9 @@ Production configurations retain 10^7 primaries/contribution; `--primaries`
 overrides statistics. The layer construction, assays and exact source sampler
 are specified in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
 
-`config/study/cygno-300elj-radioassay-v2.json` and `study/source_matrix.py` remain authoritative:
-28 contributions, ten explicit source components, seven final categories.
+`study/source_matrix.py` validates both versioned matrices: v3 has 26
+contributions, v2 has 28, each with ten physical families and seven categories.
+For retained v2, `config/study/cygno-300elj-radioassay-v2.json` is authoritative.
 `GEMs = GEMsCopper + GEMsPolyimide`; `Cathodes = CathodesCopper + CathodesPolyimide`;
 `Field Cage = RingStrips + RingSupports`. Each source
 is scaled before category summation. Supports use measured solid Reynolds UVT PMMA U/Th
@@ -46,7 +47,10 @@ detector dimensions or reconstructs module positions from guesses.
 Campaign-level parallel execution uses a positive `--jobs` limit (default `1`):
 
 ```sh
+# Directory: repository root; common Geant4 environment active.
+cd "$CYGNO_SRC"
 python3 study/simulate.py \
+  --config config/study/cygno-11x7-v3.json \
   --build "$CYGNO_BUILD" \
   --output "$CYGNO_RUNS/samuele-100k" \
   --primaries 100000 \
@@ -119,7 +123,8 @@ Changing `--jobs` on resume is allowed, including from `1` to `16`: scheduling
 concurrency is absent from config and campaign/job fingerprints. Completed
 contributions are verified and reused. As in sequential execution, an individual
 job failure is recorded while the remaining selected contributions continue;
-`--retry-failed` is still required to retry failures. Full 28/28 coverage exits 0;
+`--retry-failed` is still required to retry failures. Full matrix coverage
+(26/26 v3, 28/28 v2) exits 0;
 runner, configuration and preflight errors exit 1.
 
 Ctrl-C stops new submissions and signals all active invocations to cancel. At
@@ -143,9 +148,9 @@ build/data paths to exist. Changing source/build/data/config cannot resume it.
 
 ## Packaging and transfer
 
-`--archive` or `python3 -m study.archive --input CAMPAIGN` requires 28/28 valid
-complete jobs. Archives include failed earlier attempts as well as successful
-ones, probe/preflight logs, all snapshots and provenance. `SHA256SUMS.json` covers
+`--archive` or `python3 -m study.archive --input CAMPAIGN` requires the selected matrix
+to be complete (26/26 v3, 28/28 v2). Archives include failed earlier attempts
+as well as successful ones, probe/preflight logs, all snapshots and provenance. `SHA256SUMS.json` covers
 every packaged regular file except itself; the external `.tar.gz.sha256` checks
 the entire archive. The archive is verified before publication. Existing archives
 are never overwritten; a later campaign inventory gets a distinct timestamp name.
@@ -213,8 +218,8 @@ the new entry points. Old campaign schemas are not silently migrated/relabelled.
 `tests/test_parity.py` optionally executes the real C++ processor/plotter on uproot
 fixtures for both layouts and all 28 normalization rows, comparing group labels,
 vectors, exact-window counts/rates, every bin/flow, variances and category sums.
-It includes all histogram edges and adjacent floating-point values. See README
-for its command. Tests require no large Monte Carlo campaign.
+It includes all histogram edges and adjacent floating-point values. See
+[development checks](../internal/docs/DEVELOPMENT.md) for its command. Tests require no large Monte Carlo campaign.
 
 Retained field-cage intersections, chain assumptions, grouping,
 first-position cuts and source/revision uncertainties remain documented in

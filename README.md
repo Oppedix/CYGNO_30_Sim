@@ -1,255 +1,54 @@
-# CYGNO-30 — common detector, internal and external backgrounds
+# CYGNO-30 simulation
 
-One Geant4 application and one detector geometry serve two independent scientific
-workflows:
+One shared Geant4 application serves two independent background workflows.
+Build it once; choose the workflow at run time.
 
-- **[Internal](internal/README.md)**: component radioactivity, existing source
-  matrices, raw/compact Python and C++ ROOT analysis. Existing paths/commands remain supported.
-- **[External](external/README.md)**: LNGS environmental gamma/neutron sources,
-  optional four-layer 20 cm copper shielding, flux-based primary-event analysis.
-  The supplied source distributions are explicitly documented proxy scenarios.
+| Area | Responsibility | Start here |
+|---|---|---|
+| **Common** | Geant4 application, geometry, materials, CAD/reference context and shared technical documentation | [Setup and build](docs/SETUP.md), [module geometry](docs/SINGLE_MODULE_GEOMETRY.md), [layouts](docs/LAYOUT.md), [shielding](docs/EXTERNAL_SHIELDING.md) |
+| **Internal** | Component radioactivity; **v3 preferred**, v2 supported | [Internal guide](internal/README.md) |
+| **External** | LNGS gamma/neutron proxy scenarios with **Cu20** shielding | [External guide](external/README.md) |
 
-Build once from this root. Detector dimensions and geometry documentation remain
-shared: [module](docs/SINGLE_MODULE_GEOMETRY.md), [layouts](docs/LAYOUT.md),
-[external shielding](docs/EXTERNAL_SHIELDING.md).
-[Repository review and directory choices](docs/INTERNAL_EXTERNAL_REVIEW.md)
-explains compatibility links and scientific boundaries. Both areas include local
-and cluster instructions. Internal is still the default `rdecay01` mode.
+The active detector uses analytical Geant4 solids, not an imported CAD detector.
+Internal v3 uses PMMA50/Cu foils and historical Table 7.1 activities (26 source
+contributions); v2 retains Kapton50/Cu and Arnquist Table 5 layer assays (28).
+**Physical v3 requires new transport for every contribution; v2 cannot be
+converted by reweighting.** External retains the v2 detector.
 
-The detailed pre-existing internal guide follows.
+## Install and build the common application
 
-## CYGNO internal-radioactivity background study
+Requirements: Git, CMake ≥3.16, a C++17 compiler, Geant4 11 with matching datasets
+(including G4NDL for external neutrons), and Python ≥3.10. Simulation writes ROOT
+files through Geant4 and needs no CERN ROOT, PyROOT or analysis packages.
 
-Two stages reproduce the **workflow and analysis infrastructure** of Samuele
-Torelli's study: Geant4 generates raw or compact ROOT files; Python analyzes canonical groups offline.
-The preferred internal model is **cygno-acrylic-v3 / uniform-volume-v1**, with
-26 contributions in the [v3 source matrix](config/study/cygno-300elj-radioassay-v3.json).
-It uses physical PMMA50 cores and historical Table 7.1 Acrylic/EFCu activities.
-The retained v2 model has Kapton50 cores, Arnquist layer assays and 28 contributions;
-external stays v2. Physical v3 needs new ROOT transport for every contribution;
-old campaigns remain analyzable without editing manifests. See the
-[v2/v3 source comparison](docs/STUDY_SOURCES.md) and [internal cluster guide](internal/README.md).
-The production layout is `cygno-11x7-v1`; the two existing layouts remain supported.
-GEMs and the central cathode use Cu5/core50/Cu5 µm stacks (PMMA core in v3).
-See [the final geometry report](docs/SINGLE_MODULE_GEOMETRY.md) for dimensions,
-constructed masses, exact sampling and retained mechanical uncertainties.
-Physics remains `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`.
+Follow [setup](docs/SETUP.md) for complete clone, activation and build commands,
+with separate local, private Linux and CNAF examples. After selecting that
+environment and defining its paths, the common build is:
 
-The privately installed **Linux x86_64 Geant4 11.3.1 serial environment** has passed
-the four-case decay preflight (operator-reported). PART122 remains reproducible in
-the tested macOS/arm64 environments, including stock Geant4 examples and a serial
-build. This is empirical environment validation, **not a universal Geant4 fix**.
-See [environment evidence and limitations](docs/KNOWN_ISSUES.md).
-
-## Cluster: build and simulate
-
-Requirements: CMake ≥3.16, C++17 compiler, Geant4 11 and matching datasets, Python
-≥3.10 standard library. **No CERN ROOT, PyROOT, Qt, OpenGL, or analysis packages are
-required.** Geant4 itself writes ROOT format. Start from the private environment:
-
-```sh
-bash --noprofile --norc
-export G4LAB="/private/SolarNu/MC30/geant4-private"
-source "$G4LAB/activate.sh"
-export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
-export CYGNO_BUILD="$G4LAB/build/cygno-g4-11.3.1-linux"
-export CYGNO_RUNS="$G4LAB/runs/g4-11.3.1-linux"
+```bash
+# Directory: repository root ($CYGNO_SRC); Geant4 environment already active.
 cd "$CYGNO_SRC"
-
-cmake -S . -B "$CYGNO_BUILD" \
-  -DCMAKE_BUILD_TYPE=Release -DWITH_GEANT4_UIVIS=OFF \
-  -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
-  -DGeant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
+cmake -S . -B "$CYGNO_BUILD" -DCMAKE_BUILD_TYPE=Release \
+  -DWITH_GEANT4_UIVIS=OFF -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
+  -DGeant4_DIR="$Geant4_DIR"
 cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities --parallel
-
-python3 study/preflight.py --build "$CYGNO_BUILD" --model cygno-acrylic-v3 \
-  --output "$CYGNO_RUNS/preflight-NEW"
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/v3-smoke-NEW" --mode smoke --primaries 2
 ```
 
-The exporter `geometry_quantities` uses actual constructed component masses,
-placement counts and the common gas layout; it is available with tests disabled.
-Both executables are ROOT-free. Each campaign also retains its own four-case
-preflight and refuses simulation if any case fails, independent of statistics.
+This is the only detector build. The two standalone C++ ROOT analyzers are
+compiled separately on an analysis machine, as shown in their
+[internal](analysis/common_c++/README.md#compile) and
+[external](external/analysis/common_c++/README.md#compile) guides.
+`internal/` preserves relative symlinks to the historical `study/`, `config/`,
+`analysis/` and validation paths; keep those links when copying the checkout.
 
-To run up to 16 independent source-matrix contributions concurrently:
+## Technical references
 
-```sh
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json \
-  --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/samuele-100k" \
-  --primaries 100000 \
-  --jobs 16
-```
+- [Source activities and v2/v3 provenance](docs/STUDY_SOURCES.md)
+- [Code guide](docs/CODE_GUIDE.md) and [directory/compatibility review](docs/INTERNAL_EXTERNAL_REVIEW.md)
+- [Internal output](docs/OUTPUT.md), [analysis](docs/ANALYSIS.md), [validation](docs/TWO_STAGE_VALIDATION.md)
+- [External physics](external/docs/PHYSICS.md), [output](external/docs/OUTPUT.md), [validation](external/docs/VALIDATION.md)
+- [Known environment/geometry limits](docs/KNOWN_ISSUES.md), [development checks](internal/docs/DEVELOPMENT.md), [license/history](legacy/README.md)
 
-`--jobs` is a positive integer, defaulting to `1` (sequential execution). It
-parallelizes independent contributions; **each Geant4 process remains
-single-worker**, with its own output directory. CPU, RAM and I/O requirements
-grow with `--jobs`; choose a limit that fits the resources allocated to you.
-Only as many jobs as selected runnable contributions are launched.
-
-After the Linux smoke/archive/offline/parity gates, the first statistics check is:
-
-```sh
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/samuele-1M" --primaries 1000000 --archive
-```
-
-`--primaries N` is the normal event-count control. The canonical default in
-[samuele.json](config/study/samuele.json) remains **10,000,000 per contribution**;
-1,000,000 is an explicit override, not a redefinition of production. Every job
-keeps the explicit `1.0e+60 year` radioactive-decay threshold and full-chain/split
-boundary commands from the authoritative matrix.
-
-Repeat an identical command to resume (`--resume` is optional). Complete jobs are
-verified and reused. Interrupted jobs get new attempts; `--retry-failed` retries
-failed jobs. Valid previous attempts are never overwritten. `--only Lens_K40
-Sensors_K40` selects diagnostics; coverage remains partial and exits 2. Config,
-source, build or dataset changes require a **new campaign directory**.
-Changing `--jobs` when resuming is allowed: it does not change scientific identity,
-macros, seeds or fingerprints. Ctrl-C stops scheduling, terminates active simulation
-process groups and preserves interrupted attempts; repeat the command to resume.
-Completed contributions remain reusable, and queued contributions remain unstarted.
-Individual job failures do not stop the remaining selected contributions; they
-are retained until explicitly retried with `--retry-failed`.
-
-## Explicit 11x7 comparison
-
-The additional `cygno-11x7-v1` profile has 11 X columns (short 500 mm module
-side), 7 Y rows (long 800 mm side), and one Z plane: 77 unrotated modules and
-154 gas cells. It preserves the existing module, physics and analysis. The
-principal Samuele configuration and the existing 5x5x3 profile remain unchanged.
-See [layout contracts and comparison dimensions](docs/LAYOUT.md).
-
-Use the separate configuration and fresh campaign directory for a tiny diagnostic:
-
-```sh
-python3 study/simulate.py \
-  --config config/study/cygno-11x7-v3.json \
-  --build "$CYGNO_BUILD" \
-  --output "$CYGNO_RUNS/11x7-v3-smoke-NEW" \
-  --mode smoke --primaries 2 --jobs 8 --output-mode both --archive
-```
-
-The four-case decay preflight remains mandatory. v3 GEM/cathode activities use
-Table 7.1 Acrylic/EFCu assays; supports adopt Reynolds UVT PMMA U/Th with retained K proxy,
-and resistors adopt completed-MBNL per-reference-piece assays; other activities retain Table 7.1 values;
-normalization uses the actual 77-module constructed masses/piece counts. This
-single-plane topology resembles Samuele's 25x3 layout, but its different module
-count and vessel/source quantities imply different total backgrounds.
-For local viewing: `(cd "$CYGNO_BUILD" && ./rdecay01 --layout cygno-11x7-v1)`.
-
-## Output modes and canonical analysis
-
-Raw remains the default. Compact removes repeated sensitive-step rows while
-retaining exact historical groups, per-volume first positions/times, and track
-provenance. Both writes both representations from the same Geant4 transport.
-
-```sh
-# canonical raw
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/raw-NEW" --primaries 1000 --output-mode raw
-# production compact, after parity validation
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/compact-NEW" --primaries 100000 --output-mode compact --jobs 16
-# parity validation
-python3 study/simulate.py --config config/study/cygno-11x7-v3.json --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/both-NEW" --primaries 1000 --output-mode both
-# common analysis (automatically dispatches; verifies parity for both)
-python3 study/analyze.py --input "$CYGNO_RUNS/compact-NEW" --output "$CYGNO_RUNS/compact-analysis-NEW"
-```
-
-Output mode is part of campaign identity: changing it requires a new directory.
-`--jobs` still changes scheduling only. New campaign/job schema 3 records
-`output_mode`, `output_schema_version`, `data_path`, generated accounting and
-checksums. Archived schema-2 raw campaigns remain readable by Stage B.
-
-```text
-                    ┌─ raw Hits ── raw preprocessing ─┐
-Geant4 StepRecord ───┤                                 ├─ canonical groups ─ shared analysis
-                    └─ compact trees ─ compact reader ┘                    └─ spectra/tables/figures
-```
-
-`GlobalTime_ns` / `FirstHitTime_ns` are pre-step Geant4 event-relative time in ns.
-They support future intra-event studies, do not link independent primaries in
-absolute time, and are **inactive in canonical analysis**. Legacy raw timing is
-unavailable (`None`). See [schemas and timing](docs/OUTPUT.md),
-[analysis architecture and notebooks](analysis/README.md), and
-[validation evidence](docs/TWO_STAGE_VALIDATION.md).
-
-## Archive and offline analysis
-
-`--archive` creates `samuele-1M.tar.gz` and `samuele-1M.tar.gz.sha256`, retaining the
-unpacked campaign. Complete archives contain selected data files, manifests, exact macros,
-logs/receipts, preflight, config/matrix/geometry/quantity snapshots, the actual
-source snapshot (including dirty edits), and `SHA256SUMS.json`. Partial campaigns
-cannot be packaged as complete. To package separately:
-
-```sh
-python3 -m study.archive --input "$CYGNO_RUNS/samuele-1M"
-```
-
-Copy the archive and checksum to the workstation. Analysis needs Python ≥3.10,
-uproot, awkward, numpy and matplotlib, **not CERN ROOT or Geant4**:
-
-```sh
-python3 -m venv .venv-analysis
-. .venv-analysis/bin/activate
-python -m pip install -r study/requirements-analysis.txt
-python study/analyze.py --input /path/to/samuele-1M.tar.gz \
-  --output /path/to/analysis-samuele-1M
-# An unpacked campaign is also accepted:
-python study/analyze.py --input /path/to/samuele-1M \
-  --output /path/to/analysis-samuele-1M-directory
-```
-
-The report includes `spectra.json`, `tables.json`, `tables.txt`, `table7.2.csv`,
-`table7.3.csv`, `figure7.5.png/.pdf`, `figure7.6.png/.pdf`, `campaign.json` and
-`analysis-manifest.json`. It validates the selected trees and provenance records,
-reconstructs canonical groups, and uses actual generated-primary accounting.
-`--allow-partial` explicitly permits labeled diagnostic reports (exit 2).
-See [the workflow contract](docs/BACKGROUND_STUDY.md) for integrity and disk needs.
-
-## Development and reference analysis
-
-`WITH_GEANT4_UIVIS=ON` retains interactive local visualization:
-`(cd "$CYGNO_BUILD" && ./rdecay01 --layout legacy-25x3)`.
-`CYGNO_BUILD_ANALYSIS=ON` optionally builds the existing CERN ROOT/C++ reference
-executables from `analysis/reference_cpp/`; `legacy/study/combined/runner.py` is the legacy combined workflow.
-Neither is used by the two-stage workflow.
-
-```sh
-# Standard-library-only simulation tests:
-python3 -m unittest discover -s tests -p test_simulation.py -v
-# Synthetic ROOT fixtures; no Geant4 or CERN ROOT required:
-python -m unittest discover -s tests -v
-# Optional parity with freshly built C++/ROOT reference executables:
-CYGNO_REFERENCE_BUILD=/path/to/reference-build \
-  python -m unittest discover -s tests -p test_parity.py -v
-```
-
-To build that optional reference (on a machine with Geant4 and CERN ROOT):
-
-```sh
-export REFERENCE_BUILD=/path/to/reference-build
-cmake -S . -B "$REFERENCE_BUILD" -DWITH_GEANT4_UIVIS=OFF \
-  -DCYGNO_BUILD_ANALYSIS=ON -DBUILD_TESTING=OFF \
-  -DGeant4_DIR=/path/to/geant4/lib/cmake/Geant4
-cmake --build "$REFERENCE_BUILD" --target SimpleProcessEvents \
-  PlotNormalizedSpectra geometry_quantities --parallel
-```
-
-The parity test uses all three layouts, all 28 scales/categories, grouping, chunk/EOF
-boundaries, exact windows, histogram edges/flows and MC variances. Linux still
-needs a fresh 4/4 preflight and 28/28 smoke after this refactor, followed by
-archive/offline validation and a controlled reference comparison before 1M jobs.
-No large production is launched by tests. See the [executed checks and remaining gates](docs/TWO_STAGE_VALIDATION.md).
-
-Current limitations remain: retained field-cage intersections,
-process/nucleus grouping, and first-position fiducialization. **Nucleus is the most
-recently tracked ion label, not guaranteed per-hit ancestry.** Published tables
-are comparisons only, never normalization targets. Software-complete output does
-not establish a validated physical background estimate.
-
-[Code guide](docs/CODE_GUIDE.md) · [Layout](docs/LAYOUT.md) ·
-[Sources](docs/SOURCES.md) · [Source provenance](docs/STUDY_SOURCES.md) ·
-[Raw output](docs/OUTPUT.md) · [Analysis/reference semantics](docs/ANALYSIS.md) ·
-[Validation](validation/README.md) · [License/history](legacy/README.md).
+Software completeness does not establish a physically validated background
+prediction. Internal decay and external neutron transport require their own
+qualification on the production environment.

@@ -1,5 +1,5 @@
 > Historical validation record for the previous detector/source model.
-> The active 300ELJ construction and current contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
+> Current v2/v3 construction and contracts are in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
 
 # Raw/compact refactor validation — 2026-09-24
 
@@ -144,6 +144,8 @@ setting, full-chain commands and 1e60-year threshold are retained.
 Run the standalone suite after installing `study/requirements-analysis.txt`:
 
 ```sh
+# Directory: repository root; historical validation command, analysis dependencies required.
+cd "$CYGNO_SRC"
 CYGNO_REFERENCE_BUILD=/path/to/reference-build \
   python -m unittest discover -s tests -v
 ```
@@ -164,7 +166,7 @@ After transferring this refactor:
 4. Run the controlled Python/C++ reference comparison with the matching build.
 5. Only then consider `--primaries 1000000` for each contribution.
 
-Copyable commands are in [README](../README.md). Exact published-rate agreement
+Copyable commands are in [Internal guide](../internal/README.md). Exact published-rate agreement
 is not established: inherited geometry/sampling/grouping limitations and the
 last-ion `Nucleus` meaning remain. Group-Poisson uncertainties are not primary-level
 uncertainties. Archive analysis needs temporary disk space for unpacking; Hits

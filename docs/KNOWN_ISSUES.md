@@ -1,14 +1,18 @@
 # Known issues and scientific decisions
 
-The active detector is `cygno-300elj-v2`, with `uniform-volume-v1` sources and
-`cygno-300elj-radioassay-v2` assays. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
+Preferred internal v3 is `cygno-acrylic-v3` with the matching v3 assay matrix;
+v2 (`cygno-300elj-v2`) remains supported and is the external detector. Both
+internal versions use `uniform-volume-v1`. v3 requires fresh transport for all
+26 contributions; the dated v2 checks below are retained evidence, not new v3
+qualification. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
 describes the constructed geometry and masses. Software checks alone do not
 establish physical background-rate accuracy.
 
 ## Resolved geometry and source issues
 
-GEMs and the cathode are explicit Cu5/300ELJ50/Cu5 µm slabs without material
-intersections. The 500 mm gas boundaries meet the cathode and first GEM exactly.
+GEMs and the cathode are explicit Cu5/core50/Cu5 µm slabs without material
+intersections: Kapton in v2, PMMA in internal v3. The 500 mm gas boundaries meet
+the cathode and first GEM exactly.
 GEM clear spacing is 2.000 mm (2.060 mm centre pitch), filled with non-sensitive
 He/CF4. Uniform-volume sampling replaces the surface/inward-depth shortcut;
 deterministic containment, analytic moments, ranges and rotated placements are
@@ -42,8 +46,11 @@ errors. World-Z position plots retain their historical range and can overflow.
 The new overlay/range figures change presentation only.
 
 The original Figure 7.5 production inputs/revision remain unresolved. Historical
-normalization TSVs and Table 7.1 are references; their old masses/model cannot
-normalize the updated detector. Published Table 7.2's no-cut (10,400] value
+normalization TSVs and the historical Table 7.1 geometry are references; their
+old masses/model cannot normalize the updated detector. v3 deliberately reuses
+the selected Table 7.1 specific activities with its own new transport and actual
+constructed quantities, as detailed in [source provenance](STUDY_SOURCES.md).
+Published Table 7.2's no-cut (10,400] value
 exceeds its >10 value; it remains a reference discrepancy, never a rate-tuning
 constraint.
 

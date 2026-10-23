@@ -8,27 +8,36 @@
 
 # Analysis and normalization
 
-The normal offline entry point is now `study/analyze.py` (uproot/numpy/matplotlib,
-no CERN ROOT). See [the two-stage contract](BACKGROUND_STUDY.md#stage-b-offline-analysis).
+The Python offline entry point is `study/analyze.py` (uproot/numpy/matplotlib,
+no CERN ROOT). For preferred native compact analysis use the
+[standalone ROOT guide](../analysis/common_c++/README.md); the reference
+executables below are a separate optional comparison path. See
+[the two-stage contract](BACKGROUND_STUDY.md#stage-b-offline-analysis).
 The C++ programs and PyROOT adapters described below remain the optional reference
 implementation; their grouping/normalization rules are preserved by the Python port.
 
 
-Build the four programs with `-DCYGNO_BUILD_ANALYSIS=ON`. The simulation does not
+Build the four programs with `-DCYGNO_BUILD_ANALYSIS=ON` using
+[the reference-build recipe](../internal/docs/DEVELOPMENT.md#optional-historical-c-reference-build),
+which defines `REFERENCE_BUILD`. The absolute input/config paths below are
+operator-supplied existing files, not bundled examples. The simulation does not
 link ROOT; these executables do. Run the processor separately for each worker
 file. Run-local event IDs can repeat across runs: do not concatenate unrelated
 runs before grouping.
 
 ```sh
-/path/to/build/analysis/SimpleProcessEvents input.root processed.root
-/path/to/build/analysis/PlotNormalizedSpectra /absolute/path/to/study.tsv
+# Directory: analysis output parent; ROOT runtime active, input/config paths replaced.
+cd "$CYGNO_RUNS"
+"$REFERENCE_BUILD/analysis/SimpleProcessEvents" /absolute/path/to/input.root processed.root
+"$REFERENCE_BUILD/analysis/PlotNormalizedSpectra" /absolute/path/to/study.tsv
 ```
 
 Without an explicit output, the processor creates `elab_<basename>` beside the
 input, including when the input has directory components. New raw worker files
 have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
 `DetectorModel` and `SourcePolicy` string leaves. `legacy-25x3`,
-`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v2` and `uniform-volume-v1`. Other detector models are unsupported.
+`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v2` or `cygno-acrylic-v3` and
+`uniform-volume-v1`. Other detector models are unsupported.
 
 Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
 `CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
@@ -40,12 +49,15 @@ For an **unversioned** file, first verify the source revision, internals and sou
 policy, then explicitly identify both axes:
 
 ```sh
-/path/to/build/analysis/SimpleProcessEvents old.root processed.root \
+# Directory: analysis output parent; old.root is independently verified unversioned data here.
+cd "$CYGNO_RUNS"
+"$REFERENCE_BUILD/analysis/SimpleProcessEvents" old.root processed.root \
   --assume-layout legacy-25x3 --assume-model cygno-300elj-v2
 ```
 
-Explicit assumptions are suitable only for independently verified data generated
-with `cygno-300elj-v2 / uniform-volume-v1`. They cannot convert an older model or
+The v2 assumptions shown are suitable only for independently verified data
+generated with `cygno-300elj-v2 / uniform-volume-v1`; v3 data require an
+explicit matching `cygno-acrylic-v3` model. They cannot convert an older model or
 sampler. `--assume-geometry` remains an alias of `--assume-layout`. Versioned
 metadata is never overridden. Pre-Phase-2 incomplete markers and old geometry
 hashes are rejected; there is no old-hash compatibility exception for this model.
@@ -73,7 +85,8 @@ this is separate from the source-position correction in raw simulation output.
 
 ## Spectra
 
-For interpreted ROOT, make the matching build header visible before loading:
+For interpreted ROOT started from `$CYGNO_RUNS`, make the matching build
+header visible before loading (replace absolute paths with your build/checkout):
 
 ```cpp
 gInterpreter->AddIncludePath("/absolute/path/to/build/generated");

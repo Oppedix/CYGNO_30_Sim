@@ -90,7 +90,7 @@ is summarized in the portable evidence above. The latest CTest invocation writes
 ## Exact local build and commands
 
 From this repository root, with the Geant4 and ROOT environments loaded as in the
-[README](../README.md). These are the same build/run options; only the external
+[Internal guide](../internal/README.md). These are the same build/run options; only the external
 build/run directories and local Geant4 discovery path differ:
 
 ```sh

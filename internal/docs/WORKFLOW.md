@@ -1,86 +1,143 @@
-# Internal local and cluster workflow
+# Internal operation, recovery and transfer
 
-All commands run from `$CYGNO_SRC`, the root containing `CMakeLists.txt`.
-`internal/` is a coherent view of the established pipeline; the original
-`study/`, `config/` and `analysis/` paths remain fully supported.
+Start with the [Internal guide](../README.md) for smoke, production and analysis;
+[common setup](../../docs/SETUP.md) owns cloning, activation and the single
+Geant4 build. All commands here use `CYGNO_SRC` = repository root. Historical
+`study/`, `config/` and `analysis/` paths remain supported through relative links.
 
-## Cluster example, private Linux environment
+## Cluster entry point
 
-These are configurable examples, not directories required by the software:
+First select the [private Linux setup](../../docs/SETUP.md#private-linux-simulation-environment)
+or the [CNAF setup](../../docs/SETUP.md#cnaf-analysis-worker). On the execution
+node, export `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS` and activate the actual
+Geant4 environment. Enter a site-approved allocation before invoking the wrapper;
+no scheduler/login command is specified because none is established here.
 
 ```bash
-export G4LAB=/private/SolarNu/MC30/geant4-private
-source "$G4LAB/activate.sh"
-export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
-export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
-export CYGNO_RUNS="$G4LAB/runs/internal"
-export CYGNO_CAMPAIGN=11x7-v3-smoke-NEW
+# Directory: $CYGNO_SRC on the allocated simulation node.
+cd "$CYGNO_SRC"
+export CYGNO_CAMPAIGN=internal-v3-cluster-smoke-NEW
+export CYGNO_CONFIG="$CYGNO_SRC/internal/config/study/cygno-11x7-v3.json"
 export CYGNO_PRIMARIES=2
 export CYGNO_JOBS=1
-cd "$CYGNO_SRC"
-# Common build instructions are in internal/README.md.
+export CYGNO_OUTPUT_MODE=compact
+export CYGNO_PYTHON=python3
 bash internal/cluster/run.sh --mode smoke
-# Example only, if the allocation system is PBS:
-qsub -V -l nodes=1:ppn=1,walltime=02:00:00 internal/cluster/run.sh
 ```
 
-Use a different campaign name for the PBS example; do not submit a second owner
-of the same campaign. For an allocation with 16 CPUs, use `CYGNO_JOBS=16` and
-request 16 CPUs. Each Geant4 process still uses one worker. The wrapper accepts
-extra runner options, e.g. `--archive`, `--only Lens_K40`, `--retry-failed`.
-`CYGNO_CONFIG` defaults to `internal/config/study/cygno-11x7-v3.json` (26 jobs)
-and can select the retained v2 config (28 jobs); `CYGNO_OUTPUT_MODE` defaults to
-compact; `CYGNO_PYTHON` selects the Python executable. Never set shell `HOME` or
-`TMPDIR` as workflow data paths.
-
-For production, keep the canonical 10,000,000 primaries/contribution or explicitly
-choose another count after the documented preflight, smoke, archive and parity
-gates. Repeat an identical command to resume. Failed contributions need
-`--retry-failed`; complete contributions are checked and reused. Changed config,
-source, binary, output mode or data environment requires a new campaign.
-
-Analysis can run on a separate ROOT worker, e.g. reading
-`/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-complete` and writing to a
-new sibling analysis directory. No Geant4 is needed by native ROOT analysis.
-Python analysis needs `study/requirements-analysis.txt`, not CERN ROOT.
-
-## Native ROOT analysis on the cluster
-
-After loading the cluster's ROOT environment, from `$CYGNO_SRC`:
+After qualification, production in a fresh campaign:
 
 ```bash
-c++ -O3 -std=c++17 -ffp-contract=off \
-  internal/analysis/common_c++/AnalyzeCompactCampaign.cpp -I"$CYGNO_SRC" \
-  $(root-config --cflags --libs) -lRooFitHS3 -lRooFitJSONInterface \
-  -o "$CYGNO_BUILD/AnalyzeCompactCampaign"
-"$CYGNO_BUILD/AnalyzeCompactCampaign" \
-  "$CYGNO_RUNS/11x7-v3-complete" "$CYGNO_RUNS/11x7-v3-analysis-NEW" \
-  --coincidence-ns 1
+# Directory: $CYGNO_SRC, same allocation/environment; one CPU for CYGNO_JOBS=1.
+cd "$CYGNO_SRC"
+export CYGNO_CAMPAIGN=internal-v3-cluster-production-NEW
+export CYGNO_PRIMARIES=10000000
+bash internal/cluster/run.sh --mode production --archive
 ```
 
-ROOT 6.30.02 at CNAF needs both JSON libraries; omit
-`-lRooFitJSONInterface` only when ROOT 6.40 supplies JSON through HS3 alone.
-No Geant4 environment is needed to analyze an unpacked complete compact campaign.
-The same binary reads saved v2 campaigns without relabeling or changing them.
-Python uses `python3 internal/study/analyze.py --input CAMPAIGN --output NEW_DIR`.
-Both record their normalization scenario separately from the saved matrix.
+These commands inherit `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS` from setup and
+all other exports from the smoke block. If the allocation has 16 available CPUs,
+`CYGNO_JOBS=16` permits up to 16 independent source contributions. Each Geant4
+process is still single-worker; CPU, RAM and I/O grow with this limit. Never run
+two owners of the same campaign directory.
 
-Physical PMMA v3 needs a new Geant4 campaign for **every contribution**, including
-unchanged source components whose radiation crosses the changed cores. There is
-no valid v2-to-v3 weight factor for transport. Never replace `matrix.json` or a
-campaign/job manifest to force reuse; identity checks and the four-case decay
-preflight remain enabled. See [version comparison](STUDY_SOURCES.md).
+| Wrapper variable | Required/default |
+|---|---|
+| `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS`, `CYGNO_CAMPAIGN`, `CYGNO_PRIMARIES` | Required; repository root, shared build, campaign parent, unique name, count per contribution |
+| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v3.json`; retained v2 config selects 28 contributions |
+| `CYGNO_JOBS` | Positive concurrency limit; default 1 |
+| `CYGNO_OUTPUT_MODE` | Default compact |
+| `CYGNO_PYTHON` | Default python3, version ≥3.10 |
+| `G4LAB` | If set, wrapper sources `$G4LAB/activate.sh` again; only use for that actual private workspace |
+
+Additional arguments pass directly to `study/simulate.py`, including `--archive`,
+`--retry-failed` or `--only Lens_K40 Sensors_K40`. A subset remains partial and
+exits 2. Use ordinary workflow variables for data paths; do not repurpose `HOME`
+or `TMPDIR` (`TMPDIR` retains its normal temporary-extraction meaning).
+
+## Output modes and parity
+
+The direct Python runner defaults to **raw**; the cluster wrapper defaults to
+**compact**. All main examples specify compact explicitly for native analysis.
+Output mode is part of scientific identity; changing it requires a fresh output.
+
+```bash
+# Directory: $CYGNO_SRC; common Geant4 environment active, new parity campaign.
+cd "$CYGNO_SRC"
+python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v3.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v3-parity-NEW" \
+  --primaries 1000 --output-mode both --jobs 1
+# Stage B checks raw/compact parity from the same transport.
+python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v3-parity-NEW" \
+  --output "$CYGNO_RUNS/internal-v3-parity-analysis-NEW"
+```
+
+The last command needs the [Python analysis environment](../../docs/SETUP.md#python-analysis-environment-either-workflow);
+it can run on a different machine after transfer. Raw, compact and both use the
+same canonical Python report. Schema 3 records mode, `data_path`, accounting and
+checksums; archived schema-2 raw campaigns remain readable. Full storage/timing
+contracts are in [OUTPUT](OUTPUT.md); event-relative pre-step ns timing is
+inactive in canonical analysis and does not connect independent primaries.
+
+## Completion, resume and identity
+
+Repeat an identical simulation command to resume (`--resume` is optional).
+Complete contributions are verified/reused; interrupted jobs get new attempts;
+failed jobs need `--retry-failed`. Individual failures do not stop other selected
+jobs. Ctrl-C stops scheduling, terminates active simulation process groups and
+retains interrupted attempts; completed jobs stay reusable and queued jobs
+remain unstarted. Valid previous attempts are never overwritten.
+
+Changing `--jobs` on resume is allowed: it only changes scheduling, not macros,
+seeds or fingerprints. Config, source, build, output-mode or dataset/environment
+changes need a **new campaign directory**. The runner retains the explicit
+`1.0e+60 year` radioactive-decay threshold and authoritative full/split-chain
+commands, regardless of statistics. A complete ROOT file cannot override failed
+transport/preflight/accounting. See the [full workflow contract](BACKGROUND_STUDY.md).
+
+## Archive and offline analysis
+
+`--archive` writes `CAMPAIGN.tar.gz` plus `.tar.gz.sha256` beside a complete
+campaign, retaining the unpacked data. To package separately:
+
+```bash
+# Directory: $CYGNO_SRC; production campaign completed successfully.
+cd "$CYGNO_SRC"
+python3 -m study.archive --input "$CYGNO_RUNS/internal-v3-production-NEW"
+```
+
+Archives contain selected data files, every attempt's logs/receipts/macros,
+preflight, config/matrix/geometry/quantity snapshots, the actual source snapshot
+(including dirty edits) and `SHA256SUMS.json`. Partial campaigns cannot be
+packaged as complete. Copy archive **and checksum** to the analysis machine;
+Python can read the archive directly. It needs temporary space for an unpacked
+copy. Native ROOT needs the complete **unpacked compact** directory.
+
+Use the [native ROOT recipe](../../analysis/common_c++/README.md#compile) or
+[Python recipe](../README.md#python-analysis) after setting paths on the analysis
+machine. The documented historical CNAF input
+`/cnaf/cygno-sim/Users/goppedis/SolarNu/25x3Samuele-1M` is a retained input,
+not a newly generated v3 campaign. Paths such as
+`/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete` are configurable
+transfer destinations and must exist/be complete before analysis.
 
 ## Scientific boundary
 
-Internal normalization is the unchanged per-contribution
-`activity × constructed kg or pieces × seconds/year / generated primaries`.
-The historical e-/e+/alpha grouping, first-position 20 mm fiducial cut and native
-optional topology cuts remain as documented in [ANALYSIS](ANALYSIS.md).
-The internal heavy-ion stopping policy is retained. Do not use this pipeline to
-infer neutron nuclear-recoil rates, or give an external file a component assay.
-External `SourcePolicy` and processing markers are deliberately incompatible.
+Internal normalization is per contribution:
+`activity × constructed kg or pieces × 31536000 / generated primaries`.
+Historical e-/e+/alpha grouping, first-position 20 mm fiducialization and native
+optional topology cuts are specified in [ANALYSIS](ANALYSIS.md).
+The last tracked ion label (`Nucleus`) is not guaranteed per-hit ancestry.
+Published tables are comparisons, never normalization targets.
 
-The shared detector has retained cage intersections and vessel/optics assumptions;
-see [known issues](../../docs/KNOWN_ISSUES.md). A passing software gate does not
-establish a physically validated internal background prediction.
+v3 changes the transport of particles from **all** source components as they
+cross PMMA cores. Do not replace `matrix.json`, relabel manifests or disable
+identity/checksum/preflight gates to reuse v2 data. Both analyses retain the
+simulation matrix and a separate normalization-scenario descriptor; see
+[source provenance](STUDY_SOURCES.md).
+
+Internal heavy-ion stopping is retained: use External for environmental neutron
+recoil transport. Its `SourcePolicy`/processing markers are deliberately
+incompatible with internal activity analysis. Retained cage intersections and
+vessel/optics assumptions are in [known issues](../../docs/KNOWN_ISSUES.md).
+A passing software gate is not a validated physical background prediction.

@@ -51,7 +51,7 @@ Boolean solid = outer primitive - translated inner primitive.
 “Outer primitive/envelope” is only the bounding primitive used before subtraction.
 It does NOT mean the entire stated box is filled with material. Simple boxes/slabs
 have “—” in subtraction columns. All dimensions below are mm; material volumes
-and masses are in the second table.
+and masses are in the second table; [activities follow immediately](#component-activities-v2-and-v3).
 
 | Component | Transport material | Outer primitive/envelope | Subtracted inner primitive | Inner-cut translation | Resulting constructed solid | Physical wall/thickness/Z extent | Pieces/module | Pieces/11×7 |
 |---|---|---|---|---|---|---|---:|---:|
@@ -68,22 +68,22 @@ and masses are in the second table.
 | Sensitive drift gas | CYGNO_gas | box 500 × 800 × 500 | — | — | sensitive gas box | 500 Z | 2 | 154 |
 | GEM transfer gas | CYGNO_gas | box 500 × 800 × 2 | — | — | non-sensitive gas box | 2 Z | 4 | 308 |
 
-| Component | Density [g/cm³] | Material volume/piece [mm³] | kg/piece | kg/module | kg/11×7 | Source family | Assay provenance | Status/approximation | Construction source |
-|---|---:|---:|---:|---:|---:|---|---|---|---|
-| Cathode core v2 | 1.42 | 20000 | 0.0284 | 0.0284 | 2.1868 | `CathodesPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
-| Cathode core **v3 (preferred internal)** | 1.19 | 20000 | 0.0238 | 0.0238 | 1.8326 | `CathodesPolyimide` (stable ID) | Table 7.1 Acrylic, extended from GEM core | solid PMMA50 slab; new transport | `DetectorConstruction.cc::BuildCathodes` |
-| Cathode skin | 8.96 | 2000 | 0.01792 | 0.03584 | 2.75968 | `CathodesCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
-| GEM core v2 | 1.42 | 20000 | 0.0284 | 0.1704 | 13.1208 | `GEMsPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
-| GEM core **v3 (preferred internal)** | 1.19 | 20000 | 0.0238 | 0.1428 | 10.9956 | `GEMsPolyimide` (stable ID) | Table 7.1 Acrylic | solid PMMA50 slab, no microscopic holes; new transport | `DetectorConstruction.cc::BuildGEMs` |
-| GEM skin | 8.96 | 2000 | 0.01792 | 0.21504 | 16.55808 | `GEMsCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
-| Support frame | 1.19 | 97271.7713051 | 0.115753407853 | 0.231506815706 | 17.8260248094 | `RingSupports` | Arnquist 2019 Table 1 p.7 Pre-3 (second set); K Table 7.1 proxy | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
-| Copper strip frame | 8.96 | 913.089816217 | 0.0081812847533 | 0.409064237665 | 31.4979463002 | `RingStrips` | retained thesis Table 7.1 EFCu | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
-| Resistor | 2.2 | 2.816 | 6.1952e-06 | 0.0003221504 | 0.0248055808 | `Resistors` | Anker Table 9 p.19; nEXO Table IV row 60 p.10 | effective completed-component assay on compact box | `DetectorConstruction.cc::BuildFieldCage` |
-| Lens | 2.65 | 628.318530718 | 0.0016650441064 | 0.00666017642561 | 0.512833584772 | `Lens` | retained thesis Table 7.1 Suprasil | retained dimensions/material assumption | `DetectorConstruction.cc::BuildOptics` |
-| Sensor | 2.33 | 199.28 | 0.0004643224 | 0.0018572896 | 0.1430112992 | `Sensors` | retained thesis Table 7.1 Silicon | retained dimensions/material assumption | `DetectorConstruction.cc::BuildOptics` |
-| Common vessel | 8.96 | 427797520.705 | 3833.06578552 | 49.7800751366 | 3833.06578552 | `Vessel` | retained thesis Table 7.1 EFCu | retained dimensions/material assumption | `DetectorConstruction.cc::BuildVessel` |
-| Sensitive drift gas | 0.0015273872 | 200000000 | 0.30547744 | 0.61095488 | 47.04352576 | none | no bulk assay | retained He/CF4 mixture | `DetectorConstruction.cc::BuildSensitiveGasVolumes` |
-| GEM transfer gas | 0.0015273872 | 800000 | 0.00122190976 | 0.00488763904 | 0.37634820608 | none | no bulk assay | retained He/CF4 mixture | `DetectorConstruction.cc::BuildGEMs` |
+| Component | Geant4 material | Density [g/cm³] | Material volume/piece [mm³] | kg/piece | kg/module | kg/11×7 | Source family | Assay provenance | Status/approximation | Construction source |
+|---|---|---:|---:|---:|---:|---:|---|---|---|---|
+| Cathode core v2 | G4_KAPTON | 1.42 | 20000 | 0.0284 | 0.0284 | 2.1868 | `CathodesPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
+| Cathode core **v3 (preferred internal)** | PMMA | 1.19 | 20000 | 0.0238 | 0.0238 | 1.8326 | `CathodesPolyimide` (stable ID) | Table 7.1 Acrylic, extended from GEM core | solid PMMA50 slab; new transport | `DetectorConstruction.cc::BuildCathodes` |
+| Cathode skin | G4_Cu | 8.96 | 2000 | 0.01792 | 0.03584 | 2.75968 | `CathodesCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildCathodes` |
+| GEM core v2 | G4_KAPTON | 1.42 | 20000 | 0.0284 | 0.1704 | 13.1208 | `GEMsPolyimide` | Arnquist 1910.04317 Table 5, separate 300ELJ | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
+| GEM core **v3 (preferred internal)** | PMMA | 1.19 | 20000 | 0.0238 | 0.1428 | 10.9956 | `GEMsPolyimide` (stable ID) | Table 7.1 Acrylic | solid PMMA50 slab, no microscopic holes; new transport | `DetectorConstruction.cc::BuildGEMs` |
+| GEM skin | G4_Cu | 8.96 | 2000 | 0.01792 | 0.21504 | 16.55808 | `GEMsCopper` | v2: Arnquist Table 5 Cu; v3: Table 7.1 EFCu | agreed slab | `DetectorConstruction.cc::BuildGEMs` |
+| Support frame | PMMA | 1.19 | 97271.7713051 | 0.115753407853 | 0.231506815706 | 17.8260248094 | `RingSupports` | Arnquist 2019 Table 1 p.7 Pre-3 (second set); K Table 7.1 proxy | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
+| Copper strip frame | G4_Cu | 8.96 | 913.089816217 | 0.0081812847533 | 0.409064237665 | 31.4979463002 | `RingStrips` | retained thesis Table 7.1 EFCu | retained transverse frame | `DetectorConstruction.cc::BuildFieldCage` |
+| Resistor | ResistorFusedSilica | 2.2 | 2.816 | 6.1952e-06 | 0.0003221504 | 0.0248055808 | `Resistors` | Anker Table 9 p.19; nEXO Table IV row 60 p.10 | effective completed-component assay on compact box | `DetectorConstruction.cc::BuildFieldCage` |
+| Lens | Silicon Dioxide | 2.65 | 628.318530718 | 0.0016650441064 | 0.00666017642561 | 0.512833584772 | `Lens` | retained thesis Table 7.1 Suprasil | retained dimensions/material assumption | `DetectorConstruction.cc::BuildOptics` |
+| Sensor | G4_Si | 2.33 | 199.28 | 0.0004643224 | 0.0018572896 | 0.1430112992 | `Sensors` | retained thesis Table 7.1 Silicon | retained dimensions/material assumption | `DetectorConstruction.cc::BuildOptics` |
+| Common vessel | G4_Cu | 8.96 | 427797520.705 | 3833.06578552 | 49.7800751366 | 3833.06578552 | `Vessel` | retained thesis Table 7.1 EFCu | retained dimensions/material assumption | `DetectorConstruction.cc::BuildVessel` |
+| Sensitive drift gas | CYGNO_gas | 0.0015273872 | 200000000 | 0.30547744 | 0.61095488 | 47.04352576 | none | no bulk assay | retained He/CF4 mixture | `DetectorConstruction.cc::BuildSensitiveGasVolumes` |
+| GEM transfer gas | CYGNO_gas | 0.0015273872 | 800000 | 0.00122190976 | 0.00488763904 | 0.37634820608 | none | no bulk assay | retained He/CF4 mixture | `DetectorConstruction.cc::BuildGEMs` |
 
 The vessel kg/module entry is an accounting allocation (total/77), not a module
 shell. Source masses, densities and volumes are exported from actual logical
@@ -91,6 +91,56 @@ volumes. Boolean volumes use Geant4's cached estimator; analytic subtraction
 is a check, never a mass correction. Gas rows use the constructed mixture
 density and exact box volumes. Bibliographic sample/row/page locators are in
 [STUDY_SOURCES.md](STUDY_SOURCES.md) and the v2 matrix JSON.
+
+### Component activities: v2 and v3
+
+These tables join to the geometry/mass rows above by component/source family.
+Activities are **specific source-head values used by the matrix**, not transported
+detector rates. The first table uses **µBq/kg throughout** (1 µBq = 1e-6 Bq).
+Only the GEM/cathode layers differ between v2 and v3:
+
+| Component/source family | v2 material → v3 material | v2 U238 [µBq/kg] | v3 U238 [µBq/kg] | v2 Th232 [µBq/kg] | v3 Th232 [µBq/kg] | v2 K40 [µBq/kg] | v3 K40 [µBq/kg] |
+|---|---|---:|---:|---:|---:|---:|---:|
+| GEM core / `GEMsPolyimide` | G4_KAPTON → PMMA | 69.192 | 296 (UL) | 27.6892 | 56.9 (UL) | 3294 | 71.2 (UL) |
+| Cathode core / `CathodesPolyimide` | G4_KAPTON → PMMA | 69.192 | 296 (UL, extension) | 27.6892 | 56.9 (UL, extension) | 3294 | 71.2 (UL, extension) |
+| GEM skins / `GEMsCopper` | G4_Cu → G4_Cu | 148.8 | 0.131 | 48.72 | 0.034 | 3965 | omitted (x) |
+| Cathode skins / `CathodesCopper` | G4_Cu → G4_Cu | 148.8 | 0.131 | 48.72 | 0.034 | 3965 | omitted (x) |
+
+v2 values are nominal central measurements from **Arnquist Table 5**, converted
+per material mass; their measured concentrations/uncertainties and conversion
+constants remain [below](#radioactive-sources-and-provenance). v3 core values
+are **Table 7.1 Acrylic upper limits used as stated values (UL)**, not central
+measurements. Assigning the GEM-core assay to a PMMA cathode core is an explicit
+study extension; the historical cathode was solid copper. v3 skins use retained
+**Table 7.1 EFCu** U/Th; K marked x is omitted, not a measured zero. Stable
+`Polyimide` IDs do not identify the actual v3 material. Both 50 µm PMMA cores
+need new Geant4 transport for **all 26 contributions**, not v2 reweighting.
+
+| Shared component/source family (same in v2 and v3) | Geant4 material | U238 [µBq/kg] | Th232 [µBq/kg] | K40 [µBq/kg] | Assay interpretation |
+|---|---|---:|---:|---:|---|
+| Support frame / `RingSupports` | PMMA | 9.05 | 5.05 | 71.2 (proxy) | Reynolds UVT PMMA measured central U/Th, no row uncertainties; K unmeasured, conservative Table 7.1 proxy |
+| Copper strips / `RingStrips` | G4_Cu | 0.131 | 0.034 | omitted (x) | Retained Table 7.1 EFCu |
+| Common vessel / `Vessel` | G4_Cu | 0.131 | 0.034 | omitted (x) | Retained Table 7.1 EFCu |
+| Lens / `Lens` | Silicon Dioxide | 123 | 40.7 | 300 | Retained Table 7.1 Suprasil assay; transport material/dimensions remain assumptions |
+| Sensor / `Sensors` | G4_Si | 2000 | 2800 | 9000 | Retained Table 7.1 Silicon assay |
+| Drift/transfer gas | CYGNO_gas | — | — | — | No bulk assay/source jobs; not measured zeroes |
+
+Resistors use **µBq/reference-piece**, never the kg-based unit above:
+
+| Component (same in v2 and v3) | Geant4 material / density [g/cm³] | U238 [µBq/reference-piece] | Th232 [µBq/reference-piece] | K40 [µBq/reference-piece] |
+|---|---|---:|---:|---:|
+| `Resistors` | ResistorFusedSilica / 2.20 | 0.0313243176941 | 0.004770319949 | 0.141552782228 |
+
+These derive from the completed-MBNL measured concentrations and the nominal
+0.587477826221 g reference tube, not the 6.1952e-6 kg transport box. U/Th secular
+equilibrium is assumed, not established by the assay. The complete composite
+publication basis, uncertainties, reference dimensions and surrogate limits are
+in [the resistor section](#resistors-surrogate-reference-hardware-and-normalization)
+and [STUDY_SOURCES](STUDY_SOURCES.md#completed-mbnl-resistor-assay).
+The radiopure **support** U/Th assay is not transferred to v3 **cores**.
+Quoted numbers are rounded for reading; saved matrices and exported constructed
+quantities remain authoritative. Assay uncertainties are provenance, not added
+systematic errors in the current statistical analysis.
 
 ## Cathode and gas interfaces
 
@@ -432,8 +482,9 @@ The new cathode and GEM layers and gas interfaces are explicitly overlap-free.
 | `validation/check_geometry.py` | `check` | Independent sizes, foil interfaces, cathode/gas/GEM boundaries, layout IDs, World/vessel containment and module separation |
 | `validation/source_checks.cc`, `validation/uniform_volume.cc` | `main` | 20000 placed samples/family/profile plus 100000 local samples/family, zero outside, analytic moments/ranges and rotated transform |
 
-Run `geometry_quantities quantities.tsv cygno-11x7-v1 geometry.json` after
-building. Run CTest and the Python suite; do not normalize failed radioactive
+For explicit v3/v2 exporter commands after building, see
+[constructed quantities](STUDY_SOURCES.md#constructed-quantities-and-normalization).
+Run CTest and the Python suite; do not normalize failed radioactive
 transport. [KNOWN_ISSUES.md](KNOWN_ISSUES.md) describes the independently observed
 macOS Geant4 PART122 full-chain environment issue; no physics patch suppresses it.
 
