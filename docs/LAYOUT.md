@@ -1,9 +1,10 @@
 # Detector layout profiles
 
 All profiles share module dimensions; internal sources use `uniform-volume-v1`.
-Preferred internal v3 uses `cygno-acrylic-v3` and
+The default in both modes is v3. Internal v3 uses `cygno-acrylic-v3` and
 `config/study/cygno-11x7-v3.json`; supported v2 uses `cygno-300elj-v2` and
-`config/study/cygno-11x7-v2.json`. External retains v2 with its own source policy.
+`config/study/cygno-11x7-v2.json`. External uses the same selected detector
+with its own source policy; select v2 explicitly for historical transport.
 Layout identity is separate from detector construction and source policy. Select it before
 initialization:
 

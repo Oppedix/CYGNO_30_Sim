@@ -1,7 +1,7 @@
-# Single-module geometry: v2 and internal Acrylic v3
+# Single-module geometry: v2 and Acrylic v3
 
 The dimensions below are common to **v2** (`cygno-300elj-v2`, Kapton cores;
-external/default executable) and **v3 (preferred internal)** (`cygno-acrylic-v3`,
+explicit selection) and **v3 (default in both modes)** (`cygno-acrylic-v3`,
 PMMA cores). Source policy is `uniform-volume-v1` for internal; v3 uses
 `config/study/cygno-11x7-v3.json` and `cygno-300elj-radioassay-v3.json` (26 jobs),
 while v2 retains its original config/matrix (28 jobs). Layout is `cygno-11x7-v1`.

@@ -1,7 +1,9 @@
 # External — LNGS gamma and neutrons with Cu20
 
 An independent workflow using the [common Geant4 build](../README.md), geometry
-and materials. External retains the **v2 detector** and rejects internal PMMA v3.
+and materials. Both modes default to **`cygno-acrylic-v3`**, with PMMA GEM and
+cathode cores. `--model cygno-300elj-v2` remains available for historical Kapton
+campaigns; it changes the detector material, not the environmental source.
 Default shielding is **20 cm Cu in four adjacent 5 cm closed layers**.
 The supplied Hall C gamma and neutron inputs are explicit **proxy scenarios**,
 not validated site predictions. See [physics and source provenance](docs/PHYSICS.md).
@@ -31,7 +33,14 @@ python3 external/study/simulate.py --config external/config/hall-c-neutron-wulan
   --primaries 1000 --output-mode compact
 ```
 
-Defaults are Cu20, `QGSP_BIC_HP_EMZ + G4RadioactiveDecayPhysics`, and an inward
+Supplied configs explicitly select v3; the runner passes the selected model to
+both transport and geometry export. `--model` overrides the config for a new
+campaign. New configs must include `model`; to reproduce an old config lacking
+that field, pass `--model cygno-300elj-v2` explicitly. Archived pre-model campaigns are
+read as their original v2 without changing their files. Never reuse an old
+output directory for a new model.
+
+Defaults are v3, Cu20, `QGSP_BIC_HP_EMZ + G4RadioactiveDecayPhysics`, and an inward
 Lambert/cosine GPS source on a sphere outside all shielding corners. For an
 unshielded control, choose a new campaign and add `--shield none`; the source
 radius and incoming flux stay the same. `--output-mode both` enables Python

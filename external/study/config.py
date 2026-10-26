@@ -8,13 +8,17 @@ from study.source_matrix import require, LAYOUTS
 REPO = rt.REPO
 PROCESSING = 'external-track-volumes-v1'
 PHYSICS = 'QGSP_BIC_HP_EMZ'
-FIELDS = {'schema_version','mode','id','layout','shield','output_mode','primaries','seed',
+MODELS = ('cygno-acrylic-v3','cygno-300elj-v2')
+FIELDS = {'schema_version','mode','model','id','layout','shield','output_mode','primaries','seed',
           'timeout_seconds','scientific_status','particle','hall','flux_cm2_s','flux_convention',
           'energy_edges_MeV','bin_probabilities','shape_assumption','reference'}
 
 
-def validate(config):
-    require(set(config)==FIELDS and config['schema_version']==1 and config['mode']=='external', 'Invalid external config schema')
+def validate(config, *, historical=False):
+    # Only archived campaigns may omit model: their original executable forced v2.
+    fields=FIELDS-{'model'} if historical and 'model' not in config else FIELDS
+    require(set(config)==fields and config['schema_version']==1 and config['mode']=='external', 'Invalid external config schema')
+    require(config.get('model','cygno-300elj-v2') in MODELS, 'Invalid external detector model')
     require(isinstance(config['id'],str) and re.fullmatch(r'[a-zA-Z0-9_-]+',config['id']), 'Unsafe source ID')
     require(config['layout'] in LAYOUTS and config['shield'] in ('none','copper20'), 'Invalid layout/shield')
     require(config['output_mode'] in ('raw','compact','both') and config['particle'] in ('gamma','neutron'), 'Invalid source/output mode')
@@ -32,12 +36,14 @@ def validate(config):
     return config
 
 
-def load(path):
-    return validate(rt.read(Path(path)))
+def load(path, *, model=None):
+    config=rt.read(Path(path))
+    if model is not None:config['model']=model
+    return validate(config)
 
 
 def macro(config):
-    validate(config)
+    validate(config, historical=True)
     seeds=rt.seeds_for(config['seed'],config['id'])
     lines=['# External source: '+config['id'], '# '+config['scientific_status'],
            '/run/verbose 0','/event/verbose 0','/tracking/verbose 0','/run/printProgress 10000',

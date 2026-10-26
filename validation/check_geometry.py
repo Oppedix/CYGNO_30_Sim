@@ -28,7 +28,9 @@ def local_signature(row, center):
             *(round(row[axis]-center[i], 9) for i,axis in enumerate('xyz')))
 
 
-def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
+def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', model='cygno-acrylic-v3'):
+    assert model in ('cygno-acrylic-v3','cygno-300elj-v2'), model
+    core_material='PMMA' if model=='cygno-acrylic-v3' else 'G4_KAPTON'
     assert profile in ('cygno-5x5x3-v1', 'legacy-25x3', 'cygno-11x7-v1'), profile
     before, after = read(before_path), read(after_path)
     count = 77 if profile=='cygno-11x7-v1' else 75
@@ -122,7 +124,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1'):
             if kind in ('CathodesPolyimide','CathodesCopper','GEMsPolyimide','GEMsCopper'):
                 near(row['xmax']-row['xmin'],500); near(row['ymax']-row['ymin'],800)
                 near(row['zmax']-row['zmin'],.050 if 'Polyimide' in kind else .005)
-                assert row['material']==('G4_KAPTON' if 'Polyimide' in kind else 'G4_Cu')
+                assert row['material']==(core_material if 'Polyimide' in kind else 'G4_Cu')
             if kind=='RingStrip':
                 index=row['copy']//count % 25
                 near(abs(z),10.030+20*index)

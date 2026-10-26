@@ -292,7 +292,8 @@ class SchedulingTests(unittest.TestCase):
                     gas_centers_mm={str(i): [0, 0, 0] for i in range(150)}))
                 return ''
             return self.fake_invoke(command, cwd, label, timeout, **options)
-        def preflight(build, folder):
+        def preflight(build, folder, model):
+            self.assertEqual(model, self.cfg['model'])
             folder.mkdir()
             rt.save(folder/'preflight.json', dict(complete=True, checks={
                 name: dict(status='passed', PART122=False, environment=self.env)

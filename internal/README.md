@@ -57,8 +57,8 @@ campaign directory. See [operation, storage and recovery](docs/WORKFLOW.md).
 For v2, select `internal/config/study/cygno-11x7-v2.json`, use a fresh v2-named
 campaign and preflight with `--model cygno-300elj-v2`. The matching matrix is
 selected automatically; explicit matrix/model mismatches are rejected.
-The bare executable retains v2 for compatibility; do not omit the model for a
-direct v3 diagnostic. The runner passes it explicitly.
+The bare executable defaults to v3 in both modes. Direct v2 diagnostics must
+select `--model cygno-300elj-v2`; the runner always passes its configured model.
 
 ## Cluster
 

@@ -88,7 +88,7 @@ assert inspect_raw(path, identity, 2)['hit_rows'] == 0
 # Effective environment comes from a real fresh initialized simulation, no events.
 probe = out/'probe'; probe.mkdir()
 (probe/'probe.mac').write_text(runner.RDM_COMMAND+'\n/control/echo phase4-validation-no-transport\n')
-env_log = runner.invoke([build/'rdecay01', probe/'probe.mac', '1', '--layout', config['layout']], probe, 'probe', 60)
+env_log = runner.invoke([build/'rdecay01', probe/'probe.mac', '1', '--layout', config['layout'], '--model', config['model']], probe, 'probe', 60)
 environment = runner.parse_environment(env_log)
 env_log += f'\nCYGNO_RUN radioactive_decay_time_threshold_s {runner.RDM_SECONDS}\n'
 assert environment['source_hash'] == runner.compiled_source_hash()

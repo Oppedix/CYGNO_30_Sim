@@ -10,10 +10,13 @@ Build it once; choose the workflow at run time.
 | **External** | LNGS gamma/neutron proxy scenarios with **Cu20** shielding | [External guide](external/README.md) |
 
 The active detector uses analytical Geant4 solids, not an imported CAD detector.
-Internal v3 uses PMMA50/Cu foils and historical Table 7.1 activities (26 source
+Both modes default to `cygno-acrylic-v3` with PMMA50/Cu foils.
+Internal v3 uses these foils and historical Table 7.1 activities (26 source
 contributions); v2 retains Kapton50/Cu and Arnquist Table 5 layer assays (28).
 **Physical v3 requires new transport for every contribution; v2 cannot be
-converted by reweighting.** External retains the v2 detector.
+converted by reweighting.** Select `--model cygno-300elj-v2` explicitly in
+either mode to reproduce Kapton transport; source policies and physics remain
+specific to each mode.
 
 ## Install and build the common application
 

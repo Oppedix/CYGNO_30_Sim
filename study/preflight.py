@@ -14,7 +14,7 @@ from study.source_matrix import require, MATRIX_MODELS
 
 
 
-def check(build, output, long_lived_only=False, model='cygno-300elj-v2'):
+def check(build, output, long_lived_only=False, model='cygno-acrylic-v3'):
     require(model in MATRIX_MODELS.values(), 'Unsupported preflight model')
     output = output.resolve()
     require(not output.is_relative_to(REPO), 'Preflight outputs must be outside the repository')
@@ -37,7 +37,7 @@ def check(build, output, long_lived_only=False, model='cygno-300elj-v2'):
         result = dict(requested_primaries=count, status='failed')
         try:
             log = invoke([build.resolve()/'rdecay01', folder/'run.mac', '1', '--layout', 'legacy-25x3',
-                          *(['--model', model] if model != 'cygno-300elj-v2' else [])],
+                          '--model', model],
                          folder, 'simulation', 120)
             environment = parse_environment(log)
             result['environment'] = environment
@@ -77,7 +77,7 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='New directory, retained on failure')
     parser.add_argument('--long-lived-only', action='store_true')
-    parser.add_argument('--model', choices=tuple(MATRIX_MODELS.values()), default='cygno-300elj-v2')
+    parser.add_argument('--model', choices=tuple(MATRIX_MODELS.values()), default='cygno-acrylic-v3', help='Detector model (default: %(default)s)')
     args = parser.parse_args()
     return check(args.build, args.output, args.long_lived_only, args.model)
 

@@ -47,7 +47,7 @@ class AcrylicSpecificationTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('CYGNO_ACRYLIC_BUILD'),'Set CYGNO_ACRYLIC_BUILD for constructed geometry checks')
 class AcrylicGeometryTests(unittest.TestCase):
-    def test_material_masses_dimensions_and_external_guard(self):
+    def test_material_masses_and_dimensions(self):
         build=Path(os.environ['CYGNO_ACRYLIC_BUILD']).resolve()
         with tempfile.TemporaryDirectory() as tmp:
             directory=Path(tmp); exports={}; geometries={}
@@ -74,9 +74,44 @@ class AcrylicGeometryTests(unittest.TestCase):
             for component,row in exports['cygno-300elj-v2'].items():
                 if component not in ('GEMsPolyimide','CathodesPolyimide'):
                     self.assertEqual(row,exports['cygno-acrylic-v3'][component])
-            rejected=subprocess.run([str(build/'rdecay01'),'--mode','external','--model','cygno-acrylic-v3'],capture_output=True,text=True)
-            self.assertNotEqual(rejected.returncode,0)
-            self.assertIn('internal mode only',rejected.stderr)
+    def test_defaults_and_explicit_models_in_both_modes(self):
+        build=Path(os.environ['CYGNO_ACRYLIC_BUILD']).resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            directory=Path(tmp)
+            macro=directory/'probe.mac';macro.write_text('/control/echo MODEL_PROBE\n')
+            exports={}
+            for mode in ('internal','external'):
+                for model in (None,'cygno-300elj-v2','cygno-acrylic-v3'):
+                    expected=model or 'cygno-acrylic-v3'
+                    flags=['--mode',mode]+(['--model',model] if model else [])
+                    log=subprocess.run([str(build/'rdecay01'),str(macro),'1',*flags],cwd=directory,
+                                       check=True,capture_output=True,text=True,timeout=120).stdout
+                    policy='uniform-volume-v1' if mode=='internal' else 'environmental-surface-v1'
+                    self.assertIn(f'detector_model={expected} source_model={policy}',log)
+                    self.assertIn('QGSP_BIC_HP_EMZ' if mode=='external' else 'QGSP_BIC_EMZ',log)
+                    output=directory/'quantities.tsv';geometry=directory/'geometry.json'
+                    subprocess.run([str(build/'geometry_quantities'),str(output),'cygno-11x7-v1',str(geometry),*flags],
+                                   check=True,capture_output=True,text=True,timeout=120)
+                    document=rt.read(geometry)
+                    self.assertEqual(document['model'],expected)
+                    self.assertEqual(document['source_policy'],policy)
+                    self.assertIn('# detector-model: '+expected,output.read_text())
+                    with output.open() as file:
+                        rows={r['component']:r for r in csv.DictReader((l for l in file if not l.startswith('#')),delimiter='\t')}
+                    for component in ('GEMsPolyimide','CathodesPolyimide'):
+                        self.assertEqual(rows[component]['geometry_material'],'PMMA' if expected=='cygno-acrylic-v3' else 'G4_KAPTON')
+                    if mode=='internal':exports[expected]=(rows,document)
+                    else:
+                        old_rows,old_geometry=exports[expected]
+                        self.assertEqual(rows,old_rows)
+                        self.assertEqual(document,old_geometry | {'source_policy':policy})
+            for flags in (['--model','unknown'],['--model'],['--model','cygno-acrylic-v3','--model','cygno-300elj-v2']):
+                result=subprocess.run([str(build/'rdecay01'),*flags],capture_output=True,text=True)
+                self.assertNotEqual(result.returncode,0)
+                result=subprocess.run([str(build/'geometry_quantities'),str(output),'cygno-11x7-v1',*flags],capture_output=True,text=True)
+                self.assertNotEqual(result.returncode,0)
+            help_text=subprocess.check_output([str(build/'rdecay01'),'--help'],text=True)
+            self.assertIn('Default detector model in both modes: cygno-acrylic-v3',help_text)
 
 
 if __name__=='__main__':unittest.main()

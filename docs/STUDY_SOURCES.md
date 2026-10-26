@@ -5,7 +5,8 @@ physical model `cygno-acrylic-v3`, 26 contributions. **v2** remains supported wi
 [`cygno-300elj-radioassay-v2.json`](../config/study/cygno-300elj-radioassay-v2.json),
 physical model `cygno-300elj-v2`, 28 contributions. Both use `uniform-volume-v1`.
 `study/source_matrix.py` validates each version and rejects matrix/model mixing.
-External keeps its v2 detector and independent normalization.
+External defaults to the same v3 detector, supports explicit v2 selection, and
+keeps its independent environmental sources and normalization.
 
 The [geometry report](SINGLE_MODULE_GEOMETRY.md#component-activities-v2-and-v3)
 places the v2/v3 activities beside constructed masses, materials and densities.
@@ -238,7 +239,8 @@ mkdir -p "$CYGNO_RUNS/geometry-v3-NEW" "$CYGNO_RUNS/geometry-v2-NEW"
 ```
 
 Do not replace a campaign's saved quantities/geometry with these diagnostics.
-Omitting `--model` on the exporter retains v2 for compatibility. Matrix validation
+Omitting `--model` on the exporter selects v3, as in the simulation CLI.
+Historical v2 exports require `--model cygno-300elj-v2`. Matrix validation
 is performed by the runner; `study/source_matrix.py` is a library, not a CLI.
 
 Actual source lists and `GetMass()` sums produce the ten separate component rows.

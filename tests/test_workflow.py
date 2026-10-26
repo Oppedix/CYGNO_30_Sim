@@ -64,6 +64,7 @@ class WorkflowTests(unittest.TestCase):
             env=environment()
             calls=[]
             def invoke(command,cwd,label,timeout,**options):
+                self.assertEqual(command[-2:],['--model','cygno-300elj-v2'])
                 calls.append(label)
                 if label=='environment':
                     return '\n'.join('CYGNO_ENV '+k+' '+v for k,v in env.items())
@@ -72,7 +73,8 @@ class WorkflowTests(unittest.TestCase):
                     Path(command[3]).write_bytes((fixture/'geometry.json').read_bytes())
                     return ''
                 return fake_invoke(command,cwd,label,timeout,**options)
-            def preflight(build,output):
+            def preflight(build,output,model):
+                self.assertEqual(model,'cygno-300elj-v2')
                 output.mkdir()
                 rt.save(output/'preflight.json',rt.read(fixture/'preflight/preflight.json'))
                 return 0

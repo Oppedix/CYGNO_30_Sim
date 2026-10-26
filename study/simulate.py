@@ -60,7 +60,7 @@ def run_job(output, row, config, campaign, simulation, retry=False, cancel=None)
         (attempt/'run.mac').write_text(macro)
         log = rt.invoke([simulation, attempt/'run.mac', '1', '--layout', config['layout'],
                          '--output-mode', config.get('output_mode','raw'),
-                         *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])],
+                         '--model', config['model']],
                         attempt, 'simulation', config['timeout_seconds'], cancel=cancel,
                         contribution=row['id'], primaries=config['primaries_per_job'])
         manifest['accounting'] = rt.validate_simulation_log(
@@ -199,7 +199,7 @@ def run(args):
         (probe/'environment.mac').write_text(rt.RDM_COMMAND+'\n/control/echo CYGNO_ENVIRONMENT_PROBE\n')
         environment = rt.parse_environment(rt.invoke([tools['simulation'], probe/'environment.mac', '1',
                 '--layout', config['layout'],
-                *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])], probe, 'environment', config['timeout_seconds']))
+                '--model', config['model']], probe, 'environment', config['timeout_seconds']))
         require(math.isclose(float(environment['radioactive_decay_time_threshold_s']), rt.RDM_SECONDS, rel_tol=1e-12),
                 'Incorrect effective radioactive-decay threshold')
         require(environment['source_hash'] == rt.compiled_source_hash(), 'Stale compiled source; rebuild')
@@ -220,7 +220,7 @@ def run(args):
         else:
             require(not (output/'jobs').exists(), 'Orphan jobs without campaign manifest')
             rt.invoke([tools['quantities'], probe/'quantities.tsv', config['layout'], probe/'geometry.json',
-                       *(['--model', config['model']] if config['model'] != 'cygno-300elj-v2' else [])],
+                       '--model', config['model']],
                       probe, 'quantities', config['timeout_seconds'])
             require(f"# compiled-source-hash: {environment['source_hash']}" in (probe/'quantities.tsv').read_text().splitlines(),
                     'Stale quantity exporter')
@@ -248,7 +248,7 @@ def run(args):
         if 'preflight' not in campaign:
             from study.preflight import check
             folder = probe/'decay-preflight'
-            check(build, folder, **({'model': config['model']} if config['model'] != 'cygno-300elj-v2' else {}))
+            check(build, folder, model=config['model'])
             campaign['preflight'] = str((folder/'preflight.json').relative_to(output))
             campaign['preflight_artifacts'] = rt.artifacts(folder)
             rt.save(path, campaign)

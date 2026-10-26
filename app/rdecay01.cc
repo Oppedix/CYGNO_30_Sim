@@ -71,7 +71,7 @@ int main(int argc,char** argv) {
   bool layoutSpecified = false;
   bool outputSpecified = false;
   int workers = 1;
-  std::string mode="internal", shield, model="cygno-300elj-v2";
+  std::string mode="internal", shield, model=cygno::simulation::defaultDetectorModel;
   bool modelSpecified=false;
   bool modeSpecified=false, shieldSpecified=false;
   try {
@@ -79,6 +79,8 @@ int main(int argc,char** argv) {
       const std::string arg = argv[i];
       if (arg == "--help") {
         std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both] [--model cygno-300elj-v2|cygno-acrylic-v3]\n";
+        std::cout << "Default detector model in both modes: " << cygno::simulation::defaultDetectorModel
+                  << " (PMMA GEM/cathode cores). Select cygno-300elj-v2 explicitly for historical Kapton campaigns.\n";
         return 0;
       }
       if (arg == "--mode" || arg == "--shield") {

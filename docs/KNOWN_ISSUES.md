@@ -1,7 +1,8 @@
 # Known issues and scientific decisions
 
 Preferred internal v3 is `cygno-acrylic-v3` with the matching v3 assay matrix;
-v2 (`cygno-300elj-v2`) remains supported and is the external detector. Both
+v3 is the default detector in both modes; v2 (`cygno-300elj-v2`) remains
+supported by explicit selection in either mode. Both
 internal versions use `uniform-volume-v1`. v3 requires fresh transport for all
 26 contributions; the dated v2 checks below are retained evidence, not new v3
 qualification. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
@@ -11,7 +12,7 @@ establish physical background-rate accuracy.
 ## Resolved geometry and source issues
 
 GEMs and the cathode are explicit Cu5/core50/Cu5 µm slabs without material
-intersections: Kapton in v2, PMMA in internal v3. The 500 mm gas boundaries meet
+intersections: Kapton in v2, PMMA in v3 in both modes. The 500 mm gas boundaries meet
 the cathode and first GEM exactly.
 GEM clear spacing is 2.000 mm (2.060 mm centre pitch), filled with non-sensitive
 He/CF4. Uniform-volume sampling replaces the surface/inward-depth shortcut;

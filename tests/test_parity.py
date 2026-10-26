@@ -21,7 +21,7 @@ class ReferenceParity(unittest.TestCase):
         for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
             with self.subTest(layout=layout), tempfile.TemporaryDirectory() as d:
                 folder=Path(d)
-                subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json'],
+                subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json','--model','cygno-300elj-v2'],
                     check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 geometry=rt.read(folder/'geometry.json')
                 expected=dict(layout=layout,model='cygno-300elj-v2',source_policy='uniform-volume-v1',geometry_hash=geometry['geometry_hash'])

@@ -33,8 +33,8 @@ public:
 };
 int main(int argc,char** argv) try {
   using namespace cygno::geometry;
-  require(argc==2,"Expected layout");
-  cygno::simulation::Configure("external","copper20");
+  require(argc==2 || argc==3,"Expected layout [model]");
+  cygno::simulation::Configure("external","copper20",argc==3 ? argv[2] : cygno::simulation::defaultDetectorModel);
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(17423);
   ProbeManager manager;
@@ -54,6 +54,13 @@ int main(int argc,char** argv) try {
   require(radius>std::sqrt(outer.x*outer.x+outer.y*outer.y+outer.z*outer.z),"Sphere misses shield corners");
   for (auto* pv:*G4PhysicalVolumeStore::GetInstance()) {
     const auto name=pv->GetName();
+    const auto* logical=pv->GetLogicalVolume();
+    if (logical->GetName()=="GEMsPolyimide" || logical->GetName()=="CathodesPolyimide") {
+      require(logical->GetMaterial()->GetName()==(cygno::simulation::acrylicCore ? "PMMA" : "G4_KAPTON"),"Core/model mismatch");
+      const auto* box=dynamic_cast<const G4Box*>(logical->GetSolid());
+      require(box && box->GetXHalfLength()/mm==250 && box->GetYHalfLength()/mm==400 &&
+              box->GetZHalfLength()/mm==.025,"Core dimensions changed");
+    }
     if(name=="World")continue;
     if(name.find("ExternalCu")==0) {
       require(pv->GetLogicalVolume()->GetMaterial()->GetName()=="G4_Cu","Wrong shield material");

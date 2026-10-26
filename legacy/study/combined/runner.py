@@ -70,7 +70,7 @@ def run_job(output, row, config, campaign, tools, identity, retry):
         (attempt/'run.mac').write_text(macro_for(row, config))
         if config['mode'] == 'production' and th_chain(row) and not campaign.get('th_chain_preflight_passed', False):
             raise RuntimeError('Th/Bi preflight failed: contribution incomplete; use a compatible environment')
-        log = invoke([tools['simulation'], attempt/'run.mac', '1', '--layout', config['layout']],
+        log = invoke([tools['simulation'], attempt/'run.mac', '1', '--layout', config['layout'], '--model', config['model']],
                      attempt, 'simulation', config['timeout_seconds'])
         require(parse_environment(log) == campaign['identity']['effective_environment'], 'Runtime environment changed')
         thresholds = re.findall(r'CYGNO_RUN radioactive_decay_time_threshold_s (\S+)', log)
@@ -120,9 +120,9 @@ def campaign_job_records(output, matrix):
     return result
 
 
-def campaign_preflight(build, output):
+def campaign_preflight(build, output, model):
     from study.preflight import check
-    check(build, output)
+    check(build, output, model=model)
     checks = read(output/'preflight.json')['checks']
     require(checks['u238-enabled']['status'] == 'passed', 'Long-lived primary preflight failed')
     return all(checks[name]['status'] == 'passed' for name in ('th232-full', 'bi212-full'))
@@ -167,7 +167,7 @@ def run(args):
         else:
             (probe/'environment.mac').write_text(RDM_COMMAND+'\n/control/echo CYGNO_ENVIRONMENT_PROBE\n')
             environment = parse_environment(invoke([tools['simulation'], probe/'environment.mac', '1',
-                                                   '--layout', config['layout']], probe, 'environment', config['timeout_seconds']))
+                                                   '--layout', config['layout'], '--model', config['model']], probe, 'environment', config['timeout_seconds']))
         require(math.isclose(float(environment['radioactive_decay_time_threshold_s']), RDM_SECONDS, rel_tol=1e-12),
                 'Effective radioactive-decay threshold differs from the study setting')
         require(environment['source_hash'] == compiled_source_hash(), 'Stale build: compiled source fingerprint differs; rebuild')
@@ -192,7 +192,7 @@ def run(args):
             # Refuse orphan job state instead of attaching it to a new campaign.
             require(not (output/'jobs').exists(), 'Orphan job state without campaign manifest')
             quantity_path = probe/'quantities.tsv'
-            invoke([tools['quantities'], quantity_path, config['layout']], probe, 'quantities', config['timeout_seconds'])
+            invoke([tools['quantities'], quantity_path, config['layout'], '--model', config['model']], probe, 'quantities', config['timeout_seconds'])
             require(f"# compiled-source-hash: {environment['source_hash']}" in quantity_path.read_text().splitlines(),
                     'Stale quantity exporter build')
             (output/'quantities.tsv').write_bytes(quantity_path.read_bytes())
@@ -204,7 +204,7 @@ def run(args):
             save(output/'config.json', config); save(output/'matrix.json', matrix)
         if 'th_chain_preflight_passed' not in campaign:
             require(not analysis_only, 'Campaign preflight is incomplete')
-            campaign['th_chain_preflight_passed'] = campaign_preflight(build, probe/'decay-preflight')
+            campaign['th_chain_preflight_passed'] = campaign_preflight(build, probe/'decay-preflight', config['model'])
             save(campaign_path, campaign)
         expected = {key: config[key] for key in ('layout', 'model', 'source_policy')}
         expected['geometry_hash'] = environment['geometry_hash']

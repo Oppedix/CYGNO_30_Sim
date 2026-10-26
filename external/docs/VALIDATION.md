@@ -1,5 +1,30 @@
 # Executed validation and remaining production gates
 
+## Detector model regression checks
+
+Both modes default to `cygno-acrylic-v3`; explicit `cygno-300elj-v2` remains
+supported in both. `acrylic_geometry` checks default/explicit CLI selections,
+constructed PMMA/Kapton, masses, foil dimensions and identical exported detector
+quantities/coordinates between modes. The six `external_*` CTest cases exercise
+both models on all layouts with Cu20, core materials/dimensions, shield bounds,
+GPS sampling and retained recoil transport. Python/standalone ROOT tests cover
+v3, explicit v2 and read-only analysis of original pre-model v2 campaigns;
+model mismatches must be rejected.
+
+```bash
+# Fresh common build with BUILD_TESTING=ON; Geant4 datasets active.
+ctest --test-dir "$CYGNO_BUILD" --output-on-failure -R 'acrylic_geometry|external_'
+python -m unittest discover -s tests -p test_external.py -v
+```
+
+New external configs must declare `model`. The runner passes it to probes,
+transport and geometry export and checks log, command receipt and snapshot
+identity; ROOT readers check the output against that selected model. Existing
+pre-model campaigns remain v2 and are never rewritten. The dated execution
+record below predates the shared v3 default and does not qualify new v3 rates.
+
+## Historical execution record
+
 Local execution: 2026-10-22, macOS/arm64, Apple Clang 21, Geant4 11.3.1 **serial**,
 matching installed datasets including G4NDL 4.7.1, Python 3.14.7 analysis environment,
 ROOT 6.40.04. These observations do not certify another installation.

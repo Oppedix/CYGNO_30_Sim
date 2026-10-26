@@ -19,7 +19,7 @@ the fixed Table 7.1 values. The canonical source/isotope schema is checked.
 | Scenario | Required transport | Contributions |
 |---|---|---:|
 | v2, retained | `cygno-300elj-v2`, Kapton50 | 28 |
-| **v3 (preferred internal)** | `cygno-acrylic-v3`, PMMA50 | 26 |
+| **v3 (default detector)** | `cygno-acrylic-v3`, PMMA50 | 26 |
 
 The matrix/model pair must match. v3 cannot relabel or reweight a v2 campaign:
 all v3 contributions need new Geant4 transport. Other components keep v2 assays.

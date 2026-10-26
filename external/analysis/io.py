@@ -14,7 +14,7 @@ SIMULATION_SCHEMA=dict.fromkeys(('Mode','Shielding','PhysicsList','SourceHash','
 
 def header(file,campaign):
     identity=campaign['identity'];cfg=identity['config']
-    expected=dict(layout=cfg['layout'],model='cygno-300elj-v2',source_policy='environmental-surface-v1',geometry_hash=identity['environment']['geometry_hash'])
+    expected=dict(layout=cfg['layout'],model=cfg.get('model','cygno-300elj-v2'),source_policy='environmental-surface-v1',geometry_hash=identity['environment']['geometry_hash'])
     scientific_header(file,expected,cfg['primaries'])
     fmt=output_metadata(file,cfg['output_mode'],1,processing=PROCESSING)
     values=tree(file,'SimulationMetadata',SIMULATION_SCHEMA,one=True).arrays(library='np')

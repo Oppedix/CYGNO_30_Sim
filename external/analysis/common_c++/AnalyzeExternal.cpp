@@ -77,6 +77,9 @@ int main(int argc,char** argv) try {
   auto campaign=json(source/"campaign.json");const auto& c=campaign->rootnode();
   require(integer(c["external_campaign_version"])==1 && c["status"].val()=="complete","Not a complete external campaign");
   const auto& id=c["identity"];const auto& cfg=id["config"];const auto& env=id["environment"];
+  // Pre-model archived external configs were always constructed as v2.
+  const auto model=cfg.has_child("model") ? cfg["model"].val() : std::string("cygno-300elj-v2");
+  require(model=="cygno-acrylic-v3" || model=="cygno-300elj-v2","Unknown detector model");
   auto config=json(source/"config.json");
   std::ostringstream a,b;cfg.writeJSON(a);config->rootnode().writeJSON(b);
   require(a.str()==b.str(),"Config snapshot mismatch");
@@ -92,12 +95,12 @@ int main(int argc,char** argv) try {
   require(recorded.str()==current.str(),"Attempt/campaign manifest mismatch");
   auto geometry=json(source/"geometry.json");const auto& geo=geometry->rootnode();
   require(geo["geometry_hash"].val()==env["geometry_hash"].val() && geo["source_hash"].val()==env["source_hash"].val() &&
-          geo["layout"].val()==layout,"Geometry snapshot mismatch");
+          geo["layout"].val()==layout && geo["model"].val()==model,"Geometry snapshot mismatch");
   const int gasCount=layout=="cygno-11x7-v1" ? 154 : 150;
   require(geo["gas_centers_mm"].num_children()==unsigned(gasCount),"Invalid gas map");
   TFile file(data.c_str(),"READ");require(!file.IsZombie(),"Cannot open compact ROOT file");
   auto& metadata=tree(file,"RunMetadata",true);
-  require(text(metadata,"SourcePolicy")=="environmental-surface-v1" && text(metadata,"DetectorModel")=="cygno-300elj-v2" &&
+  require(text(metadata,"SourcePolicy")=="environmental-surface-v1" && text(metadata,"DetectorModel")==model &&
           text(metadata,"Layout")==layout && text(metadata,"GeometryHash")==env["geometry_hash"].val(),"Mixed scientific identity");
   auto& format=tree(file,"OutputMetadata",true);int version=0;branch(format,"OutputSchemaVersion","Int_t",&version);
   require(text(format,"OutputFormat")==cfg["output_mode"].val() && version==1 && text(format,"CompactProcessingVersion")=="external-track-volumes-v1" &&

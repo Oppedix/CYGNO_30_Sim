@@ -35,15 +35,18 @@ def records():
                               (0,2,'F19',.001,1),(1,1,'gamma',0,0),(2,1,'proton',.4,0),(3,1,'e-',1.,0)]]
 
 
-def fixture(folder,mode='both',layout='cygno-11x7-v1'):
+def fixture(folder,mode='both',layout='cygno-11x7-v1',model='cygno-acrylic-v3'):
     folder.mkdir();attempt=folder/'attempt-0002';attempt.mkdir()
     cfg=load(CONFIG)|dict(primaries=5,output_mode=mode,layout=layout)
+    if model is None:cfg.pop('model') # original pre-model v2 campaign
+    else:cfg['model']=model
+    actual_model=cfg.get('model','cygno-300elj-v2')
     env=environment()|dict(physics=PHYSICS+'+G4RadioactiveDecayPhysics')
     identity=dict(config=cfg,environment=env,source_radius_mm=1000.,external_geometry_hash='fixture-shield',source={'files_sha256':{}})
     c=dict(external_campaign_version=1,status='complete',identity=identity,fingerprint=rt.object_digest(identity),
            attempt=attempt.name,data_path='outfiles_V2/'+mode+'.root',incident_rate_s=rate(cfg,1000.),
            accounting=dict(RunID=0,RequestedEvents=5,GeneratedPrimaries=5,ProcessedEvents=5,AbortedEvents=0))
-    expected=dict(geometry_hash=env['geometry_hash'],layout=cfg['layout'],model='cygno-300elj-v2',source_policy='environmental-surface-v1')
+    expected=dict(geometry_hash=env['geometry_hash'],layout=cfg['layout'],model=actual_model,source_policy='environmental-surface-v1')
     data=attempt/c['data_path'];raw_fixture(data,expected,requested=5)
     rows=records();chunk=timed_chunk(rows);canonical=list(raw_groups([chunk]))
     tracks=[]
@@ -67,19 +70,42 @@ def fixture(folder,mode='both',layout='cygno-11x7-v1'):
         f.mktree('SimulationMetadata',SIMULATION_SCHEMA)
         f['SimulationMetadata'].extend({k:np.array([v],dtype='float64') if k=='SourceRadius_mm' else [v] for k,v in dict(Mode='external',Shielding=cfg['shield'],PhysicsList=PHYSICS,SourceHash=env['source_hash'],ExternalGeometryHash=identity['external_geometry_hash'],SourceRadius_mm=1000.).items()})
     rt.save(folder/'config.json',cfg)
-    rt.save(folder/'geometry.json',dict(layout=cfg['layout'],geometry_hash=env['geometry_hash'],source_hash=env['source_hash'],gas_centers_mm={str(i):[0,0,0] for i in range(154 if layout=='cygno-11x7-v1' else 150)}))
+    rt.save(folder/'geometry.json',dict(layout=cfg['layout'],model=actual_model,geometry_hash=env['geometry_hash'],source_hash=env['source_hash'],gas_centers_mm={str(i):[0,0,0] for i in range(154 if layout=='cygno-11x7-v1' else 150)}))
     c['geometry_sha256']=rt.digest(folder/'geometry.json')
     (attempt/'run.mac').write_text(macro(cfg))
-    (attempt/'simulation.log').write_text(log_for(env,5)+'CYGNO_EXTERNAL radius_mm 1000\nCYGNO_EXTERNAL geometry_hash fixture-shield\n')
-    rt.save(attempt/'simulation.command.json',dict(returncode=0))
+    (attempt/'simulation.log').write_text(log_for(env,5)+f"CYGNO layout={cfg['layout']} detector_model={actual_model} source_model=environmental-surface-v1\nCYGNO_EXTERNAL radius_mm 1000\nCYGNO_EXTERNAL geometry_hash fixture-shield\n")
+    rt.save(attempt/'simulation.command.json',dict(returncode=0,command=['rdecay01','--model',actual_model]))
     c['artifacts']=rt.artifacts(attempt)
     rt.save(attempt/'manifest.json',c);rt.save(folder/'campaign.json',c)
     return c,data,canonical,tables
 
 
 class ExternalTests(unittest.TestCase):
+    def test_models_and_archived_v2_are_checked_without_relabeling(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for model in (None,'cygno-300elj-v2','cygno-acrylic-v3'):
+                root=Path(tmp)/str(model)
+                campaign,data,canonical,_=fixture(root,model=model)
+                before={p.relative_to(root):rt.digest(p) for p in root.rglob('*') if p.is_file()}
+                check_campaign(root)
+                with uproot.open(data) as file:
+                    self.assertEqual(list(groups(file,campaign)),canonical)
+                    wrong=copy.deepcopy(campaign)
+                    wrong['identity']['config']['model']='cygno-300elj-v2' if model=='cygno-acrylic-v3' else 'cygno-acrylic-v3'
+                    with self.assertRaisesRegex(ValueError,'identity'):list(groups(file,wrong))
+                self.assertEqual(before,{p.relative_to(root):rt.digest(p) for p in root.rglob('*') if p.is_file()})
+
     def test_config_and_flux_conventions(self):
         cfg=load(CONFIG)
+        self.assertEqual(cfg['model'],'cygno-acrylic-v3')
+        missing=cfg.copy();missing.pop('model')
+        with self.assertRaises(ValueError):validate(missing)
+        self.assertEqual(validate(missing,historical=True),missing)
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'original-config.json';rt.save(path,missing)
+            with self.assertRaises(ValueError):load(path)
+            self.assertEqual(load(path,model='cygno-300elj-v2')['model'],'cygno-300elj-v2')
+            self.assertEqual(rt.read(path),missing)
         self.assertAlmostEqual(rate(cfg,10),.46*4*math.pi)
         self.assertAlmostEqual(rate(cfg|dict(flux_convention='scalar'),10),.46*math.pi)
         self.assertIn('/gps/hist/point 0.057000000000000002 0',macro(cfg))
@@ -89,7 +115,7 @@ class ExternalTests(unittest.TestCase):
         for cfg,name in [(cfg,'gamma.mac'),(n,'neutron.mac')]:
             self.assertEqual((rt.REPO/'external/macros'/name).read_text().split('\n',1)[1],macro(cfg))
         cfg=load(CONFIG)
-        for key,value in [('primaries',0),('id','../bad'),('scientific_status','proxy\n/run/beamOn 1'),('flux_cm2_s',float('nan')),('flux_convention','unknown'),('energy_edges_MeV',[2,1]),('bin_probabilities',[1,1])]:
+        for key,value in [('model','unknown'),('primaries',0),('id','../bad'),('scientific_status','proxy\n/run/beamOn 1'),('flux_cm2_s',float('nan')),('flux_convention','unknown'),('energy_edges_MeV',[2,1]),('bin_probabilities',[1,1])]:
             with self.subTest(key=key),self.assertRaises(ValueError):validate(cfg|{key:value})
 
     def test_raw_compact_parity_and_empty_primary_denominator(self):
@@ -130,22 +156,25 @@ class ExternalTests(unittest.TestCase):
             for name in ('rdecay01','geometry_quantities'):(build/name).write_bytes(b'fixture')
             cfg=load(CONFIG)|dict(primaries=5);config=root/'config.json';rt.save(config,cfg)
             args=SimpleNamespace(config=config,build=build,output=root/'campaign',primaries=None,seed=None,
-                                 shield=None,output_mode=None,dry_run=False,retry_failed=False)
+                                 shield=None,output_mode=None,model=None,dry_run=False,retry_failed=False)
             env=environment()|dict(physics=PHYSICS+'+G4RadioactiveDecayPhysics',source_hash='fixture')
             shield_hash=rt.digest(rt.REPO/'common/ExternalGeometry.hh')
-            text=log_for(env,5)+f'CYGNO_EXTERNAL radius_mm 1000\nCYGNO_EXTERNAL geometry_hash {shield_hash}\n'
+            text=log_for(env,5)+f"CYGNO layout={cfg['layout']} detector_model={cfg['model']} source_model=environmental-surface-v1\n"+f'CYGNO_EXTERNAL radius_mm 1000\nCYGNO_EXTERNAL geometry_hash {shield_hash}\n'
             calls=[]
             def invoke(command,cwd,label,timeout,**kwargs):
-                rt.save(cwd/(label+'.command.json'),dict(returncode=0))
-                (cwd/(label+'.log')).write_text(text)
+                rt.save(cwd/(label+'.command.json'),dict(returncode=0,command=list(map(str,command))))
+                transport_text=text.replace('detector_model='+cfg['model'],'detector_model='+(args.model or cfg['model']))
+                (cwd/(label+'.log')).write_text(transport_text)
                 if label=='geometry':
                     Path(command[1]).write_text('diagnostic quantities')
-                    rt.save(Path(command[3]),dict(source_hash='fixture'))
+                    self.assertEqual(command[-2:],['--model',args.model or cfg['model']])
+                    rt.save(Path(command[3]),dict(source_hash='fixture',model=cfg['model'],layout=cfg['layout'],geometry_hash=env['geometry_hash'],source_policy='environmental-surface-v1'))
                 if label=='simulation':
                     calls.append(cwd)
                     folder=cwd/'outfiles_V2';folder.mkdir();(folder/'compact.root').write_bytes(b'fixture')
                     if len(calls)==1:raise ValueError('synthetic transport failure')
-                return text
+                self.assertEqual(command[-2:],['--model',args.model or cfg['model']])
+                return transport_text
             with patch.object(rt,'invoke',side_effect=invoke),patch.object(rt,'source_state',return_value={'files_sha256':{}}), \
                  patch.object(rt,'dataset_state',return_value={}),patch.object(rt,'compiled_source_hash',return_value='fixture'):
                 with self.assertRaises(ValueError):run(args)
@@ -157,6 +186,9 @@ class ExternalTests(unittest.TestCase):
                 self.assertEqual(rt.read(args.output/'attempt-0001/manifest.json')['status'],'failed')
                 self.assertTrue((args.output/'attempt-0001/outfiles_V2/compact.root').is_file())
                 self.assertEqual(run(args),0);self.assertEqual(len(calls),2)
+                args.model='cygno-300elj-v2'
+                with self.assertRaises(ValueError):run(args)
+                args.model=None
                 args.primaries=6
                 with self.assertRaises(ValueError):run(args)
 
@@ -188,9 +220,9 @@ class ExternalRootTests(unittest.TestCase):
     def tearDownClass(cls):cls.tmp.cleanup()
 
     def test_native_root_matches_python_and_rejects_mixed_identity(self):
-        for layout,mode in [('legacy-25x3','compact'),('cygno-11x7-v1','both'),('cygno-5x5x3-v1','compact')]:
+        for layout,mode,model in [('legacy-25x3','compact',None),('cygno-11x7-v1','both','cygno-acrylic-v3'),('cygno-5x5x3-v1','compact','cygno-300elj-v2')]:
             with self.subTest(layout=layout),tempfile.TemporaryDirectory() as tmp:
-                root=Path(tmp);c,data,_,_=fixture(root/'campaign',mode,layout)
+                root=Path(tmp);c,data,_,_=fixture(root/'campaign',mode,layout,model)
                 python=analyze(root/'campaign',root/'python')
                 result=subprocess.run([str(self.exe),str(root/'campaign'),str(root/'cpp')],capture_output=True,text=True)
                 self.assertEqual(result.returncode,0,result.stderr)

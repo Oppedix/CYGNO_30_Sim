@@ -51,7 +51,7 @@ class ConstructedCampaignNotebookTests(unittest.TestCase):
             root=Path(temporary)/'campaign'
             cfg,matrix,campaign=campaign_fixture(root)
             cfg.update(layout='cygno-11x7-v1',output_mode='both',output_schema_version=1)
-            subprocess.run([build/'geometry_quantities',root/'quantities.tsv',cfg['layout'],root/'geometry.json'],
+            subprocess.run([build/'geometry_quantities',root/'quantities.tsv',cfg['layout'],root/'geometry.json','--model',cfg['model']],
                            check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
             geometry=rt.read(root/'geometry.json')
             self.assertEqual(set(geometry['gas_centers_mm']),{str(i) for i in range(154)})

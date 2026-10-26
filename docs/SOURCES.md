@@ -1,7 +1,8 @@
 # Source generation and decay policy
 
 Internal identities: **preferred v3** `cygno-acrylic-v3` and supported v2
-`cygno-300elj-v2`, both with source `uniform-volume-v1`. External has a
+`cygno-300elj-v2`, both with source `uniform-volume-v1`. Both modes default to
+the same v3 detector; choosing a detector model does not select a source. External has a
 [separate environmental source contract](../external/docs/PHYSICS.md).
 The exact `/detector/RadElement` families are `GEMsPolyimide`, `GEMsCopper`,
 `CathodesPolyimide`, `CathodesCopper`, `RingSupports`, `RingStrips`, `Resistors`,

@@ -11,7 +11,6 @@
 
 namespace cygno {
 namespace geometry {
-inline constexpr const char* detectorModel = "cygno-300elj-v2";
 inline constexpr const char* sourcePolicy = "uniform-volume-v1";
 constexpr double millimetre = 1.0;
 constexpr double centimetre = 10.0 * millimetre;

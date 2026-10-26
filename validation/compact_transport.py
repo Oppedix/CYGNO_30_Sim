@@ -19,7 +19,7 @@ def run(build, output, primaries=30, contribution='GEMsPolyimide_K40', layout='l
     output.mkdir(parents=True,exist_ok=False)
     row=next(r for r in read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')['contributions'] if r['id']==contribution)
     config=rt.load_config(rt.REPO/'config/study/samuele.json') | dict(primaries_per_job=primaries,layout=layout)
-    rt.invoke([build/'geometry_quantities',output/'quantities.tsv',config['layout'],output/'geometry.json'],
+    rt.invoke([build/'geometry_quantities',output/'quantities.tsv',config['layout'],output/'geometry.json','--model',config['model']],
               output,'geometry',120)
     geometry=rt.read(output/'geometry.json')
     expected={k:config[k] for k in ('layout','model','source_policy')} | dict(geometry_hash=geometry['geometry_hash'])
@@ -27,7 +27,7 @@ def run(build, output, primaries=30, contribution='GEMsPolyimide_K40', layout='l
     for mode in ('raw','compact','both'):
         folder=output/mode;folder.mkdir()
         (folder/'run.mac').write_text(rt.macro_for(row,config | dict(output_mode=mode)))
-        rt.invoke([build/'rdecay01',folder/'run.mac','1','--layout',config['layout'],'--output-mode',mode],
+        rt.invoke([build/'rdecay01',folder/'run.mac','1','--layout',config['layout'],'--output-mode',mode,'--model',config['model']],
                   folder,'simulation',180)
         files=list((folder/'outfiles_V2').glob('*.root'))
         require(len(files)==1,'Expected single worker output');paths[mode]=files[0]

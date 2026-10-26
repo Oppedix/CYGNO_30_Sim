@@ -213,6 +213,7 @@ G4VPhysicalVolume* DetectorConstruction::PlaceInModule(
 
 void DetectorConstruction::BuildCathodes()
 {
+  // Detector material selection is shared by internal and external source modes.
   auto* polyimide = new G4LogicalVolume(new G4Box("CathodesPolyimide",
       d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodePolyimideThickness*mm/2),
       cygno::simulation::acrylicCore ? fMaterials.pmma : fMaterials.polyimide, "CathodesPolyimide");

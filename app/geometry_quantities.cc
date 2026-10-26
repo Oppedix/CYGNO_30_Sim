@@ -16,11 +16,18 @@
 #include <stdexcept>
 
 int main(int argc, char** argv) try {
-  if (argc!=3 && argc!=4 && argc!=6) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json [--model MODEL]]");
-  if (argc==6) {
-    if (std::string(argv[4]) != "--model") throw std::runtime_error("Expected --model");
-    cygno::simulation::Configure("internal", "none", argv[5]);
+  if (argc<3) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json] [--model MODEL] [--mode internal|external]; default model: cygno-acrylic-v3");
+  std::string model=cygno::simulation::defaultDetectorModel, mode="internal", geometryPath;
+  int next=3;
+  if (next<argc && std::string(argv[next]).rfind("--",0)!=0) geometryPath=argv[next++];
+  std::set<std::string> options;
+  while (next<argc) {
+    const std::string option=argv[next++];
+    if ((option!="--model" && option!="--mode") || next==argc || !options.insert(option).second)
+      throw std::runtime_error("Specify --model/--mode once with a value");
+    (option=="--model" ? model : mode)=argv[next++];
   }
+  cygno::simulation::Configure(mode, "none", model);
   const auto layout=cygno::geometry::ParseLayoutId(argv[2]);
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
@@ -35,7 +42,8 @@ int main(int argc, char** argv) try {
   if (!out) throw std::runtime_error("Cannot write quantities file");
   out << std::setprecision(17)
       << "# layout: " << detector.GetLayoutProfile().name << '\n'
-      << "# detector-model: " << cygno::simulation::DetectorModel() << "\n# source-policy: uniform-volume-v1\n"
+      << "# detector-model: " << cygno::simulation::DetectorModel()
+      << "\n# source-policy: " << cygno::simulation::SourcePolicy() << '\n'
       << "# compiled-source-hash: " << cygno::build::sourceHash << '\n'
       << "# geometry-hash: " << cygno::build::geometryHash << '\n'
       << "# provenance: actual source placements; sum of logical GetMass()/kg and list size\n"
@@ -64,13 +72,13 @@ int main(int argc, char** argv) try {
         << '\t' << density/(g/cm3) << '\t' << volume/mm3 << '\n';
   }
   if (!out) throw std::runtime_error("Failed to write quantities");
-  if (argc>=4) {
-    std::ofstream geometry(argv[3]);
+  if (!geometryPath.empty()) {
+    std::ofstream geometry(geometryPath);
     using namespace cygno::geometry;
     geometry << std::setprecision(17)
       << "{\"layout\":\"" << LayoutName(layout)
       << "\",\"model\":\"" << cygno::simulation::DetectorModel()
-      << "\",\"source_policy\":\"" << cygno::geometry::sourcePolicy
+      << "\",\"source_policy\":\"" << cygno::simulation::SourcePolicy()
       << "\",\"geometry_hash\":\"" << cygno::build::geometryHash
       << "\",\"source_hash\":\"" << cygno::build::sourceHash
       << "\",\"gas_size_mm\":[" << module.cathodeX << ',' << module.cathodeY << ',' << module.driftLength

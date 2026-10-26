@@ -78,7 +78,7 @@ quantities={}
 for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
     path=out/(layout+'.tsv')
     with (out/(layout+'.log')).open('w') as log:
-        subprocess.run([str(build/'geometry_quantities'),str(path),layout],check=True,stdout=log,stderr=subprocess.STDOUT)
+        subprocess.run([str(build/'geometry_quantities'),str(path),layout,'--model','cygno-300elj-v2'],check=True,stdout=log,stderr=subprocess.STDOUT)
     quantities[layout]=read_quantities(path,layout=layout,model='cygno-300elj-v2',geometry_hash=fingerprint)
     q=quantities[layout]
     counts=dict(CathodesPolyimide=75,CathodesCopper=150,GEMsCopper=900,GEMsPolyimide=450,RingSupports=150,RingStrips=3750,

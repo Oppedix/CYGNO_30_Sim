@@ -8,7 +8,7 @@ import sys
 import time
 if __package__ in (None,''):
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from external.study.config import load, validate, macro, rate, PHYSICS, REPO
+from external.study.config import load, validate, macro, rate, PHYSICS, REPO, MODELS
 from study import runtime as rt
 from study.source_matrix import require
 from study.campaign import inside
@@ -32,7 +32,7 @@ def environment(log):
 def check_campaign(output):
     c=rt.read(output/'campaign.json')
     require(c['external_campaign_version']==1 and c['status']=='complete', 'Not a completed external campaign')
-    identity=c['identity']; cfg=validate(identity['config'])
+    identity=c['identity']; cfg=validate(identity['config'],historical=True)
     require(c['fingerprint']==rt.object_digest(identity), 'External identity fingerprint mismatch')
     require(rt.read(output/'config.json')==cfg and rt.digest(output/'geometry.json')==c['geometry_sha256'], 'Snapshot mismatch')
     for name,checksum in identity['source']['files_sha256'].items():
@@ -43,20 +43,33 @@ def check_campaign(output):
     rt.check_artifacts(attempt,c)
     require((attempt/'run.mac').read_text()==macro(cfg), 'Macro/config mismatch')
     log=(attempt/'simulation.log').read_text(errors='replace')
+    check_model(log,cfg)
     env,radius,geometry_hash=environment(log)
     require(env==identity['environment'] and radius==identity['source_radius_mm'] and geometry_hash==identity['external_geometry_hash'], 'Transport identity mismatch')
     accounting=rt.parse_accounting(log,cfg['primaries'])
     require(accounting==c['accounting'], 'Accounting mismatch')
     receipt=rt.read(attempt/'simulation.command.json')
     require(receipt.get('returncode')==0 and not receipt.get('interrupted') and not receipt.get('timed_out'), 'Incomplete transport receipt')
+    if 'model' in cfg:
+        command=receipt['command']
+        require(command.count('--model')==1 and command.index('--model')+1<len(command) and
+                command[command.index('--model')+1]==cfg['model'], 'External model receipt mismatch')
+    geometry=rt.read(output/'geometry.json')
+    require(geometry['model']==cfg.get('model','cygno-300elj-v2') and geometry['layout']==cfg['layout'] and
+            geometry['source_hash']==env['source_hash'] and geometry['geometry_hash']==env['geometry_hash'], 'External geometry/model mismatch')
     data=inside(attempt,c['data_path'])
     require(data.parent==attempt/'outfiles_V2' and data.stat().st_size>0, 'Invalid output path')
     require(c['incident_rate_s']==rate(cfg,radius), 'Normalization mismatch')
     return c,data
 
 
+def check_model(log,cfg):
+    expected=f"CYGNO layout={cfg['layout']} detector_model={cfg.get('model','cygno-300elj-v2')} source_model=environmental-surface-v1"
+    require([line for line in log.splitlines() if line.startswith('CYGNO layout=')]==[expected], 'External detector/source identity mismatch')
+
+
 def run(args):
-    cfg=load(args.config)
+    cfg=load(args.config,model=args.model)
     for key in ('primaries','seed','shield','output_mode'):
         if getattr(args,key) is not None:cfg[key]=getattr(args,key)
     validate(cfg)
@@ -69,8 +82,9 @@ def run(args):
     with rt.locked(output):
         probe=output/'probes'/str(time.time_ns());probe.mkdir(parents=True)
         (probe/'probe.mac').write_text('/control/echo EXTERNAL_ENVIRONMENT_PROBE\n')
-        options=['1','--mode','external','--shield',cfg['shield'],'--layout',cfg['layout'],'--output-mode',cfg['output_mode']]
+        options=['1','--mode','external','--shield',cfg['shield'],'--layout',cfg['layout'],'--output-mode',cfg['output_mode'],'--model',cfg['model']]
         log=rt.invoke([simulation,probe/'probe.mac',*options],probe,'environment',120)
+        check_model(log,cfg)
         env,radius,geometry_hash=environment(log)
         require(env['source_hash']==rt.compiled_source_hash() and env['geometry_hash']==rt.digest(REPO/'common/DetectorGeometry.hh') and
                 geometry_hash==rt.digest(REPO/'common/ExternalGeometry.hh'), 'Stale binary; rebuild')
@@ -86,9 +100,10 @@ def run(args):
             require(args.retry_failed,'Previous attempt retained; use --retry-failed to create a new attempt')
         else:
             rt.save(output/'config.json',cfg)
-            rt.invoke([exporter,output/'quantities.tsv',cfg['layout'],output/'geometry.json'],probe,'geometry',120)
+            rt.invoke([exporter,output/'quantities.tsv',cfg['layout'],output/'geometry.json','--mode','external','--model',cfg['model']],probe,'geometry',120)
             geometry=rt.read(output/'geometry.json')
-            require(geometry['source_hash']==env['source_hash'],'Stale geometry exporter')
+            require(geometry['source_hash']==env['source_hash'] and geometry['model']==cfg['model'] and
+                    geometry['source_policy']=='environmental-surface-v1', 'Stale geometry exporter or model mismatch')
             for name,checksum in identity['source']['files_sha256'].items():
                 if checksum!='missing':
                     target=output/'source'/name;target.parent.mkdir(parents=True,exist_ok=True)
@@ -104,6 +119,7 @@ def run(args):
             (attempt/'run.mac').write_text(macro(cfg))
             log=rt.invoke([simulation,attempt/'run.mac',*options],attempt,'simulation',cfg['timeout_seconds'],
                           contribution=cfg['id'],primaries=cfg['primaries'])
+            check_model(log,cfg)
             require(environment(log)==(env,radius,geometry_hash),'Environment changed during transport')
             campaign['accounting']=rt.parse_accounting(log,cfg['primaries'])
             roots=list((attempt/'outfiles_V2').glob('*.root'))
@@ -126,6 +142,7 @@ def main():
     p.add_argument('--build',type=Path);p.add_argument('--output',type=Path)
     p.add_argument('--primaries',type=int);p.add_argument('--seed',type=int)
     p.add_argument('--shield',choices=('none','copper20'))
+    p.add_argument('--model',choices=MODELS,help='Override config detector model (supplied configs: cygno-acrylic-v3)')
     p.add_argument('--output-mode',choices=('raw','compact','both'))
     p.add_argument('--retry-failed',action='store_true');p.add_argument('--dry-run',action='store_true')
     try:return run(p.parse_args())
