@@ -81,10 +81,10 @@ def validate_job(output, row, campaign):
     receipt = rt.read(attempt/'simulation.command.json')
     require(receipt.get('returncode') == 0 and not receipt.get('timed_out') and not receipt.get('interrupted'),
             'Incomplete simulation receipt')
-    if config['model'] == 'cygno-acrylic-v3':
+    if config['model'] in ('cygno-acrylic-v3', 'cygno-copper-cathode-v4'):
         command = receipt['command']
         require(command.count('--model') == 1 and command.index('--model')+1 < len(command) and
-                command[command.index('--model')+1] == config['model'], 'v3 transport model receipt mismatch')
+                command[command.index('--model')+1] == config['model'], 'Transport model receipt mismatch')
     accounting = rt.validate_simulation_log((attempt/'simulation.log').read_text(errors='replace'),
         campaign['identity']['effective_environment'], config['primaries_per_job'])
     require(job['accounting'] == accounting and job['generated_primaries'] == accounting['GeneratedPrimaries'],

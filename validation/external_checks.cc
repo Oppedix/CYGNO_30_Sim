@@ -61,6 +61,16 @@ int main(int argc,char** argv) try {
       require(box && box->GetXHalfLength()/mm==250 && box->GetYHalfLength()/mm==400 &&
               box->GetZHalfLength()/mm==.025,"Core dimensions changed");
     }
+    if (cygno::simulation::copperCathode) {
+      require(logical->GetName()!="CathodesPolyimide" && logical->GetName()!="CathodesCopper",
+              "Obsolete cathode core/skin in v4");
+      if (logical->GetName()=="Cathode") {
+        const auto* box=dynamic_cast<const G4Box*>(logical->GetSolid());
+        require(box && box->GetZHalfLength()/mm==module.cathodeHalfThickness &&
+                logical->GetMaterial()->GetName()=="G4_Cu", "Wrong solid copper cathode");
+        require(!pv->CheckOverlaps(100,0.,false,1), "Cathode overlaps geometry");
+      }
+    }
     if(name=="World")continue;
     if(name.find("ExternalCu")==0) {
       require(pv->GetLogicalVolume()->GetMaterial()->GetName()=="G4_Cu","Wrong shield material");

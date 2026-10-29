@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "mode": "smoke",
+  "layout": "cygno-5x5x3-v1",
+  "model": "cygno-300elj-v2",
+  "source_policy": "uniform-volume-v1",
+  "primaries_per_job": 2,
+  "seed": 12345,
+  "timeout_seconds": 120,
+  "rdm_threshold_years": 1e+60
+}

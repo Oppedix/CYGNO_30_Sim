@@ -79,7 +79,7 @@ int main(int argc,char** argv) try {
   const auto& id=c["identity"];const auto& cfg=id["config"];const auto& env=id["environment"];
   // Pre-model archived external configs were always constructed as v2.
   const auto model=cfg.has_child("model") ? cfg["model"].val() : std::string("cygno-300elj-v2");
-  require(model=="cygno-acrylic-v3" || model=="cygno-300elj-v2","Unknown detector model");
+  require(model=="cygno-copper-cathode-v4" || model=="cygno-acrylic-v3" || model=="cygno-300elj-v2","Unknown detector model");
   auto config=json(source/"config.json");
   std::ostringstream a,b;cfg.writeJSON(a);config->rootnode().writeJSON(b);
   require(a.str()==b.str(),"Config snapshot mismatch");

@@ -140,6 +140,10 @@ def make_campaign(path, layout, model='cygno-300elj-v2'):
     campaign['identity']['config']=config
     rt.save(path/'config.json',config); rt.save(path/'geometry.json',saved_geom)
     quantities=(path/'quantities.tsv').read_text().replace('# layout: legacy-25x3', '# layout: '+layout)
+    if model == 'cygno-copper-cathode-v4':
+        pieces=308 if layout=='cygno-11x7-v1' else 300
+        campaign['quantities']['Lens'].update(mass_kg=.512833584772, pieces=pieces)
+        quantities=quantities.replace('Lens\t2\t3\t',f'Lens\t.512833584772\t{pieces}\t')
     (path/'quantities.tsv').write_text(quantities)
     expected=dict(layout=layout,model=config['model'],source_policy=config['source_policy'],geometry_hash=saved_geom['geometry_hash'])
     full=synthetic_groups()
@@ -242,12 +246,37 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(str(f['provenance/matrix.json']), (campaign/'matrix.json').read_text())
             self.assertEqual(f['provenance/NormalizationScenario'].member('fTitle'),scenario['scenario_id'])
         self.assertEqual(snapshots,{p:p.read_bytes() for p in snapshots})
-        # Even internally consistent manifests cannot relabel v3 sources as v2 transport.
-        config=rt.read(campaign/'config.json'); config['model']='cygno-300elj-v2'
+        # Even internally consistent manifests cannot relabel v3 sources as v4 transport.
+        config=rt.read(campaign/'config.json'); config['model']='cygno-copper-cathode-v4'
         rt.save(campaign/'config.json',config)
         document=rt.read(campaign/'campaign.json');document['identity']['config']=config
         rt.save(campaign/'campaign.json',document)
         rejected=self.root/'acrylic-rejected'
+        run=subprocess.run([str(self.binary),str(campaign),str(rejected)],capture_output=True,text=True)
+        self.assertNotEqual(run.returncode,0)
+        self.assertFalse(rejected.exists())
+
+    def test_copper_cathode_v4_parity_and_model_rejection(self):
+        campaign=self.root/'v4-campaign'
+        geom,inputs=make_campaign(campaign,'cygno-11x7-v1','cygno-copper-cathode-v4')
+        output=self.root/'v4-analysis'
+        snapshots={p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()}
+        self.run_analysis(campaign,output)
+        expected=[(row,scale,*oracle(groups,geom)) for row,scale,groups in inputs]
+        self.check_output(output,expected,1.)
+        scenario=rt.read(output/'normalization-scenario.json')
+        self.assertEqual(scenario['detector_model'],'cygno-copper-cathode-v4')
+        self.assertEqual(scenario['scenario_id'],'cygno-radioassay-v4')
+        with uproot.open(output/'analysis.root') as f:
+            self.assertEqual(str(f['provenance/matrix.json']), (campaign/'matrix.json').read_text())
+            self.assertEqual(f['provenance/NormalizationScenario'].member('fTitle'),scenario['scenario_id'])
+        self.assertEqual(snapshots,{p:p.read_bytes() for p in snapshots})
+        # Even internally consistent manifests cannot relabel v4 sources as v3 transport.
+        config=rt.read(campaign/'config.json'); config['model']='cygno-acrylic-v3'
+        rt.save(campaign/'config.json',config)
+        document=rt.read(campaign/'campaign.json');document['identity']['config']=config
+        rt.save(campaign/'campaign.json',document)
+        rejected=self.root/'v4-rejected'
         run=subprocess.run([str(self.binary),str(campaign),str(rejected)],capture_output=True,text=True)
         self.assertNotEqual(run.returncode,0)
         self.assertFalse(rejected.exists())

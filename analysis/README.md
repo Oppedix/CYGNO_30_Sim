@@ -7,13 +7,13 @@
 
 # Canonical analysis
 
-Preferred internal v3 uses physical PMMA50 cores and Table 7.1 Acrylic/EFCu
-activities (26 contributions). Retained v2 uses Kapton50/Arnquist layer assays
-(28 contributions). Both pipelines require a matching saved matrix/transport
-model, preserve the simulation matrix, and record `normalization-scenario.json`
-separately. Physical v3 requires new transport for every contribution; v2 ROOT
-files cannot be converted by changing activities. See
-[source provenance](../docs/STUDY_SOURCES.md) and [cluster commands](../internal/README.md).
+Current internal v4 uses `cygno-copper-cathode-v4` and the matching
+23-contribution `cygno-radioassay-v4` matrix. Both pipelines preserve the matrix
+and record `normalization-scenario.json`. Lens activities are Bq/piece from
+`CYGNO_radioactivity_excel_suprasil`; use the actual lens count, never surrogate
+mass or another factor of 3.843 kg. New v4 transport is required for every job.
+See [source provenance](../docs/STUDY_SOURCES.md) and
+[workflow commands](../internal/README.md).
 
 `study/analyze.py` orchestrates campaign validation and publishing. All numerical
 analysis is here. No CERN ROOT or Geant4 installation is needed for Stage B.

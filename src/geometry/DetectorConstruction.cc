@@ -72,11 +72,17 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 {
   // Retain source lists across the application lifetime, rebuilding their contents
   // when Geant4 reconstructs geometry. Names resolve through its physical store.
+  fListCathode.clear();
   fListCathodesPolyimide.clear(); fListCathodesCopper.clear(); fListGEMsCopper.clear(); fListGEMsPolyimide.clear();
   fListSupportRings.clear(); fListRingStrips.clear(); fListResistors.clear();
   fListLens.clear(); fListSensors.clear(); fListDetector.clear();
   fMassMap = {{"CathodesPolyimide",0}, {"CathodesCopper",0}, {"RingSupports",0}, {"RingStrips",0}, {"Resistors",0},
               {"GEMsCopper",0}, {"GEMsPolyimide",0}, {"Vessel",0}, {"Lens",0}, {"Sensors",0}};
+  if (cygno::simulation::copperCathode) {
+    fMassMap.erase("CathodesPolyimide");
+    fMassMap.erase("CathodesCopper");
+    fMassMap["Cathode"] = 0;
+  }
   fModuleLayout = fLayoutProfile.modules;
   fMaterials = DefineMaterials();
   auto* world = BuildWorld();
@@ -213,7 +219,19 @@ G4VPhysicalVolume* DetectorConstruction::PlaceInModule(
 
 void DetectorConstruction::BuildCathodes()
 {
-  // Detector material selection is shared by internal and external source modes.
+  // One solid EFCu-assayed slab fills the old envelope in both source modes.
+  if (cygno::simulation::copperCathode) {
+    auto* cathode = new G4LogicalVolume(new G4Box("Cathode",
+        d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodeTotalThickness*mm/2),
+        fMaterials.copper, "Cathode");
+    cathode->SetVisAttributes(SolidColour(G4Colour(0.6,0.4,0.2,0.0)));
+    for (const auto& module : fModuleLayout) {
+      fPhysicalCathodes = PlaceInModule(module, cathode, {}, "Cathode", 0, fListCathode);
+      fMassMap["Cathode"] += cathode->GetMass();
+    }
+    return;
+  }
+  // Historical v2/v3 reconstruction only; never combined with the v4 slab.
   auto* polyimide = new G4LogicalVolume(new G4Box("CathodesPolyimide",
       d.cathodeX*mm/2, d.cathodeY*mm/2, d.cathodePolyimideThickness*mm/2),
       cygno::simulation::acrylicCore ? fMaterials.pmma : fMaterials.polyimide, "CathodesPolyimide");

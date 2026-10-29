@@ -8,7 +8,7 @@ from study.source_matrix import require, LAYOUTS
 REPO = rt.REPO
 PROCESSING = 'external-track-volumes-v1'
 PHYSICS = 'QGSP_BIC_HP_EMZ'
-MODELS = ('cygno-acrylic-v3','cygno-300elj-v2')
+MODELS = ('cygno-copper-cathode-v4','cygno-acrylic-v3','cygno-300elj-v2')
 FIELDS = {'schema_version','mode','model','id','layout','shield','output_mode','primaries','seed',
           'timeout_seconds','scientific_status','particle','hall','flux_cm2_s','flux_convention',
           'energy_edges_MeV','bin_probabilities','shape_assumption','reference'}

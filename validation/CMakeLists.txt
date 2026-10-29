@@ -33,6 +33,10 @@ add_test(NAME acrylic_geometry COMMAND ${Python3_EXECUTABLE} -m unittest discove
   -s tests -p test_acrylic.py -v)
 set_tests_properties(acrylic_geometry PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
   ENVIRONMENT "CYGNO_ACRYLIC_BUILD=${PROJECT_BINARY_DIR}" TIMEOUT 180)
+add_test(NAME detector_v4 COMMAND ${Python3_EXECUTABLE} -m unittest discover
+  -s tests -p test_v4.py -v)
+set_tests_properties(detector_v4 PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+  ENVIRONMENT "CYGNO_ACRYLIC_BUILD=${PROJECT_BINARY_DIR}" TIMEOUT 180)
 option(CYGNO_TEST_PYTHON_ANALYSIS "Test uproot analysis (install study/requirements-analysis.txt)" OFF)
 if(CYGNO_TEST_PYTHON_ANALYSIS)
   add_test(NAME offline_python COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -v)

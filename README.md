@@ -6,17 +6,22 @@ Build it once; choose the workflow at run time.
 | Area | Responsibility | Start here |
 |---|---|---|
 | **Common** | Geant4 application, geometry, materials, CAD/reference context and shared technical documentation | [Setup and build](docs/SETUP.md), [module geometry](docs/SINGLE_MODULE_GEOMETRY.md), [layouts](docs/LAYOUT.md), [shielding](docs/EXTERNAL_SHIELDING.md) |
-| **Internal** | Component radioactivity; **v3 preferred**, v2 supported | [Internal guide](internal/README.md) |
+| **Internal** | Component radioactivity; **v4** | [Internal guide](internal/README.md) |
 | **External** | LNGS gamma/neutron proxy scenarios with **Cu20** shielding | [External guide](external/README.md) |
 
 The active detector uses analytical Geant4 solids, not an imported CAD detector.
-Both modes default to `cygno-acrylic-v3` with PMMA50/Cu foils.
-Internal v3 uses these foils and historical Table 7.1 activities (26 source
-contributions); v2 retains Kapton50/Cu and Arnquist Table 5 layer assays (28).
-**Physical v3 requires new transport for every contribution; v2 cannot be
-converted by reweighting.** Select `--model cygno-300elj-v2` explicitly in
-either mode to reproduce Kapton transport; source policies and physics remain
-specific to each mode.
+Both modes default to **`cygno-copper-cathode-v4`**: one solid EFCu cathode
+per module, with Acrylic/PMMA cores and copper skins only in the GEMs.
+The cathode envelope remains 500 × 800 × 0.060 mm. Internal radioactivity uses
+23 contributions from `cygno-radioassay-v4`; lens activity is **Bq/piece**, from
+`CYGNO_radioactivity_excel_suprasil`, normalized by actual lens placements.
+The 3.843 kg reference mass describes **one physical lens**; Geant4 lens geometry
+and transport remain unchanged. External gamma/neutron sources use this same
+detector with their separate physics and environmental normalization.
+
+**v4 requires new transport and new campaign directories in both modes.**
+Existing results are never converted or resumed as v4. Historical reconstruction
+is isolated in the [model history](docs/history/DETECTOR_MODELS.md).
 
 ## Install and build the common application
 
@@ -46,7 +51,7 @@ compiled separately on an analysis machine, as shown in their
 
 ## Technical references
 
-- [Source activities and v2/v3 provenance](docs/STUDY_SOURCES.md)
+- [Source activities and v4 provenance](docs/STUDY_SOURCES.md)
 - [Code guide](docs/CODE_GUIDE.md) and [directory/compatibility review](docs/INTERNAL_EXTERNAL_REVIEW.md)
 - [Internal output](docs/OUTPUT.md), [analysis](docs/ANALYSIS.md), [validation](docs/TWO_STAGE_VALIDATION.md)
 - [External physics](external/docs/PHYSICS.md), [output](external/docs/OUTPUT.md), [validation](external/docs/VALIDATION.md)

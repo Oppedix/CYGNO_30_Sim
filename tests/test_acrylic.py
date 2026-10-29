@@ -81,8 +81,8 @@ class AcrylicGeometryTests(unittest.TestCase):
             macro=directory/'probe.mac';macro.write_text('/control/echo MODEL_PROBE\n')
             exports={}
             for mode in ('internal','external'):
-                for model in (None,'cygno-300elj-v2','cygno-acrylic-v3'):
-                    expected=model or 'cygno-acrylic-v3'
+                for model in (None,'cygno-300elj-v2','cygno-acrylic-v3','cygno-copper-cathode-v4'):
+                    expected=model or 'cygno-copper-cathode-v4'
                     flags=['--mode',mode]+(['--model',model] if model else [])
                     log=subprocess.run([str(build/'rdecay01'),str(macro),'1',*flags],cwd=directory,
                                        check=True,capture_output=True,text=True,timeout=120).stdout
@@ -98,8 +98,8 @@ class AcrylicGeometryTests(unittest.TestCase):
                     self.assertIn('# detector-model: '+expected,output.read_text())
                     with output.open() as file:
                         rows={r['component']:r for r in csv.DictReader((l for l in file if not l.startswith('#')),delimiter='\t')}
-                    for component in ('GEMsPolyimide','CathodesPolyimide'):
-                        self.assertEqual(rows[component]['geometry_material'],'PMMA' if expected=='cygno-acrylic-v3' else 'G4_KAPTON')
+                    for component in (('GEMsPolyimide',) if expected=='cygno-copper-cathode-v4' else ('GEMsPolyimide','CathodesPolyimide')):
+                        self.assertEqual(rows[component]['geometry_material'],'PMMA' if expected!='cygno-300elj-v2' else 'G4_KAPTON')
                     if mode=='internal':exports[expected]=(rows,document)
                     else:
                         old_rows,old_geometry=exports[expected]
@@ -111,7 +111,7 @@ class AcrylicGeometryTests(unittest.TestCase):
                 result=subprocess.run([str(build/'geometry_quantities'),str(output),'cygno-11x7-v1',*flags],capture_output=True,text=True)
                 self.assertNotEqual(result.returncode,0)
             help_text=subprocess.check_output([str(build/'rdecay01'),'--help'],text=True)
-            self.assertIn('Default detector model in both modes: cygno-acrylic-v3',help_text)
+            self.assertIn('Default detector model in both modes: cygno-copper-cathode-v4',help_text)
 
 
 if __name__=='__main__':unittest.main()

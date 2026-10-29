@@ -14,7 +14,7 @@ from study.source_matrix import require, MATRIX_MODELS
 
 
 
-def check(build, output, long_lived_only=False, model='cygno-acrylic-v3'):
+def check(build, output, long_lived_only=False, model='cygno-copper-cathode-v4'):
     require(model in MATRIX_MODELS.values(), 'Unsupported preflight model')
     output = output.resolve()
     require(not output.is_relative_to(REPO), 'Preflight outputs must be outside the repository')
@@ -29,7 +29,7 @@ def check(build, output, long_lived_only=False, model='cygno-acrylic-v3'):
         folder = output/name; folder.mkdir()
         macro = '\n'.join(['/run/verbose 0', '/event/verbose 0', '/tracking/verbose 0',
             '/random/setSeeds 12345 67890', '/output/OutFile preflight',
-            *([RDM_COMMAND] if enabled else []), '/detector/RadElement CathodesPolyimide',
+            *([RDM_COMMAND] if enabled else []), '/detector/RadElement '+('Cathode' if model == 'cygno-copper-cathode-v4' else 'CathodesPolyimide'),
             f'/isotope/AtomicNumber {z}', f'/isotope/MassNumber {a}',
             '/rdecay01/fullChain true', f'/stopChain/ZStopDecay {stop[0]}',
             f'/stopChain/AStopDecay {stop[1]}', f'/run/beamOn {count}', ''])
@@ -77,7 +77,7 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='New directory, retained on failure')
     parser.add_argument('--long-lived-only', action='store_true')
-    parser.add_argument('--model', choices=tuple(MATRIX_MODELS.values()), default='cygno-acrylic-v3', help='Detector model (default: %(default)s)')
+    parser.add_argument('--model', choices=tuple(MATRIX_MODELS.values()), default='cygno-copper-cathode-v4', help='Detector model (default: %(default)s)')
     args = parser.parse_args()
     return check(args.build, args.output, args.long_lived_only, args.model)
 

@@ -108,7 +108,8 @@ G4ThreeVector RadioactiveSourceSampler::SampleLocal(G4VSolid* solid) {
 
 SourcePoint RadioactiveSourceSampler::Sample(const G4String& component) {
   std::vector<G4String> elements;
-  if (component=="CathodesPolyimide") elements=fDetector->GetCathodesPolyimideList();
+  if (component=="Cathode") elements=fDetector->GetCathodeList();
+  else if (component=="CathodesPolyimide") elements=fDetector->GetCathodesPolyimideList();
   else if (component=="CathodesCopper") elements=fDetector->GetCathodesCopperList();
   else if (component=="GEMsPolyimide") elements=fDetector->GetGEMsPolyimideList();
   else if (component=="GEMsCopper") elements=fDetector->GetGEMsCopperList();

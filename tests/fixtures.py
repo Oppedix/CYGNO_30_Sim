@@ -5,7 +5,7 @@ import numpy as np
 import uproot
 from study import runtime as rt
 from analysis.raw.io import LEGACY_HITS_SCHEMA as HITS_SCHEMA, METADATA
-from study.source_matrix import COMPONENTS, read_matrix, MATRIX_MODELS
+from study.source_matrix import COMPONENTS, V4_COMPONENTS, read_matrix, MATRIX_MODELS
 
 
 def chunk(rows):
@@ -60,8 +60,9 @@ def campaign_fixture(root, model='cygno-300elj-v2'):
     geometry = dict(layout=cfg['layout'], model=cfg['model'], source_policy=cfg['source_policy'], geometry_hash=env['geometry_hash'], source_hash=env['source_hash'],
                     gas_size_mm=[100,100,100], gas_centers_mm={str(i):[0,0,0] for i in range(150)})
     rt.save(root/'geometry.json', geometry)
-    quantities = {name:dict(mass_kg=2., pieces=3, geometry_material='PMMA' if model == 'cygno-acrylic-v3' and name in ('GEMsPolyimide','CathodesPolyimide') else 'fixture') for name in COMPONENTS}
-    (root/'quantities.tsv').write_text(f"# layout: {cfg['layout']}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# geometry-hash: {env['geometry_hash']}\n# compiled-source-hash: {env['source_hash']}\n# provenance: synthetic fixture\ncomponent\tmass_kg\tpieces\tgeometry_material\n"+''.join(f'{name}\t2\t3\t{quantities[name]["geometry_material"]}\n' for name in COMPONENTS))
+    components = V4_COMPONENTS if model == 'cygno-copper-cathode-v4' else COMPONENTS
+    quantities = {name:dict(mass_kg=2., pieces=3, geometry_material='G4_Cu' if name == 'Cathode' else 'PMMA' if model in ('cygno-acrylic-v3','cygno-copper-cathode-v4') and name in ('GEMsPolyimide','CathodesPolyimide') else 'fixture') for name in components}
+    (root/'quantities.tsv').write_text(f"# layout: {cfg['layout']}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# geometry-hash: {env['geometry_hash']}\n# compiled-source-hash: {env['source_hash']}\n# provenance: synthetic fixture\ncomponent\tmass_kg\tpieces\tgeometry_material\n"+''.join(f'{name}\t2\t3\t{quantities[name]["geometry_material"]}\n' for name in components))
     checks = {name:dict(status='passed', PART122=False, environment=env) for name in
               ('u238-default', 'u238-enabled', 'th232-full', 'bi212-full')}
     preflight = root/'preflight'; preflight.mkdir()

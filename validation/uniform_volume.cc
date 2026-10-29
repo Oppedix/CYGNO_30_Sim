@@ -29,12 +29,15 @@ int main() {
   CLHEP::HepRandom::setTheSeed(271828);
   DetectorConstruction detector(cygno::geometry::LayoutId::Cygno11x7);
   detector.Construct();
-  const std::map<G4String,std::vector<G4String>> sources{
+  std::map<G4String,std::vector<G4String>> sources{
     {"GEMsPolyimide",detector.GetGEMsPolyimideList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
-    {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()},
+    {"Cathode",detector.GetCathodeList()}, {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()},
     {"RingSupports",detector.GetRingsSupportList()}, {"RingStrips",detector.GetRingStripstList()},
     {"Resistors",detector.GetResistorList()}, {"Lens",detector.GetLensList()},
     {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
+  for (auto it=sources.begin(); it!=sources.end();) {
+    if (it->second.empty()) it=sources.erase(it); else ++it;
+  }
   constexpr int n=100000;
   for (const auto& [family,names] : sources) {
     auto* physical=detector.GetVolumeStored()->GetVolume(names.front());

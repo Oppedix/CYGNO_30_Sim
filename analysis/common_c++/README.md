@@ -6,29 +6,21 @@ separate implementation. Historical Python spectra/reporting and
 `analysis/reference_cpp/` are unchanged; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked, v2 (28 contributions) or v3 (26 contributions) campaign** produced by
-`study/simulate.py` with `output_mode=compact`, campaign schema 3, output schema 1.
-The same executable handles `legacy-25x3` and `cygno-11x7-v1` using their saved
-geometry and constructed quantities. No detector coordinates, component masses, resistor counts or primary counts
-are compiled into the program. Normalization uses the saved matrix activities
-and constructed quantities; v3 layer activities are additionally checked against
-the fixed Table 7.1 values. The canonical source/isotope schema is checked.
+Input is a **completed, unpacked v4 campaign (23 contributions)** produced by
+`study/simulate.py` with compact output, campaign schema 3, output schema 1.
+The analyzer uses saved layouts, quantities and generated-primary accounting.
+`cygno-copper-cathode-v4` requires `cygno-radioassay-v4`. It checks EFCu cathode
+and GEM activities, Bq/piece lens values and provenance, PMMA GEM transport and
+copper cathode quantities. Lens scales are exact matrix Bq/piece × actual lens
+placements × 31536000 / generated primaries. The reference 3.843 kg physical lens
+mass has already been used once in the conversion and is never applied here.
 
-## Versioned internal inputs
-
-| Scenario | Required transport | Contributions |
-|---|---|---:|
-| v2, retained | `cygno-300elj-v2`, Kapton50 | 28 |
-| **v3 (default detector)** | `cygno-acrylic-v3`, PMMA50 | 26 |
-
-The matrix/model pair must match. v3 cannot relabel or reweight a v2 campaign:
-all v3 contributions need new Geant4 transport. Other components keep v2 assays.
-The input `matrix.json` remains the original simulation matrix, embedded verbatim
-under `provenance/`. The separate `normalization-scenario.json` is written both
-beside `analysis.root` and under `provenance/`, with scenario ID, detector model,
-simulation matrix ID and interpretation. `NormalizationScenario` and
-`DetectorModel` are also ROOT TNamed markers. Python records the same descriptor.
-See [source comparison and new-run limits](../../docs/STUDY_SOURCES.md).
+The original matrix is embedded verbatim under `provenance/`, including
+`CYGNO_radioactivity_excel_suprasil`. A separate `normalization-scenario.json`
+records model, simulation matrix and interpretation in ROOT and beside it.
+Python records the same descriptor. Existing v3 data cannot become v4 by
+reweighting or changing metadata. Historical analysis compatibility is for
+[reproducibility only](../../docs/history/DETECTOR_MODELS.md).
 
 ## Compile
 
@@ -85,30 +77,19 @@ Fast-math builds are explicitly rejected.
 The interface is `AnalyzeCompactCampaign CAMPAIGN_DIR NEW_OUTPUT_DIR
 [--coincidence-ns VALUE]`, with a positive finite window. **Default: 1 ns**,
 an explicit feasibility assumption, not an established detector time resolution.
-For the compact v3 production campaign from the Internal guide:
+For the compact v4 production campaign from the Internal guide:
 
 ```bash
 # Directory: $CYGNO_SRC; ROOT runtime active, complete unpacked input present here.
 cd "$CYGNO_SRC"
 "$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign" \
-  "$CYGNO_RUNS/internal-v3-production-NEW" \
-  "$CYGNO_RUNS/internal-v3-root-NEW" --coincidence-ns 1
+  "$CYGNO_RUNS/internal-v4-production-NEW" \
+  "$CYGNO_RUNS/internal-v4-root-NEW" --coincidence-ns 1
 ```
 
-Both paths are on the analysis machine after transfer if needed. The same
-executable supports saved v2 campaigns. For the documented historical CNAF
-25×3 input (verify that it is complete compact data before running):
-
-```bash
-# Directory: $CYGNO_SRC on the CNAF ROOT analysis worker.
-cd "$CYGNO_SRC"
-"$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign" \
-  /cnaf/cygno-sim/Users/goppedis/SolarNu/25x3Samuele-1M \
-  /cnaf/cygno-sim/Users/goppedis/SolarNu/analysis-25x3-NEW --coincidence-ns 1
-```
-
-A path such as `/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete`
-is a configurable v3 transfer destination, not a documented existing campaign.
+Both paths are on the analysis machine after transfer if needed. Always use a
+new output path and a newly transported v4 campaign. Historical reconstruction
+instructions are isolated in [model history](../../docs/history/DETECTOR_MODELS.md).
 
 The output directory must not exist and must be outside the input campaign.
 The program reads the campaign without modifying it. It does not accept an
@@ -140,7 +121,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all saved physical rows (28 v2 / 26 v3),
+1. The ordered `matrix.json.contributions` array supplies all 23 saved v4 physical rows,
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -314,7 +295,7 @@ is determined by each matrix row's unit:
 | Activity unit | Constructed quantity |
 |---|---|
 | `Bq/kg` | Component `mass_kg` |
-| `Bq/piece` | Component `pieces` (including the resistor rows) |
+| `Bq/piece` | Component `pieces` (Lens and Resistors) |
 
 For **each physical contribution**, with left-to-right multiplication:
 
@@ -331,16 +312,16 @@ The reporting order is that of `analysis/common/reporting.py`. Current matrix
 membership is shown for explanation only; the executable reads membership from
 the campaign matrix:
 
-| Reporting category | Physical components | v2 contributions | v3 contributions |
-|---|---|---:|---:|
-| Camera Lenses | Lens: U238, Th232, K40 | 3 | 3 |
-| Vessel | Vessel: U238, Th232 | 2 | 2 |
-| Camera Sensors | Sensors: U238, Th232, K40 | 3 | 3 |
-| Cathodes | Core: U238, Th232, K40; copper: U238, Th232 (+K40 only in v2) | 6 | 5 |
-| Resistors | Resistors: U238, Th232, K40 | 3 | 3 |
-| GEMs | Core: U238, Th232, K40; copper: U238, Th232 (+K40 only in v2) | 6 | 5 |
-| Field Cage | RingSupports: U238, Th232, K40; RingStrips: U238, Th232 | 5 | 5 |
-| **Total** | Stable core source IDs retain `Polyimide` in v3 | **28** | **26** |
+| Reporting category | Physical components | v4 contributions |
+|---|---|---:|
+| Camera Lenses | Lens: U238, Th232, K40, Bq/piece | 3 |
+| Vessel | Vessel: U238, Th232 | 2 |
+| Camera Sensors | Sensors: U238, Th232, K40 | 3 |
+| Cathodes | Solid Cathode: U238, Th232 | 2 |
+| Resistors | Resistors: U238, Th232, K40, Bq/piece | 3 |
+| GEMs | PMMA core U238, Th232, K40; Cu skins U238, Th232 | 5 |
+| Field Cage | RingSupports U238, Th232, K40; RingStrips U238, Th232 | 5 |
+| **Total** | Nine physical families | **23** |
 
 The completed MBNL resistor assay supplies U238/Th232 equilibrium-assumption jobs and one K40 job. Per-piece activity is based on the nominal 17-mm Suprasil reference tube, never the compact transport-box mass. See [material provenance](../../docs/STUDY_SOURCES.md).
 GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
@@ -394,8 +375,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: N × 4 × 6 (N=26 v3 / 28 v2) explicit selection windows
-ExactEnergyWindows                TTree: N × 2 × 6 (N=26 v3 / 28 v2) contribution windows
+SelectionEnergyWindows            TTree: N × 4 × 6 (N=23 v4) explicit selection windows
+ExactEnergyWindows                TTree: N × 2 × 6 (N=23 v4) contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -419,7 +400,7 @@ reconstruction of each normalized contribution without rereading the campaign.
 For example, in ROOT started from `$CYGNO_RUNS` (the analysis output parent):
 
 ```cpp
-TFile file("internal-v3-root-NEW/analysis.root");
+TFile file("internal-v4-root-NEW/analysis.root");
 file.Get<TH1D>("no_cut/total")->Draw("HIST");
 file.Get<TTree>("ExactEnergyWindows")->Scan("Contribution:Window:Count:RatePerYear", "Fiducial==1");
 ```
@@ -443,43 +424,11 @@ for `all`, `gt10`, and `gt10_le400`.
 
 ## Equivalence checks
 
-Validation uses the existing canonical `canonical_input`, `accumulate`,
-`scale_for`, and `summarize` functions as the oracle, without changing them.
-Python is used only for this development comparison, never by the new executable.
-
-The already-generated `compact-refactor-k40-30` Geant4 sample has 30 generated
-primaries, 11 stored groups, and 16 group-volume records. It produces 11 accepted
-ER groups without a cut and 1 with the cut. Its exact windows are:
-
-```text
-                 all  gt10  gt10_le400  underflow  in_range  overflow
-no_cut            11    11          10          0        11         0
-fiducial_20mm      1     1           1          0         1         0
-```
-
-For campaign integration, this small real transport file was reused in a
-**clearly labeled synthetic 28-job campaign fixture**, with actual exported
-geometry/quantities and the saved matrix activities. This exercises differing
-normalization scales and category sums; it is not a physically simulated
-28-source campaign. Attempts alternate between `attempt-0002` and
-`attempt-0007` to check manifest-based discovery.
-
-Comparisons require exact equality for accepted/processed counts, all six
-unbinned windows, every one of the 902 raw bins in both selections, scales,
-annual window rates/variances, all category density bins and errors, and totals
-summed in reporting order. Additional synthetic checks cover both supported
-layouts, every internal histogram edge and adjacent floating-point values,
-window endpoints/flows, inclusive fiducial faces and outside positions,
-multiple-volume first-position decisions, conversion-before-summation, alpha
-exclusion, and empty spectra. These fixtures and generated products are local
-development artifacts, not new production dependencies or committed ROOT data.
-
-Malformed-input checks also passed: zero volume counts, wrong volume order,
-invalid gas IDs, nonfinite deposits, conflicting primary accounting/layout,
-missing required branches, incomplete jobs, existing output directories, and
-output inside the campaign are rejected. The worker filename
-`compact_t0.root` was exercised successfully. The documented compile command
-and PNG/PDF exports were also checked.
+Current v4 regression coverage is recorded in [v4 validation](../../docs/V4_VALIDATION.md).
+Synthetic 23-contribution campaigns compare all Python/native ROOT scales,
+windows, bins, flows, variances and category sums. Lens rows use Bq/piece and
+placement counts. Historical equivalence evidence is preserved in
+[the archived record](../../docs/history/ROOT_EQUIVALENCE-pre-v4.md).
 
 ### Reproducible topology validation
 
@@ -498,7 +447,7 @@ times remain analyzable. The topology oracle rejects missing/nonfinite times
 instead of inventing them.
 
 `tests/test_topology.py` compiles the production C++ executable when `root-config`
-is available and creates synthetic v2 28-contribution and v3 26-contribution compact campaigns, including both
+is available and creates synthetic v4 23-contribution compact campaigns plus historical compatibility cases, including both
 `legacy-25x3` and `cygno-11x7-v1`. It checks default/custom timing, endpoint and
 partner policies, every historical histogram edge and neighboring floats, exact
 windows, raw bins, annual rates/variances, category density/errors, cut-flow

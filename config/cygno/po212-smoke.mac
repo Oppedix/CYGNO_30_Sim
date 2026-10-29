@@ -4,7 +4,7 @@
 /event/verbose 0
 /random/setSeeds 12345 67890
 /output/OutFile cleanup_smoke
-/detector/RadElement CathodesPolyimide
+/detector/RadElement Cathode
 /isotope/AtomicNumber 84
 /isotope/MassNumber 212
 /run/beamOn 20

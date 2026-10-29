@@ -67,7 +67,7 @@ binary supports all layouts:
 cd "$CYGNO_BUILD"
 ./rdecay01 --layout legacy-25x3
 # After closing the first session:
-./rdecay01 --layout cygno-11x7-v1 --model cygno-acrylic-v3
+./rdecay01 --layout cygno-11x7-v1 --model cygno-copper-cathode-v4
 ```
 
 ## Private Linux simulation environment

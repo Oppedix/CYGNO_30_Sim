@@ -87,6 +87,19 @@ inline Normalization ReadNormalization(const std::string& path) {
   if (!provenance || result.quantities.empty()) throw std::runtime_error("Configuration needs a # provenance: record and at least one row");
   result.identity.geometryHash=cygno::build::geometryHash;
   cygno::analysis::ValidateIdentity(result.identity);
+  if (result.identity.model=="cygno-copper-cathode-v4") {
+    if (result.quantities.count("CathodesPolyimide") || result.quantities.count("CathodesCopper"))
+      throw std::runtime_error("Obsolete cathode core/skin normalization in v4");
+    if (result.quantities.count("Lens")) {
+      if (result.activityUnits.at("Lens")!="Bq/piece")
+        throw std::runtime_error("v4 lens normalization requires Bq/piece and actual placements");
+      const std::map<std::string,double> activities{
+        {"U238",4.72689e-4},{"Th232",1.564101e-4},{"K40",1.19133e-3}};
+      for (const auto& isotope : result.activities.at("Lens"))
+        if (!activities.count(isotope.first) || activities.at(isotope.first)!=isotope.second)
+          throw std::runtime_error("Changed v4 physical-lens activity");
+    }
+  }
   return result;
 }
 // Validate the complete input set before any output is opened or data plotted.

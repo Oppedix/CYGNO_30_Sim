@@ -83,7 +83,7 @@ def fixture(folder,mode='both',layout='cygno-11x7-v1',model='cygno-acrylic-v3'):
 class ExternalTests(unittest.TestCase):
     def test_models_and_archived_v2_are_checked_without_relabeling(self):
         with tempfile.TemporaryDirectory() as tmp:
-            for model in (None,'cygno-300elj-v2','cygno-acrylic-v3'):
+            for model in (None,'cygno-300elj-v2','cygno-acrylic-v3','cygno-copper-cathode-v4'):
                 root=Path(tmp)/str(model)
                 campaign,data,canonical,_=fixture(root,model=model)
                 before={p.relative_to(root):rt.digest(p) for p in root.rglob('*') if p.is_file()}
@@ -97,7 +97,7 @@ class ExternalTests(unittest.TestCase):
 
     def test_config_and_flux_conventions(self):
         cfg=load(CONFIG)
-        self.assertEqual(cfg['model'],'cygno-acrylic-v3')
+        self.assertEqual(cfg['model'],'cygno-copper-cathode-v4')
         missing=cfg.copy();missing.pop('model')
         with self.assertRaises(ValueError):validate(missing)
         self.assertEqual(validate(missing,historical=True),missing)

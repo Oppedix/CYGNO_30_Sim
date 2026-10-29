@@ -121,8 +121,8 @@ for component in expected.keys()-{'Vessel'}:
 
 # Two electron groups: one inside the unchanged cut, one outside it. Numerical
 # energies/locations are hand-selected; no radioactive transport is involved.
-def fixture(layout):
-    path=out/(layout+'.root');f=ROOT.TFile(str(path),'RECREATE');t=ROOT.TTree('elabHits','synthetic')
+def fixture(layout, model="cygno-300elj-v2"):
+    path=out/(layout+'-'+model+'.root');f=ROOT.TFile(str(path),'RECREATE');t=ROOT.TTree('elabHits','synthetic')
     event=array.array('i',[0]);t.Branch('evNumber',event,'evNumber/I')
     strings={'PartName':ROOT.std.string('e-'),'Nucleus':ROOT.std.string('synthetic')}
     for key,value in strings.items(): t.Branch(key,value)
@@ -134,7 +134,7 @@ def fixture(layout):
             vectors[key].clear();vectors[key].push_back(value)
         t.Fill()
     t.Write()
-    for key,value in dict(CygnoLayout=layout,CygnoGeometry=fingerprint,CygnoDetectorModel='cygno-300elj-v2',CygnoSourcePolicy='uniform-volume-v1').items():
+    for key,value in dict(CygnoLayout=layout,CygnoGeometry=fingerprint,CygnoDetectorModel=model,CygnoSourcePolicy='uniform-volume-v1').items():
         ROOT.TNamed(key,value).Write()
     f.Close();return path
 
@@ -185,3 +185,36 @@ for layout,q in quantities.items():
             assert result.returncode!=0,(index,plotter)
             assert sentinel.read_bytes()==b'keep'
 print('PASS: all v2 assays/chain starts, equilibrium/reset controls, both constructed quantity sets, per-piece normalization, weighted category sums/errors and invalid-unit rejection;',out)
+
+# Current v4 lens normalization also passes through all optional native ROOT
+# reference plotters, using actual constructed lens placements, never lens kg.
+from analysis.common.normalization import scale_for
+layout='cygno-11x7-v1'; model='cygno-copper-cathode-v4'
+path=out/'v4-quantities.tsv'
+subprocess.run([str(build/'geometry_quantities'),str(path),layout,'--model',model],
+               check=True,capture_output=True,text=True)
+q=read_quantities(path,layout=layout,model=model,geometry_hash=fingerprint)
+assert q['Lens']['pieces']==308
+lens=[r for r in read_matrix(repo/'config/study/cygno-radioassay-v4.json')['contributions'] if r['component']=='Lens']
+source=fixture(layout,model)
+headers=f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# provenance: SYNTHETIC v4; CYGNO_radioactivity_excel_suprasil; 3.843 kg per physical lens converted once\n'
+lines=''.join(f'Lens {r["chain_start"]["name"]} 308 piece {r["activity"]:.17g} Bq/piece 100 "Camera Lenses" "{source}"\n' for r in lens)
+config=out/'v4-lens.tsv';config.write_text(headers+lines)
+for plotter in plotters:
+    directory=out/('v4-'+plotter);directory.mkdir()
+    subprocess.run([str(build/'analysis'/plotter),str(config)],cwd=directory,
+                   check=True,capture_output=True,text=True)
+    f=ROOT.TFile.Open(str(directory/'NormalizedHisto.root'))
+    for row in lens:
+        scale=scale_for(row,q,100)
+        assert math.isclose(f.Get(row['id']).Integral(),2*scale,rel_tol=1e-12)
+        assert math.isclose(f.Get(row['id']+'_cut').Integral(),scale,rel_tol=1e-12)
+    f.Close()
+    bad=out/'bad-v4-lens.tsv'
+    for text in (lines.replace('308 piece','308 kg').replace('Bq/piece','Bq/kg'),
+                 lines.replace(f'{lens[0]["activity"]:.17g}',f'{lens[0]["activity"]*3.843:.17g}')):
+        bad.write_text(headers+text)
+        sentinel=directory/'NormalizedHisto.root';before=sentinel.read_bytes()
+        result=subprocess.run([str(build/'analysis'/plotter),str(bad)],cwd=directory,capture_output=True,text=True)
+        assert result.returncode!=0 and sentinel.read_bytes()==before
+print('PASS: all native reference plotters agree with Python v4 lens Bq/piece scales; bad units/double reference mass rejected')

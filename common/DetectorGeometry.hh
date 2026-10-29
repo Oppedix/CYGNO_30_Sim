@@ -18,6 +18,7 @@ constexpr double centimetre = 10.0 * millimetre;
 struct ModuleDimensions {
   double cathodeX = 50 * centimetre;
   double cathodeY = 80 * centimetre;
+  // Historical sandwich dimensions preserve the 60 um external envelope in v4.
   double cathodePolyimideThickness = 0.050 * millimetre;
   double cathodeCopperThickness = 0.005 * millimetre;
   double cathodeTotalThickness = cathodePolyimideThickness + 2*cathodeCopperThickness;

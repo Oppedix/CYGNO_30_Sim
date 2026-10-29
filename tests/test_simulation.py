@@ -60,7 +60,7 @@ class SimulationTests(unittest.TestCase):
                 self.assertEqual(simulate.main(), status)
 
     def test_interruption_and_retry(self):
-        cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2}
+        cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2, 'model': 'cygno-300elj-v2'}
         row = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')['contributions'][0]
         campaign = dict(fingerprint='fixture', identity=dict(effective_environment={}))
         with tempfile.TemporaryDirectory() as d:
@@ -83,7 +83,7 @@ class SchedulingTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.output = Path(temporary.name)
-        self.cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2}
+        self.cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | {'primaries_per_job': 2, 'model': 'cygno-300elj-v2'}
         self.matrix = read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
         self.rows = self.matrix['contributions']
         self.env = dict.fromkeys(rt.ENV_KEYS, '/fixture/data') | dict(
@@ -299,7 +299,7 @@ class SchedulingTests(unittest.TestCase):
                 name: dict(status='passed', PART122=False, environment=self.env)
                 for name in ('u238-default', 'u238-enabled', 'th232-full', 'bi212-full')}))
         ids = [row['id'] for row in self.rows[:3]]
-        args = simulate.parser().parse_args(['--build', str(build), '--output', str(self.output/'campaign'),
+        args = simulate.parser().parse_args(['--config', str(rt.REPO/'config/study/historical/smoke-A-v2.json'), '--build', str(build), '--output', str(self.output/'campaign'),
                                             '--primaries', '2', '--only', *ids])
         with patch.object(rt, 'invoke', side_effect=invoke) as invoked, \
              patch.object(rt, 'dataset_state', return_value={}), \

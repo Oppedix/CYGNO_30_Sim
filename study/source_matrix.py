@@ -22,7 +22,8 @@ V1_COMPONENTS = {
 IONS = {'U238': (92, 238), 'Th232': (90, 232), 'K40': (19, 40),
         'U235': (92, 235), 'Ra226': (88, 226), 'Th228': (90, 228)}
 MATRIX_MODELS = {'cygno-300elj-radioassay-v2': 'cygno-300elj-v2',
-                 'cygno-300elj-radioassay-v3': 'cygno-acrylic-v3'}
+                 'cygno-300elj-radioassay-v3': 'cygno-acrylic-v3',
+                 'cygno-radioassay-v4': 'cygno-copper-cathode-v4'}
 
 
 # Arnquist et al., arXiv:1910.04317v1, sec. 2.2: specific activities in
@@ -43,6 +44,17 @@ ACRYLIC_COMPONENTS = COMPONENTS | {
     'GEMsPolyimide': ('Acrylic', 'GEMs'), 'GEMsCopper': ('EFCu', 'GEMs'),
     'CathodesPolyimide': ('Acrylic', 'Cathodes'), 'CathodesCopper': ('EFCu', 'Cathodes'),
 }
+V4_COMPONENTS = {k: v for k, v in ACRYLIC_COMPONENTS.items()
+                 if k not in ('CathodesPolyimide', 'CathodesCopper')} | {'Cathode': ('EFCu', 'Cathodes')}
+LENS_ACTIVITIES = {'U238': 4.72689e-4, 'Th232': 1.564101e-4, 'K40': 1.19133e-3}
+LENS_PROVENANCE = {
+    'source': 'CYGNO_radioactivity_excel_suprasil',
+    'reference_mass_kg_per_piece': 3.843,
+    'specific_activity_Bq_kg': {'U238': 1.23e-4, 'Th232': 4.07e-5, 'K40': 3.10e-4},
+    'activity_Bq_piece': LENS_ACTIVITIES,
+    'normalization': '3.843 kg is the reference mass of ONE physical camera lens; converted once to Bq/piece, then multiplied only by actual lens placement count',
+    'transport': 'Geant4 lens geometry, material, density and placements unchanged; no surrogate-mass rescaling',
+}
 HISTORICAL_LAYERS = {
     'reference_matrix_id': 'thesis-table7.1-v1',
     'reference_matrix_sha256': 'de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836',
@@ -52,6 +64,11 @@ HISTORICAL_LAYERS = {
     'extension': 'Table 7.1 GEMsCore Acrylic also assigned to the cathode core; historical cathode was solid copper',
     'copper_K40': 'omitted table x; not a measured zero',
     'scope': 'new internal transport campaign required; not a normalization override for v2 ROOT files',
+}
+V4_LAYERS = HISTORICAL_LAYERS | {
+    'core_transport': 'PMMA, 1.190 g/cm3, 50 um; GEM only',
+    'extension': 'Cathode is one solid EFCu-assayed copper slab, 500 x 800 x 0.060 mm; no core or skins',
+    'scope': 'v4 requires new internal and external transport and new campaign directories; no v3 resumption or reweighting',
 }
 PMMA_ACTIVITIES = {'U238': 9.05e-6, 'Th232': 5.05e-6, 'K40': 71.2e-6}
 RESISTOR_ASSAY = {'U238': [4.30, .20], 'Th232': [2.00, .16], 'K40': [7.90, .20]}
@@ -119,8 +136,8 @@ def vessel_material_comparison(vessel_mass_kg, copper_density_g_cm3, pmma_densit
                 pmma_K_measured=PMMA_PROVENANCE['K40']['measured'], selected_material='EFCu')
 
 
-def expected_contributions(*, historical=False, acrylic=False):
-    components = V1_COMPONENTS if historical else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
+def expected_contributions(*, historical=False, acrylic=False, v4=False):
+    components = V4_COMPONENTS if v4 else V1_COMPONENTS if historical else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
     return {(component, isotope) for component, (material, _) in components.items()
             for isotope in (PMMA_ACTIVITIES if material == 'RadiopurePMMA' else RESISTOR_ASSAY
                             if material == 'CompletedMBNLResistor' else ASSAYS.get(material) or RETAINED_ACTIVITIES[material])}
@@ -144,9 +161,10 @@ def ion_name(ion):
 
 def validate_matrix(matrix, *, historical=False):
     v1 = historical and matrix.get('matrix_id') == 'cygno-300elj-radioassay-v1'
+    v4 = matrix.get('matrix_id') == 'cygno-radioassay-v4'
     acrylic = matrix.get('matrix_id') == 'cygno-300elj-radioassay-v3'
-    components = V1_COMPONENTS if v1 else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
-    expected = expected_contributions(historical=v1, acrylic=acrylic)
+    components = V4_COMPONENTS if v4 else V1_COMPONENTS if v1 else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
+    expected = expected_contributions(historical=v1, acrylic=acrylic, v4=v4)
     require(matrix.get('schema_version') == 1, 'Unsupported matrix schema')
     require(matrix.get('matrix_id') in ({'cygno-300elj-radioassay-v1'} if v1 else MATRIX_MODELS), 'Unsupported source matrix')
     require(matrix.get('seconds_per_year') == 31536000, 'Study year convention changed')
@@ -163,6 +181,9 @@ def validate_matrix(matrix, *, historical=False):
         require(provenance.get('pmma') == PMMA_PROVENANCE and provenance.get('completed_resistor') == RESISTOR_PROVENANCE, 'Missing/changed v2 material provenance')
     if acrylic:
         require(provenance.get('historical_layers') == HISTORICAL_LAYERS, 'Missing/changed v3 layer provenance')
+    if v4:
+        require(provenance.get('lens') == LENS_PROVENANCE, 'Missing/changed per-lens provenance')
+        require(provenance.get('v4_layers') == V4_LAYERS, 'Missing/changed v4 layer provenance')
     rows = matrix.get('contributions', [])
     seen = set()
     for row in rows:
@@ -176,16 +197,20 @@ def validate_matrix(matrix, *, historical=False):
         require(key not in seen and row.get('id') == '_'.join(key), 'Duplicate or malformed contribution ID')
         seen.add(key)
         require(positive(row.get('activity')), 'Activity must be finite and positive; omit x entries')
-        require(row.get('activity_unit') == ('Bq/piece' if component == 'Resistors' else 'Bq/kg'), 'Wrong activity unit')
-        require(row.get('activity_basis') == ('separate-material-assay' if material in ASSAYS else
+        require(row.get('activity_unit') == ('Bq/piece' if component == 'Resistors' or v4 and component == 'Lens' else 'Bq/kg'), 'Wrong activity unit')
+        require(row.get('activity_basis') == ('reference-physical-lens-per-piece' if v4 and component == 'Lens' else
+                'separate-material-assay' if material in ASSAYS else
                 'upper-limit-used-as-value' if material == 'Acrylic' else
                 'conservative-old-K-proxy' if material == 'RadiopurePMMA' and isotope == 'K40' else
                 'measured-solid-pmma-conservative-replicate' if material == 'RadiopurePMMA' else
                 'effective-completed-component-per-piece' if material == 'CompletedMBNLResistor' else 'table-value'), 'Wrong activity interpretation')
-        expected_activity = (assay_activity(isotope, ASSAYS[material][isotope][0]) if material in ASSAYS
+        expected_activity = (LENS_ACTIVITIES[isotope] if v4 and component == 'Lens'
+                             else assay_activity(isotope, ASSAYS[material][isotope][0]) if material in ASSAYS
                              else PMMA_ACTIVITIES[isotope] if material == 'RadiopurePMMA'
                              else resistor_activity(isotope) if material == 'CompletedMBNLResistor'
                              else RETAINED_ACTIVITIES[material].get(isotope))
+        if v4 and component == 'Lens':
+            require(row.get('provenance') == LENS_PROVENANCE['source'], 'Wrong lens source')
         require(expected_activity is not None and row['activity'] == expected_activity, 'Wrong nominal assay activity')
         require(row.get('full_chain') is True, 'Chain transport must be enabled, including split segments')
         stop = row.get('stop_before')
@@ -237,21 +262,24 @@ def read_quantities(path, *, layout, model, geometry_hash):
                           'source-policy': 'uniform-volume-v1', 'geometry-hash': geometry_hash}.items():
         require(headers.get(key) == expected, f'Quantities {key} mismatch')
     require(headers.get('provenance'), 'Missing constructed quantities provenance')
+    components = V4_COMPONENTS if model == 'cygno-copper-cathode-v4' else COMPONENTS
     result = {}
     for row in csv.DictReader((line for line in lines if not line.startswith('#')), delimiter='\t'):
         component = row['component']
-        require(component in COMPONENTS and component not in result, 'Unknown/duplicate quantity component')
+        require(component in components and component not in result, 'Unknown/duplicate quantity component')
         mass, pieces = float(row['mass_kg']), int(row['pieces'])
         require(positive(mass) and pieces > 0 and row['geometry_material'], 'Invalid constructed quantity')
-        if model == 'cygno-acrylic-v3' and component in ('GEMsPolyimide', 'CathodesPolyimide'):
-            require(row['geometry_material'] == 'PMMA', 'v3 core transport must be PMMA')
+        if model in ('cygno-acrylic-v3', 'cygno-copper-cathode-v4') and component in ('GEMsPolyimide', 'CathodesPolyimide'):
+            require(row['geometry_material'] == 'PMMA', 'Acrylic core transport must be PMMA')
+        if model == 'cygno-copper-cathode-v4' and component == 'Cathode':
+            require(row['geometry_material'] == 'G4_Cu', 'v4 cathode transport must be copper')
         result[component] = dict(mass_kg=mass, pieces=pieces, geometry_material=row['geometry_material'])
-    require(result.keys() == COMPONENTS.keys(), 'Incomplete constructed quantities')
+    require(result.keys() == components.keys(), 'Incomplete constructed quantities')
     return result
 
 
 def quantity_for(row, quantities):
-    """Select units, never use a resistor mass as its number of pieces."""
+    """Bq/piece uses actual placement counts, including lenses and resistors."""
     unit = row['activity_unit']
     require(unit in ('Bq/kg', 'Bq/piece'), 'Unsupported activity unit')
     return quantities[row['component']]['mass_kg' if unit == 'Bq/kg' else 'pieces']

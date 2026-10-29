@@ -24,7 +24,7 @@ from legacy.study.combined.root_io import inspect_raw, export_spectra
 from study.source_matrix import read_matrix
 build = Path(sys.argv[1]).resolve()
 out = Path(tempfile.mkdtemp(prefix='study-runner-', dir=build/'validation-results'))
-config = runner.load_config(repo/'config/study/smoke-A.json')
+config = runner.load_config(repo/'config/study/historical/smoke-A-v2.json')
 matrix = read_matrix(repo/'config/study/cygno-300elj-radioassay-v2.json')
 identity = dict(layout=config['layout'], model='cygno-300elj-v2', source_policy='uniform-volume-v1',
                 geometry_hash=runner.digest(repo/'common/DetectorGeometry.hh'))
@@ -103,7 +103,7 @@ first_data = runner.dataset_state(small_env)
 assert first_data != runner.dataset_state(small_env)
 
 selected = ['GEMsPolyimide_U238', 'GEMsPolyimide_Th232', 'GEMsPolyimide_K40']
-args = argparse.Namespace(config=repo/'config/study/smoke-A.json', matrix=repo/'config/study/cygno-300elj-radioassay-v2.json',
+args = argparse.Namespace(config=repo/'config/study/historical/smoke-A-v2.json', matrix=repo/'config/study/cygno-300elj-radioassay-v2.json',
                           output=out/'campaign', build=build, only=selected, retry_failed=False)
 real_invoke = runner.invoke
 attempted = []

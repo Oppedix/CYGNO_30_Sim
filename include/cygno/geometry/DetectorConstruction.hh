@@ -83,6 +83,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   
   G4PhysicalVolumeStore* GetVolumeStored() {return fPhysVolStore;}
 
+  std::vector<G4String> GetCathodeList() {return fListCathode;}
   std::vector<G4String> GetCathodesCopperList() {return fListCathodesCopper;}
   std::vector<G4String> GetCathodesPolyimideList() {return fListCathodesPolyimide;}
   std::vector<G4String> GetGEMsCopperList() {return fListGEMsCopper;}
@@ -133,6 +134,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   G4double fSensorWidth;
   G4double fVesselWidth;
   
+  std::vector<G4String> fListCathode;
   std::vector<G4String> fListCathodesPolyimide;
   std::vector<G4String> fListCathodesCopper;
   std::vector<G4String> fListGEMsCopper;

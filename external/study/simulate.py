@@ -79,6 +79,9 @@ def run(args):
     build,output=args.build.resolve(),args.output.resolve()
     simulation,exporter=build/'rdecay01',build/'geometry_quantities'
     require(simulation.is_file() and exporter.is_file(),'Build the common Geant4 application first')
+    if (output/'campaign.json').exists():
+        require(rt.read(output/'campaign.json')['identity']['config'].get('model', 'cygno-300elj-v2') == cfg['model'],
+                'Campaign identity changed; new physics requires a new directory')
     with rt.locked(output):
         probe=output/'probes'/str(time.time_ns());probe.mkdir(parents=True)
         (probe/'probe.mac').write_text('/control/echo EXTERNAL_ENVIRONMENT_PROBE\n')
@@ -142,7 +145,7 @@ def main():
     p.add_argument('--build',type=Path);p.add_argument('--output',type=Path)
     p.add_argument('--primaries',type=int);p.add_argument('--seed',type=int)
     p.add_argument('--shield',choices=('none','copper20'))
-    p.add_argument('--model',choices=MODELS,help='Override config detector model (supplied configs: cygno-acrylic-v3)')
+    p.add_argument('--model',choices=MODELS,help='Override config detector model (supplied configs: cygno-copper-cathode-v4)')
     p.add_argument('--output-mode',choices=('raw','compact','both'))
     p.add_argument('--retry-failed',action='store_true');p.add_argument('--dry-run',action='store_true')
     try:return run(p.parse_args())

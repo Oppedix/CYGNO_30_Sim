@@ -1,17 +1,17 @@
 # Source generation and decay policy
 
-Internal identities: **preferred v3** `cygno-acrylic-v3` and supported v2
-`cygno-300elj-v2`, both with source `uniform-volume-v1`. Both modes default to
-the same v3 detector; choosing a detector model does not select a source. External has a
+The current internal identity is `cygno-copper-cathode-v4 / uniform-volume-v1`.
+Both modes share v4 construction; external has a
 [separate environmental source contract](../external/docs/PHYSICS.md).
-The exact `/detector/RadElement` families are `GEMsPolyimide`, `GEMsCopper`,
-`CathodesPolyimide`, `CathodesCopper`, `RingSupports`, `RingStrips`, `Resistors`,
-`Vessel`, `Lens`, `Sensors`. Old ambiguous/core/outer/cathode names are rejected.
+Current `/detector/RadElement` families: `Cathode`, `GEMsPolyimide`, `GEMsCopper`,
+`RingSupports`, `RingStrips`, `Resistors`, `Vessel`, `Lens`, `Sensors`.
+The cathode is one solid copper slab; no cathode core/skin source exists in v4.
+The stable `GEMsPolyimide` identifier denotes the retained 50 µm PMMA core.
 
 `RadioactiveSourceSampler::Sample()` chooses a physical placement uniformly from
 its family, then samples its material volume uniformly. Every placement in a
 family has identical solid/material, verified by tests; one common vessel is a
-singleton. The copper skins remain independently selectable.
+singleton. GEM copper skins remain independently selectable.
 
 - Boxes: independent uniform X/Y/Z.
 - Cylinders: uniform phi, radius `sqrt(r0²+(r1²-r0²)*U)`, uniform Z.
@@ -24,8 +24,8 @@ direct World daughters. `SampleLocal()` asserts containment in debug builds;
 validation explicitly checks containment in Release, analytic moments and ranges,
 including the asymmetric strip frame and a rotated vessel. No production
 surface/depth sampling remains. CLHEP owns all source draws, so no Geant4 surface
-RNG seed API is needed on 11.3. `source_checks` replays 100 same-event vertices
-across ten families and tests 20000 placed points/family/profile;
+RNG seed API is needed on 11.3. `source_checks` replays 90 same-event vertices
+across nine families and tests 20000 placed points/family/profile;
 `uniform_volume` tests 100000 local points/family and 10000 rotated samples.
 
 `PrimaryGeneratorAction::GeneratePrimaries()` samples immediately before that
@@ -36,17 +36,12 @@ scheduling can change source histories; archive seeds, build/data and metadata.
 
 ## Assays and normalization
 
-The preferred [v3 matrix](../config/study/cygno-300elj-radioassay-v3.json) has
-26 contributions in seven categories: GEM/cathode PMMA50 cores use Table 7.1
-Acrylic upper limits as values; Cu skins use EFCu U/Th with K omitted. All
-contributions need new transport. Stable `Polyimide` source IDs denote PMMA
-in v3. The retained [v2 matrix](../config/study/cygno-300elj-radioassay-v2.json)
-has 28 contributions: separate 300ELJ/laminate-Cu assays apply to the layers,
-with `G4_KAPTON` providing polyimide transport.
-Concentration is per material mass. Whole-laminate assay is a cross-check, not a
-layer concentration. [STUDY_SOURCES.md](STUDY_SOURCES.md) and
-[SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md) give assays, uncertainties,
-conversion constants, mass fractions and actual constructed quantities.
+The [v4 matrix](../config/study/cygno-radioassay-v4.json) has 23 contributions.
+EFCu U/Th applies to the entire `Cathode` mass; Acrylic U/Th/K applies only to
+GEM cores. Lenses use exact Bq/piece values from
+`CYGNO_radioactivity_excel_suprasil`: 3.843 kg is ONE physical lens, converted
+once; normalize by actual placements without changing lens transport.
+[STUDY_SOURCES.md](STUDY_SOURCES.md) specifies activities and assumptions.
 
 ## Retained decay physics
 

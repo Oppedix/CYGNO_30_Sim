@@ -36,14 +36,17 @@ int main(int argc, char** argv) {
   // Build ion definitions before independently replaying sampler draws.
   G4IonTable::GetIonTable()->GetIon(84,212,0.);
   RadioactiveSourceSampler sampler(detector);
-  const std::map<G4String,std::vector<G4String>> sources{
-    {"CathodesPolyimide",detector->GetCathodesPolyimideList()}, {"CathodesCopper",detector->GetCathodesCopperList()}, {"GEMsCopper",detector->GetGEMsCopperList()},
+  std::map<G4String,std::vector<G4String>> sources{
+    {"Cathode",detector->GetCathodeList()}, {"CathodesPolyimide",detector->GetCathodesPolyimideList()}, {"CathodesCopper",detector->GetCathodesCopperList()}, {"GEMsCopper",detector->GetGEMsCopperList()},
     {"GEMsPolyimide",detector->GetGEMsPolyimideList()}, {"RingSupports",detector->GetRingsSupportList()},
     {"RingStrips",detector->GetRingStripstList()}, {"Resistors",detector->GetResistorList()},
     {"Lens",detector->GetLensList()}, {"Sensors",detector->GetSensorsList()}, {"Vessel",{"Vessel"}}};
+  for (auto it=sources.begin(); it!=sources.end();) {
+    if (it->second.empty()) it=sources.erase(it); else ++it;
+  }
   require(detector->GetComponentMasses().size()==sources.size(),"extra mass map keys");
   const int count=detector->GetLayoutProfile().expectedModuleCount;
-  const std::map<G4String,int> perModule{{"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
+  const std::map<G4String,int> perModule{{"Cathode",1}, {"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
     {"RingSupports",2},{"RingStrips",2*cygno::geometry::module.stripCount},{"Resistors",2*(cygno::geometry::module.stripCount+1)},{"Lens",4},{"Sensors",4}};
   int event=0;
   for(const auto& source:sources) {
@@ -80,5 +83,5 @@ int main(int argc, char** argv) {
   G4Event changed(event); generator.GeneratePrimaries(&changed);
   require(changed.GetPrimaryVertex()->GetPrimary()->GetG4code()->GetAtomicNumber()==83,"updated Z");
   require(changed.GetPrimaryVertex()->GetPrimary()->GetG4code()->GetAtomicMass()==211,"updated A");
-  G4cout<<"PASS: 100 vertices equal their own samples, event zero non-origin, exact RNG replay, all mass keys/totals"<<G4endl;
+  G4cout<<"PASS: all vertices equal their own samples, event zero non-origin, exact RNG replay, all mass keys/totals"<<G4endl;
 }

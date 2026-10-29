@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "external",
-  "model": "cygno-acrylic-v3",
+  "model": "cygno-copper-cathode-v4",
   "layout": "cygno-11x7-v1",
   "shield": "copper20",
   "output_mode": "compact",

@@ -1,6 +1,6 @@
 # Architecture and event lifecycle
 
-For preferred internal v3, start with `config/study/cygno-11x7-v3.json` and a generated study macro, then follow this path:
+For current internal v4, start with `config/study/cygno-11x7-v4.json` and a generated study macro, then follow this path:
 
 ```text
 macro → primary sampler → Geant4 transport/TrackingAction → sensitive gas StepRecord
@@ -82,7 +82,7 @@ active reference physics list. The complete original-to-current move mapping is
 
 ## Legacy combined study entry points
 
-`study/source_matrix.py` validates the matching v2/v3 assay matrix (and v1 only with explicit historical opt-in), isotope boundaries and
+`study/source_matrix.py` validates the matching v4 assay matrix (historical schemas remain for reproducibility), isotope boundaries and
 kg/piece quantities. `legacy/study/combined/runner.py` creates exact macros and seeds, preflights the
 effective environment, verifies actual generation/processing and preserves immutable
 attempts. `legacy/study/combined/root_io.py` validates ROOT identity/accounting and exports the

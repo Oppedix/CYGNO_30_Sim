@@ -18,7 +18,7 @@ struct FileIdentity {
 };
 inline void ValidateIdentity(const FileIdentity& identity) {
   geometry::ParseLayoutId(identity.layout);
-  if (identity.model != "cygno-300elj-v2" && identity.model != "cygno-acrylic-v3")
+  if (identity.model != "cygno-300elj-v2" && identity.model != "cygno-acrylic-v3" && identity.model != "cygno-copper-cathode-v4")
     throw std::runtime_error("Unsupported detector model: " + identity.model);
   if (identity.sourcePolicy != "uniform-volume-v1")
     throw std::runtime_error("Unsupported source policy: " + identity.sourcePolicy);
@@ -75,7 +75,7 @@ inline FileIdentity RequireGeometry(TFile& file, const std::string& assumedLayou
   }
   if (!found) {
     if (assumedLayout.empty() || assumedModel.empty())
-      throw std::runtime_error("Unversioned file: verify its source revision, then supply both --assume-layout PROFILE and --assume-model cygno-300elj-v2");
+      throw std::runtime_error("Unversioned file: verify its source revision, then supply both --assume-layout PROFILE and --assume-model MATCHING_MODEL");
     identity = {assumedLayout, assumedModel, "uniform-volume-v1", build::geometryHash,
       "Researcher explicitly identified unversioned data: layout=" + assumedLayout +
       ", detector_model=" + assumedModel + ", source_policy=uniform-volume-v1"};

@@ -28,7 +28,7 @@ RDM_SECONDS = 1.0e60 * 31536000
 LIMITATIONS = ['Smoke samples are software diagnostics, not statistically useful background estimates.',
                'Explicit RDM threshold enables long-lived decays; complete chains require preflight.',
                'Decay preflight validates this environment empirically, not all Geant4 installations.',
-               'Uniform-volume 300ELJ model; retained mechanical assumptions and inherited grouping limitations.']
+               'Uniform-volume detector model; retained mechanical assumptions and inherited grouping limitations.']
 
 
 def digest(path):

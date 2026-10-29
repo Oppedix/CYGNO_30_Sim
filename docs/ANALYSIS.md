@@ -1,359 +1,42 @@
-> Internal v3 (preferred) uses physical PMMA50 cores with Table 7.1 Acrylic/EFCu
-> activities, 26 contributions; v2 retains Kapton50/Arnquist and 28 contributions.
-> Both analyses preserve the simulation matrix and separately record
-> `normalization-scenario.json`. v3 needs new transport for all contributions;
-> v2 ROOT files must not be relabeled. See [source comparison](STUDY_SOURCES.md)
-> and [cluster commands](../internal/README.md). The v2 normalization examples
-> below remain versioned reference examples.
+# Internal v4 analysis and normalization
 
-# Analysis and normalization
+The current model/matrix pair is `cygno-copper-cathode-v4` /
+`cygno-radioassay-v4` (23 contributions). Analyze newly transported v4 campaigns
+in new output directories. Existing v3 transport cannot be relabeled or
+reweighted into v4. Model, matrix, geometry hashes, receipts, metadata and
+campaign fingerprints must agree.
 
-The Python offline entry point is `study/analyze.py` (uproot/numpy/matplotlib,
-no CERN ROOT). For preferred native compact analysis use the
-[standalone ROOT guide](../analysis/common_c++/README.md); the reference
-executables below are a separate optional comparison path. See
-[the two-stage contract](BACKGROUND_STUDY.md#stage-b-offline-analysis).
-The C++ programs and PyROOT adapters described below remain the optional reference
-implementation; their grouping/normalization rules are preserved by the Python port.
+Python: `study/analyze.py`, using uproot/numpy/matplotlib. Native ROOT:
+[`AnalyzeCompactCampaign`](../analysis/common_c++/README.md), consuming a completed,
+unpacked compact campaign. Both preserve the source matrix and write
+`normalization-scenario.json` with the matching model/matrix identity.
 
+Both use the same operation order:
+`activity * quantity * 60 * 60 * 24 * 365 / actual_generated_primaries`.
+Bq/kg uses constructed component kg; **Bq/piece uses actual placement count**.
+Lens and Resistors are per piece. Lens U/Th/K activities are exactly
+4.72689e-4 / 1.564101e-4 / 1.19133e-3 Bq/piece, from
+**`CYGNO_radioactivity_excel_suprasil`**. The spreadsheet's 3.843 kg is ONE
+physical lens, already included in those values. Never multiply by it again or
+use the Geant4 lens mass. Lens transport geometry remains unchanged.
+For planar 11×7, 308 actual lens placements enter normalization.
 
-Build the four programs with `-DCYGNO_BUILD_ANALYSIS=ON` using
-[the reference-build recipe](../internal/docs/DEVELOPMENT.md#optional-historical-c-reference-build),
-which defines `REFERENCE_BUILD`. The absolute input/config paths below are
-operator-supplied existing files, not bundled examples. The simulation does not
-link ROOT; these executables do. Run the processor separately for each worker
-file. Run-local event IDs can repeat across runs: do not concatenate unrelated
-runs before grouping.
+The entire solid `Cathode` mass uses EFCu U/Th. There are no cathode-core or
+copper-skin source contributions. Scale each source before combining the seven
+categories. `Cathodes = Cathode`, `GEMs = GEMsPolyimide + GEMsCopper`,
+`Field Cage = RingSupports + RingStrips`.
 
-```sh
-# Directory: analysis output parent; ROOT runtime active, input/config paths replaced.
-cd "$CYGNO_RUNS"
-"$REFERENCE_BUILD/analysis/SimpleProcessEvents" /absolute/path/to/input.root processed.root
-"$REFERENCE_BUILD/analysis/PlotNormalizedSpectra" /absolute/path/to/study.tsv
-```
+Existing grouping, event/EOF boundaries, first-position fiducialization, exact
+energy windows, 365-day year, flow bins, topology cuts and group-Poisson errors
+are retained. Systematic assay/geometry uncertainties are not propagated.
+The provenance source matrix is copied into Python reports/manifests and
+embedded verbatim in native ROOT output, including physical-lens metadata.
 
-Without an explicit output, the processor creates `elab_<basename>` beside the
-input, including when the input has directory components. New raw worker files
-have a separate one-row `RunMetadata` tree with `GeometryHash`, `Layout`,
-`DetectorModel` and `SourcePolicy` string leaves. `legacy-25x3`,
-`cygno-5x5x3-v1` and `cygno-11x7-v1` are supported with `cygno-300elj-v2` or `cygno-acrylic-v3` and
-`uniform-volume-v1`. Other detector models are unsupported.
-
-Processed output records `CygnoGeometry`, `CygnoLayout`, `CygnoDetectorModel`,
-`CygnoSourcePolicy`, `GeometryProvenance` and `ProcessingVersion`, and copies the
-raw metadata when present. Every available record must agree; malformed or
-partial metadata and conflicting assumptions are rejected before output creation.
-Geometry identity does not establish successful production or generated counts.
-
-For an **unversioned** file, first verify the source revision, internals and source
-policy, then explicitly identify both axes:
-
-```sh
-# Directory: analysis output parent; old.root is independently verified unversioned data here.
-cd "$CYGNO_RUNS"
-"$REFERENCE_BUILD/analysis/SimpleProcessEvents" old.root processed.root \
-  --assume-layout legacy-25x3 --assume-model cygno-300elj-v2
-```
-
-The v2 assumptions shown are suitable only for independently verified data
-generated with `cygno-300elj-v2 / uniform-volume-v1`; v3 data require an
-explicit matching `cygno-acrylic-v3` model. They cannot convert an older model or
-sampler. `--assume-geometry` remains an alias of `--assume-layout`. Versioned
-metadata is never overridden. Pre-Phase-2 incomplete markers and old geometry
-hashes are rejected; there is no old-hash compatibility exception for this model.
-The exact compiled geometry fingerprint is required by the ROOT reference.
-Portable campaigns validate their own matching archived model/policy/hashes and
-source bytes rather than today's checkout.
-
-## Grouping semantics and intentional changes
-
-Only e−, e+ and alpha rows contribute. Within one event, successive rows with the
-same creator process/nucleus are accumulated under the inherited group rule.
-Ionization-created rows (`ionIoni`, `eIoni`) can join the current group; once they
-have done so, the next non-ionization transition closes it. This is a historical
-heuristic, not a track-ancestry grouping. The event boundary is now unconditional,
-including when its first row is an ignored particle. EOF flushes the last nonempty
-group. Empty groups are not emitted. Per-volume energies preserve first-seen
-volume ordering and the first position in that volume.
-
-`elabHits` retains `evNumber`, `PartName`, `EDep_Out`, `VolNnum_Out`, `Nucleus`,
-`X_Vertex`, `Y_Vertex`, `Z_Vertex`. Energies remain MeV. The nonexistent unused
-`VolumeTraslX/Y/Z` bindings are gone. ROOT-managed string leaves replace fixed
-20-byte buffers, including for long excited-ion names. Input schema is checked.
-**Processed numerical results intentionally change** due to boundary/EOF fixes;
-this is separate from the source-position correction in raw simulation output.
-
-## Spectra
-
-For interpreted ROOT started from `$CYGNO_RUNS`, make the matching build
-header visible before loading (replace absolute paths with your build/checkout):
-
-```cpp
-gInterpreter->AddIncludePath("/absolute/path/to/build/generated");
-.L /absolute/path/to/repository/analysis/reference_cpp/PlotSpectrum.C
-PlotSpectra("processed.root");
-```
-
-`PlotSpectrum.C` exposes `PlotSpectra("processed.root")` in ROOT and creates
-`histo_<basename>` beside the input. It fills per-volume beta/alpha histograms.
-It validates file identity; optional second and third arguments require a specific
-layout and detector model. The output carries the checked identity.
-The three normalized programs retain their original group-energy summation,
-first-position fiducial test, 20 mm insets, keV conversion, position histograms
-and energy selection. The main normalized program uses 900 bins in 0–2000 keV;
-`_single` and `_GEMchain` use 1200. All write `NormalizedHisto.root` in the current
-directory. Equal integrals now remain separate in a multimap: every histogram,
-including empty ones, survives in both stacks and individual output keys.
-Additional `Categories/` histograms and stacks sum contributions after individual
-normalization. `NormalizationConfiguration` preserves the full configuration text,
-and `NormalizationConvention` records the scale and counts/bin/year convention.
-No division by bin width is performed in these source histograms. The figure exporter
-clones category histograms and divides every display bin by its actual width.
-
-The old YZ histogram still retains world Z and its old ±550 mm range. Outer layers
-can enter overflow. No axes/cuts were silently redefined.
-
-## Study configuration
-
-The supported matrix uses explicit quantities/units and category grouping. Use this format for
-new source-matrix studies (the format header must precede all data rows):
-
-```text
-# normalization-format: quantity-v2
-# layout: legacy-25x3
-# detector-model: cygno-300elj-v2
-# source-policy: uniform-volume-v1
-# provenance: canonical 300ELJ/separate-Cu and retained Table 7.1 assays, matching geometry_quantities export and validated generated-primary counts
-# component isotope quantity quantity_unit activity activity_unit generated_events category input_file
-```
-
-Each data row has nine whitespace-separated fields. Quote categories and paths
-containing spaces. `kg` pairs with `Bq/kg`; `piece` pairs with `Bq/piece`. Piece
-counts and generated-primary counts must be positive integers; quantities must
-be finite/positive and activities finite/nonnegative. Repeated components must
-have the same quantity, units and category. Unrecognized or mismatched units,
-duplicates and nonfinite scales fail before creating output. There is no implicit
-micro-/milli-Bq conversion: the matrix already supplies Bq values.
-
-Use the 28 contributions in `config/study/cygno-300elj-radioassay-v2.json` and the actual
-constructed mass/piece export; see [source provenance](STUDY_SOURCES.md). The
-assay matrix has no layout or detector-model default and launches no simulations.
-The runner attaches the verified actual generated-primary count for each completed job.
-
-The existing six-column mass-only format remains supported when the format header
-is absent, with its original meaning (kg and Bq/kg) and category equal to component:
-
-```text
-# layout: legacy-25x3
-# detector-model: cygno-300elj-v2
-# source-policy: uniform-volume-v1
-# provenance: identify source revision, assay source, mass basis and generated-event accounting
-# component isotope mass_kg activity_Bq_per_kg generated_events input_file
-```
-
-The three identity headers are mandatory. All input files are checked before any
-output file is opened: mixing layouts/models/policies, missing metadata and a
-conflicting configuration fail without replacing an existing spectrum. The output
-records the configured identity and provenance. This does not verify stated masses
-or assay values; those must still come from the selected constructed detector.
-
-Add one row per component/isotope with your study's values. Input paths resolve
-relative to the process working directory, so absolute paths are useful. Repeated
-component rows must use a consistent mass; duplicates, nonfinite values, negative
-activity and nonpositive mass/event counts are errors. Histograms use the unchanged
-formula `activity * quantity * 60*60*24*365 / generated_events`, where the legacy
-six-column format always means Bq/kg and kg.
-The program requires an explicit configuration argument and provenance record.
-This records a researcher's stated basis; software cannot verify the assay.
-
-`config/normalization/*.historical.tsv` faithfully transcribes the original
-compiled tables, tested numerically against copies in `legacy/analysis/05a2b92`.
-They are marked `historical-unverified` and rejected as production inputs. They
-contain unexplained component masses, ambiguous GEMs/Rings labels, generated-event
-counts and branching-weight denominators. `_single` includes the inherited
-`1e5/0.9862`, `1e5/0.9973`, `1e5/0.0138`, `1e5/0.0027` factors; their scientific
-applicability is unresolved. The historical vessel mass 1102.24 kg must not be
-carried into the resized shell automatically. No replacement assay or generated
-count has been invented. Create a separate study file only after resolving those
-inputs. A passing transcription test does not establish their scientific validity.
-
-## Study runner exports
-
-The main normalized plotter additionally writes `ExactEnergyWindows` with unbinned
-electron/positron group counts and rates for full range, >10 keV, (10,400] keV and
-explicit underflow/regular/overflow partitions. The other variants retain their
-existing outputs. New processed/histogram files carry `CygnoBuildSource` for runner
-stale-build detection; this is separate from the geometry compatibility markers.
-See [STUDY_RUNNER.md](STUDY_RUNNER.md) for exact endpoints, density units, manifest
-validation, partial coverage and the distinction between pipeline completion and
-unvalidated decay chains.
-
-## Exact processing contract
-
-The accepted raw branches and required ROOT types are specified in
-[OUTPUT.md](OUTPUT.md): twelve legacy fields plus timing in schema 1. The Python
-reader enforces the explicit versioned schema; the C++ reference ignores extra branches. ParticleID, ParticleTag and
-ParentID are validated for schema compatibility but do not drive grouping.
-Coordinates are world millimetres and step EnergyDeposit is MeV. ProcessType is
-the track's creator process, not the current step process.
-
-The within-event algorithm is inherited from the historical implementation:
-
-1. Any event-number change flushes the previous nonempty group, before checking
-   the row's particle. Events must remain contiguous; do not interleave worker files.
-2. Only e-, e+ and alpha rows are admitted. Ignored gamma/ion rows do not create
-   groups or process transitions, but still trigger event-boundary flushing.
-3. If creator process and Nucleus match the group's initial values and no joined
-   ionization transition has occurred, append the row and update PartName to that
-   row's particle. Otherwise an ionIoni/eIoni row joins the group and marks the
-   ionization transition. Any other transition flushes and starts a fresh group.
-4. Within a group, sum every admitted EnergyDeposit by VolumeNumber, including
-   zero deposits. Save volumes in first-seen order and retain each volume's first
-   admitted row position. Copy numbers must be in the selected layout's gas range.
-5. EOF flushes the final nonempty group. No empty groups are emitted.
-
-The grouped PartName and Nucleus do not certify a single track, parent or physical
-coincidence. Nucleus follows the last transported ion and can persist across events;
-it is retained as a historical label. The grouping itself never crosses events.
-The normalized program selects groups whose final PartName is e- or e+, sums their
-per-volume energies, and converts MeV to keV. Alpha-labeled groups are excluded.
-
-Output `elabHits` schema:
-
-| Branch | Type | Meaning |
-|---|---|---|
-| evNumber | Int_t | Run-local event ID |
-| PartName, Nucleus | std::string | Historical group particle / last-ion label |
-| EDep_Out | vector<double> | Summed energy per first-seen gas volume, MeV |
-| VolNnum_Out | vector<double> | Corresponding integer gas copy IDs, stored as doubles |
-| X_Vertex, Y_Vertex, Z_Vertex | vector<double> | First saved position per volume, world mm |
-
-Every vector in a row has the same length. Metadata is copied and checked, and
-processing/build markers are added. Step multiplicity is not a generated-primary
-denominator. Normalization requires independently completed RunAccounting.
-
-## Annual rates, cuts and exact windows
-
-For each component/chain contribution independently:
-
-```text
-events/year = selected_MC_groups * activity * quantity * 31536000 / generated_primaries
-```
-
-Activity is canonical-matrix Bq/kg with constructed mass in kg, or Bq/piece with constructed
-placement count. The three resistor contributions use 3900 pieces in the two 75-module
-layouts and 4004 in `cygno-11x7-v1`, with effective activity per nominal nEXO reference component.
-PMMA U/Th adopts measured Reynolds UVT solid stock; its unmeasured K retains the old conservative proxy.
-GEM/cathode layer, EFCu, lens and sensor assays retain their previous basis;
-see [STUDY_SOURCES.md](STUDY_SOURCES.md) for the completed-resistor equilibrium assumption. Quantities come
-from actual cygno-300elj-v2 construction, including its Boolean-solid mass estimate.
-The selected production setting 10^7 comes from the thesis's approximate simulation
-count; it is never substituted for the verified denominator. The implementation uses
-a 365-day year; the thesis rounds it to 3.15e7 seconds in Eq. 7.14.
-
-GEMs = separately normalized GEMsCopper + GEMsPolyimide. Cathodes = separately normalized CathodesCopper + CathodesPolyimide. Field Cage = separately
-normalized RingStrips + RingSupports. The other categories are Camera Lenses,
-Vessel, Camera Sensors, Cathodes and Resistors. These sums do not change activities
-or add branch weights. Resistor upper/lower segments are separate matrix rows.
-
-The thesis motivates the 20 mm fiducial inset; the exact implementation is the
-inherited first-position predicate: relative to the selected gas center, the first
-saved group position satisfies |x|<=230 mm, |y|<=380 mm and |z|<=230 mm.
-It does not require every step or every crossed volume to lie inside. Gas centers
-retain the cygno-300elj-v2 ±250.03 mm local offset. No reconstruction smearing,
-trigger efficiency, time-coincidence selection or optical response is introduced.
-
-Exact unbinned windows are all finite energies (including flows), E>10 keV,
-10<E<=400 keV, E<0 underflow, 0<=E<2000 regular range, and E>=2000 overflow.
-The 10 keV endpoint is excluded from both threshold windows; 400 is included in
-the finite window; 2000 is overflow. Tables use these counts, not histogram-bin
-approximations. The main spectrum uses 900 bins across 0–2000 keV. ROOT histograms
-store counts/bin/year; PNG/PDF displays divide by each bin's width and label
-counts / keV / year. Flows remain counts/year in JSON and exact tables.
-
-Figure/table export and published comparison values are in
-[BACKGROUND_STUDY.md](BACKGROUND_STUDY.md). Their statistical errors are the
-historical Poisson group-count convention, not an independent-primary covariance
-calculation. A completed smoke pipeline is not a statistically useful reproduction.
-
-## Shared canonical representation and timing
-
-The active Python packages are `analysis/raw`, `analysis/compact`, and
-`analysis/common`. The canonical model has Group identity/labels/counts and an
-ordered volume dictionary of GroupVolume energy, first position and optional
-first_hit_time_ns. Raw legacy times are None. New raw times and compact first
-hit times refer to the same pre-step event-relative global time/ns.
-
-Raw implements the historical state machine above; compact **does not regroup**.
-It validates and reconstructs stored groups. `study/analyze.py` dispatches using
-validated manifests and OutputMetadata. Both files require exact parity before
-compact groups enter the common spectrum functions. A second campaign summary
-from raw counts verifies normalized rates/variances, categories, flows and all
-Table 7.2/7.3 inputs against the compact result. No tolerance is used between
-same-transport raw and compact; C++/ROOT reference comparisons retain their
-existing narrowly scoped rounding tolerance for separately computed scaled sums.
-
-Timing, track identities and diagnostic relationships have no effect on the
-canonical results. They enable future separately versioned intra-event studies;
-they are not an absolute clock across independent primary events. TrackGroups
-preserves multiple historical group memberships instead of inventing an ancestry
-partition. The first position and first time always belong to the same first
-admitted step, including zero-energy steps.
-
-The three notebooks under raw/, compact/ and common/ show production function
-source and call it. The common notebook retains the detailed energy/cut/window,
-normalization, category and thesis-table explanations. Its synthetic default and
-optional campaign path share the same functions. Lightweight execution tests
-compare cell-derived counts with production, check category sums/flows and prove
-timing independence. Alternative timing cuts are discussed but never enabled.
-
-
-## Standalone compact topology study
-
-`analysis/common_c++/AnalyzeCompactCampaign.cpp` extends completed compact
-campaign analysis without rerunning simulation or changing compact schema,
-physics, sources, normalization, or `analysis/reference_cpp`. See its
-[compile/run instructions and output contract](../analysis/common_c++/README.md).
-
-A historical Group is Samuele's inherited spectral bookkeeping object. It is
-not guaranteed to correspond one-to-one to a physical interaction or one Geant4
-track. One event can contain several groups; an ER group surviving a selection
-is the detector candidate counted in these spectra. Historical `no_cut` and
-`fiducial_20mm`, including Figure 7.5/7.6, stay unchanged.
-
-The additional nested selections require (1) exactly one volume with positive
-TOTAL deposited energy after the historical fiducial cut, then (2) no positive
-ER site in another group in the SAME EventNumber with `abs(dt) <= coincidence_ns`
-and Euclidean separation **> 10 mm**. Zero-energy touches do not trigger a
-multi-volume veto; zero-active groups fail the new selections. Exactly 10 mm
-survives and exactly the time window is coincident. The candidate uses its sole
-active volume's stored first position/time; the fiducial cut still uses the first
-stored volume. Partner e-/e+ groups may themselves fail fiducial or single-volume
-cuts. Alpha/gamma groups are excluded as candidates and partners.
-
-`--coincidence-ns VALUE` must be positive and finite; **default 1 ns**. This is an
-idealized prompt timing assumption, not a complete CYGNO reconstruction model.
-Times are event-relative; independent primaries must never be compared. Low
-background rates motivate ignoring accidental coincidences between independent
-physical events, but a prompt spatial multi-site / Compton-like topology is not
-proof of Compton scattering. No truth process, track or ancestry veto is used.
-
-Compact retains only the first position/time per group × volume, even if that
-first step deposited zero energy. Distinct groups, different gas volumes and
-within-event prompt coincidence are accessible; two sites compressed into the
-same group AND volume are invisible. The thesis considers cross-module track
-matching/merging: reconstruction may identify one particle, while this study
-explores the complementary choice of vetoing its topology. Signal efficiency
-must be evaluated, since solar-neutrino recoil electrons can cross module
-boundaries and topology cuts can reject signal.
-
-New spectra and PNG/PDF figures accompany `cutflow.md`, with four stages and
-contribution/category/TOTAL annual-rate efficiencies, using the full `all`
-window. Category efficiencies use normalized rates, never summed raw MC counts.
-`SelectionEnergyWindows` adds all four selections without changing the historical
-`ExactEnergyWindows` tree. Timing/spatial parameters are recorded in summary,
-cut-flow, ROOT provenance and the multi-site figure caption. The small Python
-`analysis/common/topology.py` is a semantic oracle with synthetic C++ parity
-tests for both layouts; historical `study/analyze.py` remains compatible with
-untimed schema-0 raw input. Earlier statements about timing independence in this
-document refer to the historical Python/reference analyses.
+[Workflow commands](../internal/README.md), [source specification](STUDY_SOURCES.md),
+[Python analysis architecture](../analysis/README.md), and
+[validation](TWO_STAGE_VALIDATION.md) give operating details. Optional historical
+ROOT reference programs still accept explicit unit-paired normalization files;
+that interface and historical unversioned-input rules are archived in
+[the pre-v4 reference](history/ANALYSIS-pre-v4.md).
+External uses [its own environmental normalization](../external/docs/OUTPUT.md),
+never internal activity weights.

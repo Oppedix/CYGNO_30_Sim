@@ -78,7 +78,6 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* Detector)
   (void)G4UniformRand();
 
   fParticleGun->SetParticleEnergy(0*eV);
-  //fParticleGun->SetParticlePosition(GetPointOnDetectorElement("CathodesPolyimide"));
   fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));          
   fParticleGun->SetParticleDefinition(particle);
 

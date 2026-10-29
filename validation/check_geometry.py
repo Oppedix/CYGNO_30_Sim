@@ -28,18 +28,21 @@ def local_signature(row, center):
             *(round(row[axis]-center[i], 9) for i,axis in enumerate('xyz')))
 
 
-def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', model='cygno-acrylic-v3'):
-    assert model in ('cygno-acrylic-v3','cygno-300elj-v2'), model
-    core_material='PMMA' if model=='cygno-acrylic-v3' else 'G4_KAPTON'
+def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', model='cygno-copper-cathode-v4'):
+    assert model in ('cygno-copper-cathode-v4','cygno-acrylic-v3','cygno-300elj-v2'), model
+    v4=model=='cygno-copper-cathode-v4'
+    per_module=137 if v4 else 139
+    cathode_name='Cathode' if v4 else 'CathodesPolyimide'
+    core_material='PMMA' if model!='cygno-300elj-v2' else 'G4_KAPTON'
     assert profile in ('cygno-5x5x3-v1', 'legacy-25x3', 'cygno-11x7-v1'), profile
     before, after = read(before_path), read(after_path)
     count = 77 if profile=='cygno-11x7-v1' else 75
-    assert len(after) == count*139+2
+    assert len(after) == count*per_module+2
     assert len({r['name'] for r in after}) == len(after), 'Duplicate physical names'
-    old_modules = [r for r in before if r['logical']=='CathodesPolyimide']
-    new_modules = {r['copy']:r for r in after if r['logical']=='CathodesPolyimide'}
+    old_modules = [r for r in before if r['logical']==cathode_name]
+    new_modules = {r['copy']:r for r in after if r['logical']==cathode_name}
     old_count=len(old_modules)
-    assert len(before)==old_count*139+2
+    assert len(before)==old_count*per_module+2
     assert len(new_modules)==count
     # Baseline nearest cathode is unambiguous in XY; its modules had no Z layers.
     old_patterns=collections.defaultdict(collections.Counter)
@@ -50,7 +53,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
         center=tuple(cathode[a] for a in 'xyz')
         old_patterns[center][local_signature(row,center)]+=1
     reference=next(iter(old_patterns.values()))
-    assert sum(reference.values()) == 139
+    assert sum(reference.values()) == per_module
     assert all(pattern == reference for pattern in old_patterns.values())
     patterns=collections.defaultdict(collections.Counter)
     gas=set()
@@ -112,7 +115,10 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
     piece_counts = dict(CathodesPolyimide=1, CathodesCopper=2, GEMsPolyimide=6,
                         GEMsCopper=12, RingSupport=2, RingStrip=50, Resistor=52,
                         Lens=4, Sensor=4, GasVolume=2, GEMTransferGas=4)
-    assert sum(piece_counts.values()) == 139
+    if v4:
+        del piece_counts['CathodesPolyimide'], piece_counts['CathodesCopper']
+        piece_counts['Cathode']=1
+    assert sum(piece_counts.values()) == per_module
     assert collections.Counter(r['logical'] for r in after if r['logical'] not in ('World','Vessel')) == {
         k:v*count for k,v in piece_counts.items()}
     def near(a,b): assert math.isclose(a,b,abs_tol=1e-9), (a,b)
@@ -121,9 +127,9 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
         cz=cathode['z']
         for row in rows:
             kind=row['logical']; z=row['z']-cz
-            if kind in ('CathodesPolyimide','CathodesCopper','GEMsPolyimide','GEMsCopper'):
+            if kind in ('Cathode','CathodesPolyimide','CathodesCopper','GEMsPolyimide','GEMsCopper'):
                 near(row['xmax']-row['xmin'],500); near(row['ymax']-row['ymin'],800)
-                near(row['zmax']-row['zmin'],.050 if 'Polyimide' in kind else .005)
+                near(row['zmax']-row['zmin'],.060 if kind=='Cathode' else .050 if 'Polyimide' in kind else .005)
                 assert row['material']==(core_material if 'Polyimide' in kind else 'G4_Cu')
             if kind=='RingStrip':
                 index=row['copy']//count % 25
@@ -147,6 +153,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
                 near(row['ymax']-row['ymin'],800.220)
                 near(row['zmax']-row['zmin'],500)
                 assert row['material']=='PMMA'
+            if kind=='Cathode': near(z,0)
             if kind=='CathodesCopper': near(abs(z),.0275)
             if kind=='GasVolume':
                 near(abs(z),250.03)
@@ -168,7 +175,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
                 near(edges[0][0],z-.030);near(edges[1][1],z+.030)
                 if layer==0: near(abs(z)-.030,500.030)
                 if layer<2: near((500.060+(layer+1)*2.060-.030)-(abs(z)+.030),2.000)
-        changed=[r for r in rows if r['logical'] in ('GasVolume','GEMTransferGas','CathodesCopper','CathodesPolyimide','GEMsCopper','GEMsPolyimide')]
+        changed=[r for r in rows if r['logical'] in ('GasVolume','GEMTransferGas','Cathode','CathodesCopper','CathodesPolyimide','GEMsCopper','GEMsPolyimide')]
         for left,right in itertools.combinations(changed,2):
             assert any(left[a]+left[a+'max']<=right[a]+right[a+'min']+1e-9 or
                        right[a]+right[a+'max']<=left[a]+left[a+'min']+1e-9 for a in 'xyz'), (left['name'],right['name'])
@@ -186,7 +193,7 @@ def check(before_path, after_path, same_layout=False, profile='cygno-5x5x3-v1', 
     center_id=next(m for m,r in new_modules.items() if all(r[a]==0 for a in 'xyz'))
     lo,hi=envelopes[center_id]
     print(f'{count} modules, {2*count} gas volumes, {len(after):,} unique placements: PASS')
-    print('All 139 local placements per module have identical solid/material signatures across layouts.')
+    print(f'All {per_module} local placements per module have identical solid/material signatures across layouts.')
     print('Module envelope [mm]:',lo,hi)
     print('No inter-module envelope intersections, vessel crossings or world protrusions.')
     # Densities and elemental fractions are independently captured by snapshot.

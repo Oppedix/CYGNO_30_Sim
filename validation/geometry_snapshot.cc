@@ -57,6 +57,7 @@ int main(int argc, char** argv)
     out << "source-list " << name << '\n';
     for (const auto& entry : list) out << entry << '\n';
   };
+  writeList("Cathode", detector.GetCathodeList());
   writeList("CathodesCopper", detector.GetCathodesCopperList());
   writeList("CathodesPolyimide", detector.GetCathodesPolyimideList());
   writeList("GEMsCopper", detector.GetGEMsCopperList());

@@ -193,6 +193,9 @@ def run(args):
     output, build = args.output.resolve(), args.build.resolve()
     tools = {key: build/name for key, name in [('simulation', 'rdecay01'), ('quantities', 'geometry_quantities')]}
     require(all(p.is_file() for p in tools.values()), 'Build rdecay01 and geometry_quantities first')
+    if (output/'campaign.json').exists():
+        require(rt.read(output/'campaign.json')['identity']['config']['model'] == config['model'],
+                'Campaign identity changed; new physics requires a new output directory')
     with rt.locked(output):
         probe = output/'probes'/f'probe-{time.time_ns()}'
         probe.mkdir(parents=True)

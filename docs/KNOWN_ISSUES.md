@@ -1,25 +1,13 @@
 # Known issues and scientific decisions
 
-Preferred internal v3 is `cygno-acrylic-v3` with the matching v3 assay matrix;
-v3 is the default detector in both modes; v2 (`cygno-300elj-v2`) remains
-supported by explicit selection in either mode. Both
-internal versions use `uniform-volume-v1`. v3 requires fresh transport for all
-26 contributions; the dated v2 checks below are retained evidence, not new v3
-qualification. [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md)
-describes the constructed geometry and masses. Software checks alone do not
-establish physical background-rate accuracy.
-
-## Resolved geometry and source issues
-
-GEMs and the cathode are explicit Cu5/core50/Cu5 µm slabs without material
-intersections: Kapton in v2, PMMA in v3 in both modes. The 500 mm gas boundaries meet
-the cathode and first GEM exactly.
-GEM clear spacing is 2.000 mm (2.060 mm centre pitch), filled with non-sensitive
-He/CF4. Uniform-volume sampling replaces the surface/inward-depth shortcut;
-deterministic containment, analytic moments, ranges and rotated placements are
-tested. Model/policy/hash gates reject earlier data rather than relabel them.
-Same-event primary placement, isotope updates, mass-map accounting, event/EOF
-flushes and output ownership checks remain in place. Longitudinal segmentation is resolved: 25 ten-mm Cu bands, 24 ten-mm internal gaps, five-mm endpoint half-gaps, and 26 gap-centred resistors per side. Resistor transport is a compact fused-silica surrogate; completed-component assay is normalized per nominal nEXO reference piece.
+The current model is `cygno-copper-cathode-v4` in both modes. All 23 internal
+contributions and external transport require new campaigns. The solid EFCu
+cathode fills the retained 60 µm envelope; GEMs alone retain PMMA50/Cu5 skins.
+The 500 mm gas volumes meet cathode and first GEM faces exactly.
+Lens activity uses physical-lens Bq/piece from `CYGNO_radioactivity_excel_suprasil`;
+its 3.843 kg reference mass changes no Geant4 geometry or transport.
+See [geometry and masses](SINGLE_MODULE_GEOMETRY.md) and [assays](STUDY_SOURCES.md).
+Dated model qualifications below are historical evidence, not v4 rate validation.
 
 ## Unresolved current geometry assumptions
 
@@ -48,8 +36,8 @@ The new overlay/range figures change presentation only.
 
 The original Figure 7.5 production inputs/revision remain unresolved. Historical
 normalization TSVs and the historical Table 7.1 geometry are references; their
-old masses/model cannot normalize the updated detector. v3 deliberately reuses
-the selected Table 7.1 specific activities with its own new transport and actual
+old masses/model cannot normalize the updated detector. v4 retains
+selected Table 7.1 component activities, with the separate per-piece lens update with its own new transport and actual
 constructed quantities, as detailed in [source provenance](STUDY_SOURCES.md).
 Published Table 7.2's no-cut (10,400] value
 exceeds its >10 value; it remains a reference discrepancy, never a rate-tuning

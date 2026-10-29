@@ -16,7 +16,7 @@
 #include <stdexcept>
 
 int main(int argc, char** argv) try {
-  if (argc<3) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json] [--model MODEL] [--mode internal|external]; default model: cygno-acrylic-v3");
+  if (argc<3) throw std::runtime_error("Usage: geometry_quantities output.tsv LAYOUT [geometry.json] [--model MODEL] [--mode internal|external]; default model: cygno-copper-cathode-v4");
   std::string model=cygno::simulation::defaultDetectorModel, mode="internal", geometryPath;
   int next=3;
   if (next<argc && std::string(argv[next]).rfind("--",0)!=0) geometryPath=argv[next++];
@@ -33,11 +33,14 @@ int main(int argc, char** argv) try {
   CLHEP::HepRandom::setTheSeed(12345);
   DetectorConstruction detector(layout);
   detector.Construct();
-  const std::map<G4String,std::vector<G4String>> sources{
-    {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
+  std::map<G4String,std::vector<G4String>> sources{
+    {"Cathode",detector.GetCathodeList()}, {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
     {"GEMsPolyimide",detector.GetGEMsPolyimideList()}, {"RingSupports",detector.GetRingsSupportList()},
     {"RingStrips",detector.GetRingStripstList()}, {"Resistors",detector.GetResistorList()},
     {"Lens",detector.GetLensList()}, {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
+  for (auto it=sources.begin(); it!=sources.end();) {
+    if (it->second.empty()) it=sources.erase(it); else ++it;
+  }
   std::ofstream out(argv[1]);
   if (!out) throw std::runtime_error("Cannot write quantities file");
   out << std::setprecision(17)

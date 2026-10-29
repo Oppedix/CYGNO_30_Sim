@@ -2,34 +2,19 @@
 
 ## Scientific identity
 
-**Preferred internal v3** selects `cygno-acrylic-v3` and the 26-contribution
-`cygno-300elj-radioassay-v3.json`: physical PMMA50 cores for GEM and cathode,
-Table 7.1 Acrylic U/Th/K, and EFCu skins U/Th. Use
-`--config config/study/cygno-11x7-v3.json` with the commands below; the runner
-selects the matching matrix and passes the transport model to Geant4/exporter.
-All v3 contributions require new transport. v2 campaigns remain unmodified and
-analyzable; no provenance check is disabled. Both analyses keep the original
-simulation matrix plus a separate `normalization-scenario.json` descriptor.
-Full comparison and cluster commands: [STUDY_SOURCES](STUDY_SOURCES.md),
-[internal README](../internal/README.md).
-
-
-The retained v2 detector/source identity is `cygno-300elj-v2 / uniform-volume-v1`
-with `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`. The production configuration
-`config/study/cygno-11x7-v2.json` selects 77 modules; `samuele.json` retains the
-legacy-25x3 layout. All three supported layouts use the same module geometry.
-Production configurations retain 10^7 primaries/contribution; `--primaries`
-overrides statistics. The layer construction, assays and exact source sampler
-are specified in [SINGLE_MODULE_GEOMETRY.md](SINGLE_MODULE_GEOMETRY.md).
-
-`study/source_matrix.py` validates both versioned matrices: v3 has 26
-contributions, v2 has 28, each with ten physical families and seven categories.
-For retained v2, `config/study/cygno-300elj-radioassay-v2.json` is authoritative.
-`GEMs = GEMsCopper + GEMsPolyimide`; `Cathodes = CathodesCopper + CathodesPolyimide`;
-`Field Cage = RingStrips + RingSupports`. Each source
-is scaled before category summation. Supports use measured solid Reynolds UVT PMMA U/Th
-and retain the unmeasured-K conservative proxy; completed MBNL resistor assays
-normalize per nominal reference piece. Omitted table entries do not become zero-rate jobs.
+The single current model is `cygno-copper-cathode-v4 / uniform-volume-v1`.
+Use `config/study/cygno-11x7-v4.json` for the planar 77-module campaign;
+`samuele.json` and smoke A/B also select v4 with their retained layouts.
+The matching `cygno-radioassay-v4.json` has 23 contributions, nine physical
+families and seven reporting categories. `GEMs = GEMsCopper + GEMsPolyimide`,
+`Cathodes = Cathode`, `Field Cage = RingStrips + RingSupports`.
+Each source is normalized before category sums. Lens Bq/piece uses actual
+placement count; no Geant4 lens mass enters its activity.
+Both analyses retain the original matrix and separate normalization descriptor.
+New transport in a new directory is mandatory; old campaign identities remain
+unchanged. See [source provenance](STUDY_SOURCES.md),
+[geometry](SINGLE_MODULE_GEOMETRY.md), and [commands](../internal/README.md).
+Production retains 10^7 primaries/contribution; `--primaries` changes statistics.
 
 ## Stage A: simulation only
 
@@ -50,7 +35,7 @@ Campaign-level parallel execution uses a positive `--jobs` limit (default `1`):
 # Directory: repository root; common Geant4 environment active.
 cd "$CYGNO_SRC"
 python3 study/simulate.py \
-  --config config/study/cygno-11x7-v3.json \
+  --config config/study/cygno-11x7-v4.json \
   --build "$CYGNO_BUILD" \
   --output "$CYGNO_RUNS/samuele-100k" \
   --primaries 100000 \
@@ -124,7 +109,7 @@ concurrency is absent from config and campaign/job fingerprints. Completed
 contributions are verified and reused. As in sequential execution, an individual
 job failure is recorded while the remaining selected contributions continue;
 `--retry-failed` is still required to retry failures. Full matrix coverage
-(26/26 v3, 28/28 v2) exits 0;
+(23/23 v4) exits 0;
 runner, configuration and preflight errors exit 1.
 
 Ctrl-C stops new submissions and signals all active invocations to cancel. At
@@ -149,7 +134,7 @@ build/data paths to exist. Changing source/build/data/config cannot resume it.
 ## Packaging and transfer
 
 `--archive` or `python3 -m study.archive --input CAMPAIGN` requires the selected matrix
-to be complete (26/26 v3, 28/28 v2). Archives include failed earlier attempts
+to be complete (23/23 v4). Archives include failed earlier attempts
 as well as successful ones, probe/preflight logs, all snapshots and provenance. `SHA256SUMS.json` covers
 every packaged regular file except itself; the external `.tar.gz.sha256` checks
 the entire archive. The archive is verified before publication. Existing archives
@@ -216,7 +201,7 @@ combined PyROOT/C++ workflow for historical comparisons; they are not imported b
 the new entry points. Old campaign schemas are not silently migrated/relabelled.
 
 `tests/test_parity.py` optionally executes the real C++ processor/plotter on uproot
-fixtures for both layouts and all 28 normalization rows, comparing group labels,
+fixtures for both layouts and historical normalization rows, comparing group labels,
 vectors, exact-window counts/rates, every bin/flow, variances and category sums.
 It includes all histogram edges and adjacent floating-point values. See
 [development checks](../internal/docs/DEVELOPMENT.md) for its command. Tests require no large Monte Carlo campaign.

@@ -2,6 +2,7 @@
 // Optional second argument "overlaps" runs Geant4 checks on the central module
 // and common vessel. Existing INTERNAL overlaps are expected, not suppressed.
 #include "cygno/geometry/DetectorConstruction.hh"
+#include "common/SimulationMode.hh"
 #include "cygno/source/PrimaryGeneratorAction.hh"
 #include "G4Geantino.hh"
 #include "G4RunManager.hh"
@@ -28,13 +29,17 @@ int main(int argc, char** argv) {
   if (argc < 2) return 1;
   auto layout = cygno::geometry::LayoutId::Current5x5x3;
   bool overlaps = false;
+  std::string model=cygno::simulation::defaultDetectorModel, mode="internal";
   for (int i=2; i<argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "overlaps") overlaps = true;
     else if (arg == "--layout" && i+1 < argc)
       layout = cygno::geometry::ParseLayoutId(argv[++i]);
+    else if (arg == "--model" && i+1 < argc) model=argv[++i];
+    else if (arg == "--mode" && i+1 < argc) mode=argv[++i];
     else return 1;
   }
+  cygno::simulation::Configure(mode,"none",model);
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   CLHEP::HepRandom::setTheSeed(12345);
   DetectorConstruction detector(layout);
@@ -66,11 +71,14 @@ int main(int argc, char** argv) {
       if (logical->GetName() != "World") volume->CheckOverlaps(2000,0,true,5);
     }
   }
-  const std::map<G4String,std::vector<G4String>> sources{
-    {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
+  std::map<G4String,std::vector<G4String>> sources{
+    {"Cathode",detector.GetCathodeList()}, {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()}, {"GEMsCopper",detector.GetGEMsCopperList()},
     {"GEMsPolyimide",detector.GetGEMsPolyimideList()}, {"RingSupports",detector.GetRingsSupportList()},
     {"RingStrips",detector.GetRingStripstList()}, {"Resistors",detector.GetResistorList()},
     {"Lens",detector.GetLensList()}, {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
+  for (auto it=sources.begin(); it!=sources.end();) {
+    if (it->second.empty()) it=sources.erase(it); else ++it;
+  }
   // Supply the normal particle-table readiness required by a primary action.
   // This harness samples positions only; it does not transport events.
   G4RunManager runManager;

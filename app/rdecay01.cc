@@ -78,9 +78,9 @@ int main(int argc,char** argv) {
     for (int i=1; i<argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both] [--model cygno-300elj-v2|cygno-acrylic-v3]\n";
+        std::cout << "Usage: rdecay01 [macro [workers]] [--mode internal|external] [--shield none|copper20] [--layout legacy-25x3|cygno-5x5x3-v1|cygno-11x7-v1] [--output-mode raw|compact|both] [--model cygno-copper-cathode-v4]\n";
         std::cout << "Default detector model in both modes: " << cygno::simulation::defaultDetectorModel
-                  << " (PMMA GEM/cathode cores). Select cygno-300elj-v2 explicitly for historical Kapton campaigns.\n";
+                  << " (solid copper cathode; PMMA GEM cores). Historical v2/v3 require explicit selection.\n";
         return 0;
       }
       if (arg == "--mode" || arg == "--shield") {

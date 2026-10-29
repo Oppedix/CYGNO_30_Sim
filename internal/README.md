@@ -1,12 +1,13 @@
 # Internal — component radioactivity
 
 An independent workflow using the [common Geant4 build](../README.md).
-**Preferred internal v3** uses PMMA50 cores, historical Table 7.1 Acrylic U/Th/K
-and EFCu skins U/Th: **26 contributions**. Supported v2 uses Kapton50 and
-Arnquist Table 5 separate layer assays: **28 contributions**. Both retain
-`uniform-volume-v1` sampling, dimensions and isotope-chain controls.
-**All 26 v3 contributions require new transport; never reweight v2 ROOT files
-or edit their manifests to present them as physical v3.**
+**Current v4** uses a solid EFCu cathode, Acrylic-core GEMs and
+**23 contributions** in `cygno-radioassay-v4.json`. Lens activity is Bq/piece
+from `CYGNO_radioactivity_excel_suprasil`: the reference mass is 3.843 kg for
+**one physical lens**, converted once, then multiplied by actual lens count.
+Geant4 lens transport is unchanged. `uniform-volume-v1` and chain controls remain.
+**Every v4 contribution needs new transport in a new campaign directory.**
+Old results and manifests retain their original identities.
 
 ## Checkout and common build
 
@@ -22,15 +23,15 @@ All commands below start from that root and use external output directories.
 ```bash
 # Directory: $CYGNO_SRC; common Geant4 environment/build from setup.
 cd "$CYGNO_SRC"
-python3 internal/study/preflight.py --build "$CYGNO_BUILD" --model cygno-acrylic-v3 \
-  --output "$CYGNO_RUNS/internal-v3-preflight-NEW"
-python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v3.json \
-  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v3-smoke-NEW" \
+python3 internal/study/preflight.py --build "$CYGNO_BUILD" --model cygno-copper-cathode-v4 \
+  --output "$CYGNO_RUNS/internal-v4-preflight-NEW"
+python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v4-smoke-NEW" \
   --mode smoke --primaries 2 --output-mode compact --jobs 1
 ```
 
 The runner also performs its own mandatory four-case U238/Th232/Bi212 preflight.
-All 26 jobs must pass even for a tiny complete smoke. The macOS PART122 failure
+All 23 jobs must pass even for a tiny complete smoke. The macOS PART122 failure
 remains open; use an environment where this gate passes. A complete smoke tests
 software, not a statistically meaningful background prediction.
 
@@ -42,8 +43,8 @@ in [validation](../docs/TWO_STAGE_VALIDATION.md), run:
 ```bash
 # Directory: $CYGNO_SRC; same common build/environment, fresh campaign directory.
 cd "$CYGNO_SRC"
-python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v3.json \
-  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v3-production-NEW" \
+python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v4-production-NEW" \
   --primaries 10000000 --output-mode compact --jobs 1 --archive
 ```
 
@@ -54,11 +55,9 @@ Each Geant4 process still has one worker. Repeat the identical command to resume
 failed jobs require `--retry-failed`. Scientific identity changes require a new
 campaign directory. See [operation, storage and recovery](docs/WORKFLOW.md).
 
-For v2, select `internal/config/study/cygno-11x7-v2.json`, use a fresh v2-named
-campaign and preflight with `--model cygno-300elj-v2`. The matching matrix is
-selected automatically; explicit matrix/model mismatches are rejected.
-The bare executable defaults to v3 in both modes. Direct v2 diagnostics must
-select `--model cygno-300elj-v2`; the runner always passes its configured model.
+The executable defaults to v4 in both modes; the runner always passes the
+configured model. Historical workflows are documented separately in
+[model history](../docs/history/DETECTOR_MODELS.md).
 
 ## Cluster
 
@@ -75,7 +74,7 @@ link differences. It compiles `AnalyzeCompactCampaign` separately from Geant4
 into `CYGNO_ANALYSIS_BIN`; no Geant4 or Python is needed on the ROOT worker.
 
 Use the complete unpacked compact campaign above as input and a **new** analysis
-directory. v2 and v3 use the same executable. Raw, both, partial campaigns and
+directory. The current v4 analyzer checks the matching matrix. Raw, both, partial campaigns and
 archives are not native inputs; use Python for those storage modes. Output
 includes `analysis.root`, historical Figure 7.5/7.6 spectra, topology figures,
 `summary.txt`, `cutflow.md` and normalization provenance. The extra topology
@@ -90,10 +89,10 @@ then run either input form below (different outputs):
 ```bash
 # Directory: $CYGNO_SRC on the analysis machine; Python venv active.
 cd "$CYGNO_SRC"
-python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v3-production-NEW" \
-  --output "$CYGNO_RUNS/internal-v3-python-NEW"
-python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v3-production-NEW.tar.gz" \
-  --output "$CYGNO_RUNS/internal-v3-python-archive-NEW"
+python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-production-NEW" \
+  --output "$CYGNO_RUNS/internal-v4-python-NEW"
+python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-production-NEW.tar.gz" \
+  --output "$CYGNO_RUNS/internal-v4-python-archive-NEW"
 ```
 
 Python accepts raw/compact/both, verifies full artifact integrity, and checks
@@ -106,7 +105,7 @@ and separately record `normalization-scenario.json`.
 
 ## Scientific references and compatibility
 
-- [Complete geometry/material tables](../docs/SINGLE_MODULE_GEOMETRY.md) and [source provenance](docs/STUDY_SOURCES.md): activities, upper limits, proxies, omitted isotopes and the explicit PMMA cathode extension.
+- [Complete geometry/material tables](../docs/SINGLE_MODULE_GEOMETRY.md) and [source provenance](docs/STUDY_SOURCES.md): activities, upper limits, proxies, omitted isotopes and the solid EFCu cathode and physical-lens per-piece activity.
 - [Workflow contract](docs/BACKGROUND_STUDY.md), [output/timing](docs/OUTPUT.md), [analysis semantics](docs/ANALYSIS.md), [notebooks](analysis/README.md).
 - [Known issues](docs/KNOWN_ISSUES.md) and [development/reference checks](docs/DEVELOPMENT.md).
 
@@ -114,7 +113,7 @@ and separately record `normalization-scenario.json`.
 are intentional relative symlinks to their historical locations. Keep them when
 copying the checkout; root paths remain supported. `macros` exposes `config/cygno`;
 `legacy` contains historical combined workflows, not production defaults.
-Stable source IDs containing `Polyimide` denote PMMA cores in v3; PMMA50 is a
+The stable `GEMsPolyimide` ID denotes GEM PMMA cores in v4; PMMA50 is a
 study choice, not a claim about installed CYGNO foils. Internal physics is
 `QGSP_BIC_EMZ + G4RadioactiveDecayPhysics`, unshielded. Retained grouping,
 first-position fiducialization and heavy-ion stopping are internal assumptions;

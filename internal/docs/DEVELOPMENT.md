@@ -20,7 +20,7 @@ python -m unittest discover -s tests -v
 These tests do not launch large production. Optional C++/ROOT parity checks
 cover layouts, historical v2's 28 scales/categories, grouping, chunk/EOF
 boundaries, exact energy windows, histogram edges/flows and MC variances.
-The standalone compact analyzer has its own v2/v3/topology regressions in
+The standalone compact analyzer has its own historical/v4/topology regressions in
 [its guide](../../analysis/common_c++/README.md#equivalence-checks).
 
 ## Optional historical C++ reference build
@@ -52,7 +52,7 @@ contracts and retained physical limits are in
 The final geometry report retains executed-check counts and environment details;
 [TWO_STAGE_VALIDATION](TWO_STAGE_VALIDATION.md) records smoke/archive/offline/parity
 evidence and remaining gates. Historical 28/28 Linux smoke requirements refer to
-v2; preferred v3 must qualify all its 26 contributions with new transport.
+v2; current v4 must qualify all its 23 contributions with new transport.
 A fresh four-case decay preflight is required on the target environment before
 smoke, followed by archive/offline validation and a controlled reference check
 before scaling to 1M/10M. Tests do not bypass PART122 or establish physical rates.

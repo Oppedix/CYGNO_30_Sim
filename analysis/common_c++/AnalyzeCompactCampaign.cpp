@@ -429,12 +429,13 @@ int main(int argc, char** argv) try {
     const std::string model = config["model"].val();
     const std::string policy = config["source_policy"].val();
     const std::string geometryHash = environment["geometry_hash"].val();
-    const bool acrylic = model == "cygno-acrylic-v3";
+    const bool v4 = model == "cygno-copper-cathode-v4";
+    const bool acrylic = v4 || model == "cygno-acrylic-v3";
     require((model == "cygno-300elj-v2" || acrylic) && policy == "uniform-volume-v1", "Unsupported model/source policy");
     require(geometry["model"].val() == model && geometry["source_policy"].val() == policy &&
             geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
             geometry["source_hash"].val() == environment["source_hash"].val(), "Geometry snapshot mismatch");
-    const std::string scenarioId = acrylic ? "cygno-300elj-radioassay-v3" : "cygno-300elj-radioassay-v2";
+    const std::string scenarioId = v4 ? "cygno-radioassay-v4" : acrylic ? "cygno-300elj-radioassay-v3" : "cygno-300elj-radioassay-v2";
     require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == scenarioId &&
             integer(matrix["seconds_per_year"]) == 31536000 &&
             matrix["quantity_policy"].val() == "constructed-component-mass-kg-or-placement-count",
@@ -449,11 +450,20 @@ int main(int argc, char** argv) try {
     if (acrylic) {
         sourceIsotopes["GEMsCopper"] = {"U238","Th232"};
         sourceIsotopes["CathodesCopper"] = {"U238","Th232"};
-        const auto& reference = matrix["provenance"]["historical_layers"];
+        const auto& reference = matrix["provenance"][v4 ? "v4_layers" : "historical_layers"];
         require(reference["reference_matrix_id"].val() == "thesis-table7.1-v1" &&
                 reference["reference_matrix_sha256"].val() ==
                     "de7eddc44076f0697d36a693894eb0d927da964770dc9762f684b34eb0a65836",
-                "Missing v3 Table 7.1 provenance");
+                "Missing Table 7.1 layer provenance");
+    }
+    if (v4) {
+        sourceIsotopes.erase("CathodesPolyimide");
+        sourceIsotopes.erase("CathodesCopper");
+        sourceIsotopes["Cathode"] = {"U238","Th232"};
+        const auto& lens = matrix["provenance"]["lens"];
+        require(lens["source"].val() == "CYGNO_radioactivity_excel_suprasil" &&
+                number(lens["reference_mass_kg_per_piece"]) == 3.843,
+                "Missing physical-lens provenance");
     }
     std::set<std::string> expectedContributions;
     for (const auto& [component,isotopes] : sourceIsotopes)
@@ -497,7 +507,10 @@ int main(int argc, char** argv) try {
         require(fields.size() == columns.size(), "Malformed quantity row");
         const auto component = fields.at(columns.at("component"));
         if (acrylic && (component == "GEMsPolyimide" || component == "CathodesPolyimide"))
-            require(fields.at(columns.at("geometry_material")) == "PMMA", "v3 core transport must be PMMA");
+            require(fields.at(columns.at("geometry_material")) == "PMMA", "Acrylic core transport must be PMMA");
+        require(sourceIsotopes.count(component), "Unknown constructed component");
+        if (v4 && component == "Cathode")
+            require(fields.at(columns.at("geometry_material")) == "G4_Cu", "v4 cathode must be copper");
         size_t usedMass = 0, usedPieces = 0;
         const auto& massText = fields.at(columns.at("mass_kg"));
         const auto& piecesText = fields.at(columns.at("pieces"));
@@ -516,7 +529,7 @@ int main(int argc, char** argv) try {
     require(quantityHeaders.at("layout") == layout && quantityHeaders.at("detector-model") == model &&
             quantityHeaders.at("source-policy") == policy && quantityHeaders.at("geometry-hash") == geometryHash &&
             quantityHeaders.at("compiled-source-hash") == environment["source_hash"].val() &&
-            !quantityHeaders.at("provenance").empty() && quantities.size() == campaign["quantities"].num_children(),
+            !quantityHeaders.at("provenance").empty() && quantities.size() == campaign["quantities"].num_children() && quantities.size() == sourceIsotopes.size(),
             "Quantity export identity mismatch");
 
     // geometry.json is the runner's export of common/DetectorGeometry.hh.
@@ -576,7 +589,19 @@ int main(int argc, char** argv) try {
             require(result.unit == "Bq/kg" && result.activity == activities.at(row["chain_start"]["name"].val()) &&
                     row["assay_material"].val() == (core ? "Acrylic" : "EFCu") &&
                     row["activity_basis"].val() == (core ? "upper-limit-used-as-value" : "table-value"),
-                    "Changed v3 historical layer activity/basis");
+                    "Changed layer activity/basis");
+        }
+        if (v4) {
+            const bool perPiece = component == "Lens" || component == "Resistors";
+            require(result.unit == (perPiece ? "Bq/piece" : "Bq/kg"), "Wrong v4 activity unit");
+            if (component == "Lens") {
+                const std::map<std::string,double> activities{
+                    {"U238",4.72689e-4},{"Th232",1.564101e-4},{"K40",1.19133e-3}};
+                require(result.activity == activities.at(row["chain_start"]["name"].val()) &&
+                        row["activity_basis"].val() == "reference-physical-lens-per-piece" &&
+                        row["provenance"].val() == "CYGNO_radioactivity_excel_suprasil",
+                        "Changed physical-lens activity/basis");
+            }
         }
         result.quantity = quantities.at(component)[result.unit == "Bq/kg" ? 0 : 1];
         require(result.activity > 0., "Activity must be positive");

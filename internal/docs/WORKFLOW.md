@@ -16,8 +16,8 @@ no scheduler/login command is specified because none is established here.
 ```bash
 # Directory: $CYGNO_SRC on the allocated simulation node.
 cd "$CYGNO_SRC"
-export CYGNO_CAMPAIGN=internal-v3-cluster-smoke-NEW
-export CYGNO_CONFIG="$CYGNO_SRC/internal/config/study/cygno-11x7-v3.json"
+export CYGNO_CAMPAIGN=internal-v4-cluster-smoke-NEW
+export CYGNO_CONFIG="$CYGNO_SRC/internal/config/study/cygno-11x7-v4.json"
 export CYGNO_PRIMARIES=2
 export CYGNO_JOBS=1
 export CYGNO_OUTPUT_MODE=compact
@@ -30,7 +30,7 @@ After qualification, production in a fresh campaign:
 ```bash
 # Directory: $CYGNO_SRC, same allocation/environment; one CPU for CYGNO_JOBS=1.
 cd "$CYGNO_SRC"
-export CYGNO_CAMPAIGN=internal-v3-cluster-production-NEW
+export CYGNO_CAMPAIGN=internal-v4-cluster-production-NEW
 export CYGNO_PRIMARIES=10000000
 bash internal/cluster/run.sh --mode production --archive
 ```
@@ -44,7 +44,7 @@ two owners of the same campaign directory.
 | Wrapper variable | Required/default |
 |---|---|
 | `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS`, `CYGNO_CAMPAIGN`, `CYGNO_PRIMARIES` | Required; repository root, shared build, campaign parent, unique name, count per contribution |
-| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v3.json`; retained v2 config selects 28 contributions |
+| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v4.json`; v4 selects 23 contributions |
 | `CYGNO_JOBS` | Positive concurrency limit; default 1 |
 | `CYGNO_OUTPUT_MODE` | Default compact |
 | `CYGNO_PYTHON` | Default python3, version ≥3.10 |
@@ -64,12 +64,12 @@ Output mode is part of scientific identity; changing it requires a fresh output.
 ```bash
 # Directory: $CYGNO_SRC; common Geant4 environment active, new parity campaign.
 cd "$CYGNO_SRC"
-python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v3.json \
-  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v3-parity-NEW" \
+python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.json \
+  --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-v4-parity-NEW" \
   --primaries 1000 --output-mode both --jobs 1
 # Stage B checks raw/compact parity from the same transport.
-python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v3-parity-NEW" \
-  --output "$CYGNO_RUNS/internal-v3-parity-analysis-NEW"
+python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-parity-NEW" \
+  --output "$CYGNO_RUNS/internal-v4-parity-analysis-NEW"
 ```
 
 The last command needs the [Python analysis environment](../../docs/SETUP.md#python-analysis-environment-either-workflow);
@@ -103,7 +103,7 @@ campaign, retaining the unpacked data. To package separately:
 ```bash
 # Directory: $CYGNO_SRC; production campaign completed successfully.
 cd "$CYGNO_SRC"
-python3 -m study.archive --input "$CYGNO_RUNS/internal-v3-production-NEW"
+python3 -m study.archive --input "$CYGNO_RUNS/internal-v4-production-NEW"
 ```
 
 Archives contain selected data files, every attempt's logs/receipts/macros,
@@ -117,8 +117,8 @@ Use the [native ROOT recipe](../../analysis/common_c++/README.md#compile) or
 [Python recipe](../README.md#python-analysis) after setting paths on the analysis
 machine. The documented historical CNAF input
 `/cnaf/cygno-sim/Users/goppedis/SolarNu/25x3Samuele-1M` is a retained input,
-not a newly generated v3 campaign. Paths such as
-`/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v3-complete` are configurable
+not a newly generated v4 campaign. Paths such as
+`/cnaf/cygno-sim/Users/goppedis/SolarNu/internal/11x7-v4-complete` are configurable
 transfer destinations and must exist/be complete before analysis.
 
 ## Scientific boundary
@@ -130,9 +130,10 @@ optional topology cuts are specified in [ANALYSIS](ANALYSIS.md).
 The last tracked ion label (`Nucleus`) is not guaranteed per-hit ancestry.
 Published tables are comparisons, never normalization targets.
 
-v3 changes the transport of particles from **all** source components as they
-cross PMMA cores. Do not replace `matrix.json`, relabel manifests or disable
-identity/checksum/preflight gates to reuse v2 data. Both analyses retain the
+v4 changes transport for **all** source components crossing the solid copper
+cathode. Lens activity is Bq/piece from `CYGNO_radioactivity_excel_suprasil`;
+3.843 kg describes one physical lens and is already included in the activity. Do not replace `matrix.json`, relabel manifests or disable
+identity/checksum/preflight gates to reuse historical data. Both analyses retain the
 simulation matrix and a separate normalization-scenario descriptor; see
 [source provenance](STUDY_SOURCES.md).
 
