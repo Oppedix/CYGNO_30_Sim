@@ -51,6 +51,9 @@ compiled separately on an analysis machine, as shown in their
 `internal/` preserves relative symlinks to the historical `study/`, `config/`,
 `analysis/` and validation paths; keep those links when copying the checkout.
 
+For CNAF batch submission of the existing runners, see the
+[minimal HTCondor setup](condor/README.md).
+
 ## Technical references
 
 - [Source activities and v4 provenance](docs/STUDY_SOURCES.md)

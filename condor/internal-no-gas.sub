@@ -1,0 +1,4 @@
+campaign = internal-no-gas
+cpus = $(internal_jobs)
+include : site.conf
+queue 1

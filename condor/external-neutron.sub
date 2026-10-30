@@ -1,0 +1,4 @@
+campaign = external-neutron
+cpus = 1
+include : site.conf
+queue 1
