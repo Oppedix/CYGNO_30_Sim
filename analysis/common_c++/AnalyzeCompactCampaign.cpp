@@ -53,7 +53,7 @@ constexpr int bins = 900;
 constexpr double maximumEnergy = 2000.;
 constexpr double binWidth = maximumEnergy / bins;
 // Presentation order only; physical contribution membership comes from matrix.json.
-const std::array<std::string, 7> categories = {
+std::vector<std::string> categories = {
     "Camera Lenses", "Vessel", "Camera Sensors", "Cathodes", "Resistors", "GEMs", "Field Cage"};
 const std::array<const char*, 6> windows = {
     "all", "gt10", "gt10_le400", "underflow", "in_range", "overflow"};
@@ -179,7 +179,7 @@ void saveFigure(TCanvas& canvas, const fs::path& stem) {
         require(fs::exists(file) && fs::file_size(file)>0, "Figure export failed: "+file);
     }
 }
-void exportRangeStack(const fs::path& stem, const std::array<std::unique_ptr<TH1D>,7>& spectra,
+void exportRangeStack(const fs::path& stem, const std::vector<std::unique_ptr<TH1D>>& spectra,
                       const char* title, double low, double high) {
     TCanvas canvas("range_stack",title,1200,750);
     canvas.SetLeftMargin(.12); canvas.SetRightMargin(.04); canvas.SetBottomMargin(.12);
@@ -199,7 +199,7 @@ void exportRangeStack(const fs::path& stem, const std::array<std::unique_ptr<TH1
         }
         maximum=std::max(maximum,total);
     }
-    for (int c=0; c<7; ++c) {
+    for (int c=0; c<static_cast<int>(categories.size()); ++c) {
         copies.emplace_back(static_cast<TH1D*>(spectra[c]->Clone()));
         copies.back()->SetDirectory(nullptr);
         stack.Add(copies.back().get());
@@ -342,7 +342,8 @@ void writeCutflow(const fs::path& path, const std::vector<Contribution>& results
            << "NEVER cross-contribution MC count ratios. Rates below are rounded to 10 significant digits; "
            << "summary.txt and ROOT retain full precision.\n\n";
     report << std::setprecision(10); // Readable rates; ROOT and summary retain full precision.
-    std::array<std::array<double, 7>, selectionCount> categoryRates{};
+    std::array<std::vector<double>, selectionCount> categoryRates;
+    for (auto& rates : categoryRates) rates.resize(categories.size());
     std::array<std::array<double, 6>, selectionCount> totalRates{};
     for (const auto& result : results) {
         const int c = std::find(categories.begin(), categories.end(), result.category) - categories.begin();
@@ -367,7 +368,7 @@ void writeCutflow(const fs::path& path, const std::vector<Contribution>& results
         report << "\n### Thesis categories\n\n"
                << "| Thesis category | Expected events/year | Step efficiency [%] | Cumulative efficiency [%] |\n"
                << "|---|---:|---:|---:|\n";
-        for (int c = 0; c < 7; ++c)
+        for (int c = 0; c < static_cast<int>(categories.size()); ++c)
             report << "| " << categories[c] << " | " << categoryRates[cut][c] << " | "
                    << efficiency(categoryRates[cut][c], categoryRates[previous][c]) << " | "
                    << efficiency(categoryRates[cut][c], categoryRates[0][c]) << " |\n";
@@ -435,7 +436,12 @@ int main(int argc, char** argv) try {
     require(geometry["model"].val() == model && geometry["source_policy"].val() == policy &&
             geometry["layout"].val() == layout && geometry["geometry_hash"].val() == geometryHash &&
             geometry["source_hash"].val() == environment["source_hash"].val(), "Geometry snapshot mismatch");
-    const std::string scenarioId = v4 ? "cygno-radioassay-v4" : acrylic ? "cygno-300elj-radioassay-v3" : "cygno-300elj-radioassay-v2";
+    const bool gasBkg = config.has_child("gas_bkg") && config["gas_bkg"].val() == "yes";
+    require(!config.has_child("gas_bkg") || config["gas_bkg"].val() == "yes" || config["gas_bkg"].val() == "no",
+            "Invalid gas flag");
+    require(!gasBkg || v4, "Gas backgrounds require v4");
+    if (gasBkg) { categories.push_back("Gas C14"); categories.push_back("Gas Rn222"); }
+    const std::string scenarioId = gasBkg ? "cygno-radioassay-v4-gas-v1" : v4 ? "cygno-radioassay-v4" : acrylic ? "cygno-300elj-radioassay-v3" : "cygno-300elj-radioassay-v2";
     require(integer(matrix["schema_version"]) == 1 && matrix["matrix_id"].val() == scenarioId &&
             integer(matrix["seconds_per_year"]) == 31536000 &&
             matrix["quantity_policy"].val() == "constructed-component-mass-kg-or-placement-count",
@@ -465,6 +471,8 @@ int main(int argc, char** argv) try {
                 number(lens["reference_mass_kg_per_piece"]) == 3.843,
                 "Missing physical-lens provenance");
     }
+    if (gasBkg) sourceIsotopes["Gas"] = {"C14","Rn222"};
+    require(matrix["provenance"].has_child("gas") == gasBkg, "Gas provenance/flag mismatch");
     std::set<std::string> expectedContributions;
     for (const auto& [component,isotopes] : sourceIsotopes)
         for (const auto& isotope : isotopes) expectedContributions.insert(component+"_"+isotope);
@@ -509,6 +517,13 @@ int main(int argc, char** argv) try {
         if (acrylic && (component == "GEMsPolyimide" || component == "CathodesPolyimide"))
             require(fields.at(columns.at("geometry_material")) == "PMMA", "Acrylic core transport must be PMMA");
         require(sourceIsotopes.count(component), "Unknown constructed component");
+        if (component == "Gas") {
+            require(fields.at(columns.at("geometry_material")) == "CYGNO_gas" &&
+                    std::abs(std::stod(fields.at(columns.at("density_g_cm3")))/.0015273872 - 1.) < 1e-12 &&
+                    std::abs(std::stod(fields.at(columns.at("mass_kg")))/
+                        (std::stod(fields.at(columns.at("volume_mm3")))*1e-6*.0015273872) - 1.) < 1e-12,
+                    "Gas mixture/material mismatch");
+        }
         if (v4 && component == "Cathode")
             require(fields.at(columns.at("geometry_material")) == "G4_Cu", "v4 cathode must be copper");
         size_t usedMass = 0, usedPieces = 0;
@@ -550,6 +565,8 @@ int main(int argc, char** argv) try {
         for (int axis = 0; axis < 3; ++axis) gasCenters[volume][axis] = number(center.child(axis));
     }
 
+    if (gasBkg) require(quantities.at("Gas")[1] == gasCenters.size(), "Gas placement count mismatch");
+
     // The only persistent analysis data are source-matrix sets of four 902-bin histograms and
     // their exact counters. ROOT streams the large event trees through its cache.
     std::vector<Contribution> results;
@@ -574,7 +591,7 @@ int main(int argc, char** argv) try {
         require(std::find(categories.begin(), categories.end(), result.category) != categories.end(),
                 "Unknown reporting category: " + result.category);
         categoryNames.insert(result.category);
-        if (componentCategories.count(component))
+        if (componentCategories.count(component) && component != "Gas")
             require(componentCategories.at(component) == result.category && componentUnits.at(component) == result.unit,
                     "Inconsistent component category/unit");
         componentCategories[component] = result.category;
@@ -602,6 +619,28 @@ int main(int argc, char** argv) try {
                         row["provenance"].val() == "CYGNO_radioactivity_excel_suprasil",
                         "Changed physical-lens activity/basis");
             }
+        }
+        if (component == "Gas") {
+            const auto isotope = row["chain_start"]["name"].val();
+            const bool carbon = isotope == "C14";
+            const double carbonFraction = (3574.736*.4)/(162.488*.6+3574.736*.4)*12.0107/(12.0107+4*18.998);
+            const double carbonActivity = std::log(2.)/(5730.*31536000)*6.02214076e23*1000/12.0107*carbonFraction*.9893*1.94e-18;
+            require(result.category == "Gas " + isotope && result.unit == "Bq/kg" &&
+                    result.activity == (carbon ? carbonActivity : 1e-6) &&
+                    integer(row["chain_start"]["Z"]) == (carbon ? 6 : 86) &&
+                    integer(row["chain_start"]["A"]) == (carbon ? 14 : 222) &&
+                    row["assay_material"].val() == "CYGNO_gas" &&
+                    row["activity_basis"].val() == "optimistic-extrapolation" &&
+                    row["full_chain"].val_bool() && row["equilibrium_daughters"].num_children() == 0 &&
+                    row["chain_policy"].val() == (carbon ? "single-parent" : "short-chain-to-Pb210"),
+                    "Changed gas activity/chain assumption");
+            if (carbon) require(row["stop_before"].is_null(), "C14 must reach stable N14");
+            else require(integer(row["stop_before"]["Z"]) == 82 && integer(row["stop_before"]["A"]) == 210 &&
+                         row["stop_before"]["name"].val() == "Pb210", "Radon must stop before Pb210");
+            const auto& provenance = matrix["provenance"]["gas"][isotope];
+            require(number(provenance["activity_Bq_kg_mixture"]) == result.activity &&
+                    provenance["doi"].val() == (carbon ? "10.1016/S0370-2693(97)01565-7" : "10.1103/zc1w-88p6"),
+                    "Changed gas provenance");
         }
         result.quantity = quantities.at(component)[result.unit == "Bq/kg" ? 0 : 1];
         require(result.activity > 0., "Activity must be positive");
@@ -770,10 +809,12 @@ int main(int argc, char** argv) try {
     // ------------------------------------------------------------
     // 7. Sum categories and produce the final spectra
     // ------------------------------------------------------------
-    std::array<std::array<std::unique_ptr<TH1D>, 7>, selectionCount> categoryHistograms;
-    std::array<std::array<std::array<double, bins + 2>, 7>, selectionCount> variances{};
+    std::array<std::vector<std::unique_ptr<TH1D>>, selectionCount> categoryHistograms;
+    for (auto& histograms : categoryHistograms) histograms.resize(categories.size());
+    std::array<std::vector<std::array<double, bins + 2>>, selectionCount> variances;
+    for (auto& values : variances) values.resize(categories.size());
     for (int cut = 0; cut < selectionCount; ++cut)
-        for (int c = 0; c < 7; ++c) categoryHistograms[cut][c] = histogram(categories[c]);
+        for (int c = 0; c < static_cast<int>(categories.size()); ++c) categoryHistograms[cut][c] = histogram(categories[c]);
     for (const auto& result : results) {
         const int category = std::find(categories.begin(), categories.end(), result.category) - categories.begin();
         for (int cut = 0; cut < selectionCount; ++cut)
@@ -897,15 +938,15 @@ int main(int argc, char** argv) try {
             summary << selections[cut] << ' ' << windows[w] << ": count=" << totalCounts[cut][w]
                     << " rate/year=" << totalRates[cut][w] << " variance/year^2=" << totalVariances[cut][w] << '\n';
 
-    const std::array<const char*, 7> colors = {
-        "#0072B2", "#999999", "#56B4E9", "#E69F00", "#CC79A7", "#D55E00", "#009E73"};
+    const std::array<const char*, 9> colors = {
+        "#0072B2", "#999999", "#56B4E9", "#E69F00", "#CC79A7", "#D55E00", "#009E73", "#332288", "#882255"};
     std::array<std::unique_ptr<TH1D>,selectionCount> totalSpectra;
     for (cut = 0; cut < selectionCount; ++cut) {
         auto* directory = output.mkdir(selections[cut]);
         auto* categoryDirectory = directory->mkdir("categories");
         auto total = histogram("total");
         double minimumPositive = std::numeric_limits<double>::infinity();
-        for (int c = 0; c < 7; ++c) {
+        for (int c = 0; c < static_cast<int>(categories.size()); ++c) {
             auto& h = *categoryHistograms[cut][c];
             for (int bin = 0; bin <= bins + 1; ++bin) {
                 // Sum in counts/bin/year FIRST, then divide regular bins by the
@@ -938,7 +979,7 @@ int main(int argc, char** argv) try {
         THStack stack("categories", title);
         TLegend legend(.72, .57, .95, .84);
         legend.SetBorderSize(0); legend.SetFillStyle(0); legend.SetTextSize(.028);
-        for (int c = 0; c < 7; ++c) {
+        for (int c = 0; c < static_cast<int>(categories.size()); ++c) {
             stack.Add(categoryHistograms[cut][c].get());
             legend.AddEntry(categoryHistograms[cut][c].get(), categories[c].c_str(), "f");
         }

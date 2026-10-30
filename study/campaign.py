@@ -30,8 +30,11 @@ def validate_snapshots(output, campaign):
         if checksum != 'missing':
             require(rt.digest(inside(output/'source', name)) == checksum, 'Source snapshot mismatch: '+name)
     cfg, env = identity['config'], identity['effective_environment']
+    require(cfg.get('gas_bkg', 'no') in ('yes', 'no') and
+            (cfg.get('gas_bkg', 'no') == 'yes') == (identity['matrix']['matrix_id'] == 'cygno-radioassay-v4-gas-v1'),
+            'Gas flag/matrix identity mismatch')
     quantities = read_quantities(output/'quantities.tsv', layout=cfg['layout'], model=cfg['model'],
-                                 geometry_hash=env['geometry_hash'])
+                                 geometry_hash=env['geometry_hash'], gas_bkg=cfg.get('gas_bkg') == 'yes')
     require(quantities == campaign['quantities'], 'Quantity mismatch')
     require(f"# compiled-source-hash: {env['source_hash']}" in (output/'quantities.tsv').read_text().splitlines(),
             'Quantity source hash mismatch')

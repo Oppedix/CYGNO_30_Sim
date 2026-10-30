@@ -1,7 +1,9 @@
 # v4 validation and production gates
 
 Current model: `cygno-copper-cathode-v4`; internal matrix: `cygno-radioassay-v4`
-(23 contributions). [Current module](SINGLE_MODULE_GEOMETRY.md) and
+(23 material contributions by default), or `cygno-radioassay-v4-gas-v1`
+(25 with `--gas-bkg yes`). [Gas-specific validation](GAS_VALIDATION.md)
+records the added checks and the Rn222 transport limitation. [Current module](SINGLE_MODULE_GEOMETRY.md) and
 [source provenance](STUDY_SOURCES.md) define the scientific contract.
 
 Use a fresh build with testing enabled, matching Geant4 datasets, ROOT and the

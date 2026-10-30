@@ -6,6 +6,13 @@ large production after same-transport parity validation. Both writes the two
 representations from the **same transport**, in one worker ROOT file.
 No output code calls an RNG. Physics, sampling, seeds and decay policy are unchanged.
 
+Gas selection is a campaign/matrix identity, not a new ROOT storage schema.
+With `--gas-bkg yes`, the existing job paths `jobs/Gas_C14/` and
+`jobs/Gas_Rn222/` use the same raw/compact/both contracts. Config records
+`gas_bkg=yes`; the expanded matrix stores activities, chain controls and
+published provenance. Material-only campaigns retain their original config shape.
+See [gas assumptions and compatibility](GAS_BACKGROUNDS.md).
+
 ## Common metadata
 
 Every worker file retains the unchanged one-row scientific `RunMetadata` tree:

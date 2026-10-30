@@ -2,7 +2,10 @@
 
 An independent workflow using the [common Geant4 build](../README.md).
 **Current v4** uses a solid EFCu cathode, Acrylic-core GEMs and
-**23 contributions** in `cygno-radioassay-v4.json`. Lens activity is Bq/piece
+**23 material contributions** in `cygno-radioassay-v4.json` by default.
+`--gas-bkg yes` adds **C14 and Rn222** (25 contributions;
+`cygno-radioassay-v4-gas-v1`). Both are optimistic extrapolations, not CYGNO
+measurements; see [gas assumptions, normalization and commands](../docs/GAS_BACKGROUNDS.md). Lens activity is Bq/piece
 from `CYGNO_radioactivity_excel_suprasil`: the reference mass is 3.843 kg for
 **one physical lens**, converted once, then multiplied by actual lens count.
 Geant4 lens transport is unchanged. `uniform-volume-v1` and chain controls remain.
@@ -31,7 +34,7 @@ python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.
 ```
 
 The runner also performs its own mandatory four-case U238/Th232/Bi212 preflight.
-All 23 jobs must pass even for a tiny complete smoke. The macOS PART122 failure
+All 23 jobs (25 with gas) must pass even for a tiny complete smoke. The macOS PART122 failure
 remains open; use an environment where this gate passes. A complete smoke tests
 software, not a statistically meaningful background prediction.
 
@@ -51,7 +54,10 @@ python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.
 10,000,000 primaries **per contribution** is the configured production target;
 1M or 100k is an explicit `--primaries` override. Raise `--jobs` only within
 allocated CPU/RAM/I/O resources (e.g. 16 for 16 independent contributions).
-Each Geant4 process still has one worker. Repeat the identical command to resume;
+Each Geant4 process still has one worker. Add `--gas-bkg yes` to smoke or production commands to include both gas sources;
+omitting it or using `--gas-bkg no` selects materials only. Use separate output
+directories for the two choices. Both analyses discover gas sources from the
+saved matrix, without another flag. Repeat the identical command to resume;
 failed jobs require `--retry-failed`. Scientific identity changes require a new
 campaign directory. See [operation, storage and recovery](docs/WORKFLOW.md).
 

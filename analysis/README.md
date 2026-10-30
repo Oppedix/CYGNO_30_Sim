@@ -8,7 +8,9 @@
 # Canonical analysis
 
 Current internal v4 uses `cygno-copper-cathode-v4` and the matching
-23-contribution `cygno-radioassay-v4` matrix. Both pipelines preserve the matrix
+23-contribution `cygno-radioassay-v4` matrix by default, or the optional
+25-contribution `cygno-radioassay-v4-gas-v1` with distinct C14/Rn222 gas categories
+in every aggregate and plot. See [gas provenance](../docs/GAS_BACKGROUNDS.md). Both pipelines preserve the matrix
 and record `normalization-scenario.json`. Lens activities are Bq/piece from
 `CYGNO_radioactivity_excel_suprasil`; use the actual lens count, never surrogate
 mass or another factor of 3.843 kg. New v4 transport is required for every job.

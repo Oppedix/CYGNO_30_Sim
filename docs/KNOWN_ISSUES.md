@@ -1,13 +1,23 @@
 # Known issues and scientific decisions
 
-The current model is `cygno-copper-cathode-v4` in both modes. All 23 internal
-contributions and external transport require new campaigns. The solid EFCu
+The current model is `cygno-copper-cathode-v4` in both modes. All 23 internal material
+contributions (25 with optional gas) and external transport require new campaigns. The solid EFCu
 cathode fills the retained 60 µm envelope; GEMs alone retain PMMA50/Cu5 skins.
 The 500 mm gas volumes meet cathode and first GEM faces exactly.
 Lens activity uses physical-lens Bq/piece from `CYGNO_radioactivity_excel_suprasil`;
 its 3.843 kg reference mass changes no Geant4 geometry or transport.
 See [geometry and masses](SINGLE_MODULE_GEOMETRY.md) and [assays](STUDY_SOURCES.md).
 Dated model qualifications below are historical evidence, not v4 rate validation.
+
+## Optional gas scenario
+
+`--gas-bkg yes` adds C14 and Rn222 under [explicit optimistic assumptions](GAS_BACKGROUNDS.md),
+not measured CYGNO gas activities. Stationary bulk short-lived Rn daughters are
+tracked only to Pb210; ion drift, plate-out, recoil motion, purification kinetics
+and the long-lived tail are excluded. The local macOS serial Geant4 11.3.1
+Rn222 test also fails with PART122 while registering Po214; C14 passes in all
+three storage modes. [Gas validation](GAS_VALIDATION.md) separates passing
+software/analysis checks from incomplete transport qualification.
 
 ## Unresolved current geometry assumptions
 

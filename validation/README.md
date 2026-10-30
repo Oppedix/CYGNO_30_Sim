@@ -16,14 +16,21 @@ ctest --test-dir "$CYGNO_BUILD" --output-on-failure
 |---|---|
 | detector_v4 | Exact physical-lens conversion, 23 rows, current defaults, old-model resume rejection before writes; all layouts' constructed masses/materials/counts and identical detector placements between modes; unchanged non-cathode geometry against archived v3 |
 | acrylic_geometry | Historical reconstruction plus current CLI/export defaults in both modes |
-| source_and_mass, uniform_volume | Nine v4 source families, all mass totals, uniform bulk sampling, containment and deterministic same-event RNG replay |
+| source_and_mass, uniform_volume | Nine material families plus optional gas sampling, all material mass totals, uniform bulk sampling, containment and deterministic same-event RNG replay |
 | external_* | Current detector, Cu20 shield bounds/overlaps, GPS spectrum/cosine sampling and ion recoil retention, plus historical compatibility |
 | geometry, layout_geometry, layout_profiles | 137 placements/module, copper cathode interfaces/no overlap, GEMs, source lists, gas maps, bounds, all layouts and smoke transport |
 | transport, compact_transport | Raw/compact/both parity, multiple runs, accounting, reset/EOF boundaries and metadata |
 | offline_python | Full Python suite, v4 standalone ROOT parity, schemas, campaigns, archives, reports, notebook execution and historical compatibility |
 | source_matrix | Retained assay regression plus all native reference plotters' v4 lens Bq/piece scales against Python with 308 actual placements; bad units/double reference mass rejected |
 | analysis, layout_analysis, root_geometry, study_runner | Reference ROOT grouping, exact windows, material/unit guards, metadata, layout and historical-runner compatibility |
-| long_lived_decay, chain_boundaries | Real U238 threshold behavior and retained chain-stop callback controls |
+| long_lived_decay, chain_boundaries | Real U238 threshold behavior and retained chain-stop callback controls, including gas Rn stop-before-Pb210 |
+
+The full Python suite also checks gas matrix science/identity, both resume directions,
+raw/compact/both/archive parity, notebook coverage and the two gas categories in
+every native ROOT cutflow/stack and all three reference plotters.
+[Gas validation](../docs/GAS_VALIDATION.md) records passing checks and the real
+Rn222 PART122 failure. Set `CYGNO_GAS_TRANSPORT_BUILD` explicitly to run the
+retained 100-primary C14/Rn222 transport diagnostic.
 
 Set `CYGNO_ACRYLIC_BUILD`, `CYGNO_TRANSPORT_BUILD` and `CYGNO_REFERENCE_BUILD`
 to the fresh build when running optional tests outside their CTest wrappers.

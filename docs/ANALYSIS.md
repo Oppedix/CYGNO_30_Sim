@@ -1,7 +1,8 @@
 # Internal v4 analysis and normalization
 
 The current model/matrix pair is `cygno-copper-cathode-v4` /
-`cygno-radioassay-v4` (23 contributions). Analyze newly transported v4 campaigns
+`cygno-radioassay-v4` (23 material contributions), or the optional
+`cygno-radioassay-v4-gas-v1` (25 contributions). Analyze newly transported v4 campaigns
 in new output directories. Existing v3 transport cannot be relabeled or
 reweighted into v4. Model, matrix, geometry hashes, receipts, metadata and
 campaign fingerprints must agree.
@@ -22,8 +23,14 @@ use the Geant4 lens mass. Lens transport geometry remains unchanged.
 For planar 11×7, 308 actual lens placements enter normalization.
 
 The entire solid `Cathode` mass uses EFCu U/Th. There are no cathode-core or
-copper-skin source contributions. Scale each source before combining the seven
-categories. `Cathodes = Cathode`, `GEMs = GEMsPolyimide + GEMsCopper`,
+copper-skin source contributions. Scale each source before combining the seven material
+categories. Gas-enabled campaigns append separate `Gas C14` and `Gas Rn222`
+categories throughout tables, legends, stacks and totals, including all native
+ROOT topology cutflows and figures. Each uses total constructed sensitive-gas kg;
+no extra daughter multiplier or carbon-mass multiplier is applied. Gas rows have
+no historical Table 7.3 reference. [Gas assumptions](GAS_BACKGROUNDS.md) define
+the activity conversion and Rn stop-before-Pb210 policy. Analysis reads the
+saved scenario automatically; there is no analysis gas flag. `Cathodes = Cathode`, `GEMs = GEMsPolyimide + GEMsCopper`,
 `Field Cage = RingSupports + RingStrips`.
 
 Existing grouping, event/EOF boundaries, first-position fiducialization, exact

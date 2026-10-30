@@ -12,6 +12,11 @@ REFERENCE_73 = dict(zip(CATEGORIES, ((35,16), (1187,465), (4278,1687),
                                     (9293,196), (12542,810), (30540,1769), (313451,17738))))
 
 
+def reporting_categories(summary):
+    return CATEGORIES + (('Gas C14', 'Gas Rn222') if
+        summary.get('campaign_identity', {}).get('config', {}).get('gas_bkg') == 'yes' else ())
+
+
 def write_table(path, rows):
     with path.open('w', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=list(rows[0]))
@@ -35,13 +40,13 @@ def write_tables(directory, spectra, summary):
                 mc_standard_error=math.sqrt(value['variance_per_year2']) if value else None,
                 published_reference_counts_per_year=reference[cut], coverage=summary['coverage'],
                 complete_matrix=summary['complete_matrix']))
-    for category in CATEGORIES:
+    for category in reporting_categories(summary):
         for cut in (0, 1):
             value = categories.get((category, 'all', cut))
             table73.append(dict(category=category, window='all', fiducial_mm=20*cut,
                 calculated_counts_per_year=value['rate_per_year'] if value else None,
                 mc_standard_error=math.sqrt(value['variance_per_year2']) if value else None,
-                published_reference_counts_per_year=REFERENCE_73[category][cut],
+                published_reference_counts_per_year=REFERENCE_73.get(category, (None, None))[cut],
                 coverage=summary['coverage'], complete_matrix=summary['complete_matrix']))
     write_table(directory/'table7.2.csv', table72)
     write_table(directory/'table7.3.csv', table73)
@@ -74,13 +79,13 @@ def render(directory, spectra, summary):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     import numpy as np
-    colors = ('#0072B2','#999999','#56B4E9','#E69F00','#CC79A7','#D55E00','#009E73')
+    colors = ('#0072B2','#999999','#56B4E9','#E69F00','#CC79A7','#D55E00','#009E73','#332288','#882255')
     for cut, name in ((0, 'figure7.5'), (1, 'figure7.6')):
         fig, ax = plt.subplots(figsize=(12, 7), layout='constrained')
         items = {d['category']: d for d in spectra['density'] if d['fiducial'] == cut}
         bottom = None
         positives = []
-        for category, color in zip(CATEGORIES, colors):
+        for category, color in zip(reporting_categories(summary), colors):
             if category not in items:
                 ax.plot([], [], color=color, label=category+' (missing)')
                 continue

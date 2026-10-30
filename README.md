@@ -13,7 +13,9 @@ The active detector uses analytical Geant4 solids, not an imported CAD detector.
 Both modes default to **`cygno-copper-cathode-v4`**: one solid EFCu cathode
 per module, with Acrylic/PMMA cores and copper skins only in the GEMs.
 The cathode envelope remains 500 × 800 × 0.060 mm. Internal radioactivity uses
-23 contributions from `cygno-radioassay-v4`; lens activity is **Bq/piece**, from
+23 contributions from `cygno-radioassay-v4` by default; `--gas-bkg yes` adds
+C14 and Rn222 gas contamination (25 contributions), with documented
+[optimistic assumptions](docs/GAS_BACKGROUNDS.md). Lens activity is **Bq/piece**, from
 `CYGNO_radioactivity_excel_suprasil`, normalized by actual lens placements.
 The 3.843 kg reference mass describes **one physical lens**; Geant4 lens geometry
 and transport remain unchanged. External gamma/neutron sources use this same

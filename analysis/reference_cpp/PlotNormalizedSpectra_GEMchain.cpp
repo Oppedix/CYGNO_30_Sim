@@ -134,7 +134,7 @@ int main(int argc, char** argv) try {
       temp_histo->Scale( settings.Scale(component.first,val.first) );
       temp_histocut->Scale( settings.Scale(component.first,val.first) );
 
-      categories.Add(settings.categories.at(component.first),*temp_histo,*temp_histocut);
+      categories.Add(settings.categories.at(component.first+"_"+val.first),*temp_histo,*temp_histocut);
       Histo.push_back(temp_histo);
       HistoCut.push_back(temp_histocut);
 

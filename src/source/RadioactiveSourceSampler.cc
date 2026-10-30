@@ -119,6 +119,7 @@ SourcePoint RadioactiveSourceSampler::Sample(const G4String& component) {
   else if (component=="Lens") elements=fDetector->GetLensList();
   else if (component=="Sensors") elements=fDetector->GetSensorsList();
   else if (component=="Vessel") elements={"Vessel"};
+  else if (component=="Gas") elements=fDetector->GetGasList();
   if (elements.empty()) {
     G4ExceptionDescription message;
     message << "Unknown or empty radioactive component: " << component;

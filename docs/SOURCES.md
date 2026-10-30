@@ -4,7 +4,7 @@ The current internal identity is `cygno-copper-cathode-v4 / uniform-volume-v1`.
 Both modes share v4 construction; external has a
 [separate environmental source contract](../external/docs/PHYSICS.md).
 Current `/detector/RadElement` families: `Cathode`, `GEMsPolyimide`, `GEMsCopper`,
-`RingSupports`, `RingStrips`, `Resistors`, `Vessel`, `Lens`, `Sensors`.
+`RingSupports`, `RingStrips`, `Resistors`, `Vessel`, `Lens`, `Sensors`, plus optional `Gas` for C14/Rn222.
 The cathode is one solid copper slab; no cathode core/skin source exists in v4.
 The stable `GEMsPolyimide` identifier denotes the retained 50 µm PMMA core.
 
@@ -36,7 +36,10 @@ scheduling can change source histories; archive seeds, build/data and metadata.
 
 ## Assays and normalization
 
-The [v4 matrix](../config/study/cygno-radioassay-v4.json) has 23 contributions.
+The [v4 matrix](../config/study/cygno-radioassay-v4.json) has 23 material contributions by default. `--gas-bkg yes` appends two
+gas contributions using `GasVolume` placements and total sensitive-gas mass.
+See [gas provenance](GAS_BACKGROUNDS.md) for C14 conversion, Rn short-chain
+termination before Pb210, assumptions and limitations.
 EFCu U/Th applies to the entire `Cathode` mass; Acrylic U/Th/K applies only to
 GEM cores. Lenses use exact Bq/piece values from
 `CYGNO_radioactivity_excel_suprasil`: 3.843 kg is ONE physical lens, converted

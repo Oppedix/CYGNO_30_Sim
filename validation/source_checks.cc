@@ -14,6 +14,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <set>
 void require(bool ok, const char* message) { if(!ok) throw std::runtime_error(message); }
 int main(int argc, char** argv) {
   if (argc > 2) return 1;
@@ -45,8 +46,9 @@ int main(int argc, char** argv) {
     if (it->second.empty()) it=sources.erase(it); else ++it;
   }
   require(detector->GetComponentMasses().size()==sources.size(),"extra mass map keys");
+  sources["Gas"]=detector->GetGasList();
   const int count=detector->GetLayoutProfile().expectedModuleCount;
-  const std::map<G4String,int> perModule{{"Cathode",1}, {"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
+  const std::map<G4String,int> perModule{{"Gas",2}, {"Cathode",1}, {"CathodesPolyimide",1},{"CathodesCopper",2},{"GEMsCopper",12},{"GEMsPolyimide",6},
     {"RingSupports",2},{"RingStrips",2*cygno::geometry::module.stripCount},{"Resistors",2*(cygno::geometry::module.stripCount+1)},{"Lens",4},{"Sensors",4}};
   int event=0;
   for(const auto& source:sources) {
@@ -54,7 +56,7 @@ int main(int argc, char** argv) {
     require(source.second.size()==(source.first=="Vessel" ? 1 : count*perModule.at(source.first)),"source count mismatch");
     double mass=0;
     for(const auto& name:source.second) mass+=detector->GetVolumeStored()->GetVolume(name)->GetLogicalVolume()->GetMass();
-    require(std::abs(mass-detector->GetComponentMasses().at(source.first))<=1e-12*mass,"component mass mismatch");
+    require(source.first=="Gas" || std::abs(mass-detector->GetComponentMasses().at(source.first))<=1e-12*mass,"component mass mismatch");
     require(mass>0 && std::isfinite(mass),"invalid constructed mass");
     G4cout<<"MASS_OK "<<source.first<<" "<<mass/CLHEP::kg<<" kg"<<G4endl;
     for(int n=0;n<10;++n) {
@@ -71,10 +73,13 @@ int main(int argc, char** argv) {
       require(actualState.str()==expectedState.str(),"unexpected RNG draws or event-action sampling");
     }
     int outside=0;
+    std::set<G4String> sampled;
     for(int n=0;n<20000;++n) {
       const auto sample=sampler.Sample(source.first);
+      sampled.insert(sample.volume->GetName());
       outside+=sample.volume->GetLogicalVolume()->GetSolid()->Inside(sample.volume->GetObjectRotationValue().inverse()*(sample.position-sample.volume->GetObjectTranslation()))==kOutside;
     }
+    require(source.first!="Gas" || sampled.size()==source.second.size(),"gas placement coverage");
     require(outside==0,"uniform-volume sample outside solid");
     G4cout<<"CONTAINMENT_DIAGNOSTIC "<<source.first<<" "<<outside<<" / 20000 outside; no rejection/resampling"<<G4endl;
   }

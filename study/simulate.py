@@ -16,7 +16,7 @@ import time
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from study import runtime as rt
-from study.source_matrix import read_matrix, read_quantities, require, validate_matrix_model, MATRIX_MODELS
+from study.source_matrix import read_matrix, read_quantities, require, validate_matrix_model, MATRIX_MODELS, with_gas_backgrounds, GAS_PROVENANCE
 
 
 def needs_attempt(previous, retry):
@@ -175,6 +175,11 @@ def run(args):
             'Primaries must be 1..2147483647')
     matrix_path = args.matrix or rt.REPO/'config/study'/(next(k for k,v in MATRIX_MODELS.items() if v == config['model'])+'.json')
     matrix = read_matrix(matrix_path)
+    if args.gas_bkg == 'yes':
+        matrix = with_gas_backgrounds(matrix)
+        config['gas_bkg'] = 'yes'
+    require((matrix['matrix_id'] == 'cygno-radioassay-v4-gas-v1') == (args.gas_bkg == 'yes'),
+            'Gas matrix requires --gas-bkg yes with the base v4 matrix')
     validate_matrix_model(matrix, config['model'])
     selected = set(args.only or [r['id'] for r in matrix['contributions']])
     require(selected <= {r['id'] for r in matrix['contributions']}, 'Unknown --only contribution')
@@ -194,7 +199,10 @@ def run(args):
     tools = {key: build/name for key, name in [('simulation', 'rdecay01'), ('quantities', 'geometry_quantities')]}
     require(all(p.is_file() for p in tools.values()), 'Build rdecay01 and geometry_quantities first')
     if (output/'campaign.json').exists():
-        require(rt.read(output/'campaign.json')['identity']['config']['model'] == config['model'],
+        saved = rt.read(output/'campaign.json')['identity']
+        require(saved['config']['model'] == config['model'] and
+                saved['config'].get('gas_bkg', 'no') == config.get('gas_bkg', 'no') and
+                saved.get('matrix', matrix) == matrix,
                 'Campaign identity changed; new physics requires a new output directory')
     with rt.locked(output):
         probe = output/'probes'/f'probe-{time.time_ns()}'
@@ -223,14 +231,14 @@ def run(args):
         else:
             require(not (output/'jobs').exists(), 'Orphan jobs without campaign manifest')
             rt.invoke([tools['quantities'], probe/'quantities.tsv', config['layout'], probe/'geometry.json',
-                       '--model', config['model']],
+                       '--model', config['model']] + (['--gas-bkg', 'yes'] if args.gas_bkg == 'yes' else []),
                       probe, 'quantities', config['timeout_seconds'])
             require(f"# compiled-source-hash: {environment['source_hash']}" in (probe/'quantities.tsv').read_text().splitlines(),
                     'Stale quantity exporter')
             for name in ('quantities.tsv', 'geometry.json'):
                 shutil.copyfile(probe/name, output/name)
             quantities = read_quantities(output/'quantities.tsv', layout=config['layout'], model=config['model'],
-                                         geometry_hash=environment['geometry_hash'])
+                                         geometry_hash=environment['geometry_hash'], gas_bkg=args.gas_bkg == 'yes')
             rt.save(output/'config.json', config)
             rt.save(output/'matrix.json', matrix)
             # Retain actual source bytes, including dirty/new files, not just a Git SHA.
@@ -240,7 +248,8 @@ def run(args):
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(rt.REPO/name, destination)
             campaign = dict(schema_version=3, stage='simulation', fingerprint=fingerprint, identity=identity,
-                            quantities=quantities, created_unix=time.time(), limitations=rt.LIMITATIONS,
+                            quantities=quantities, created_unix=time.time(), limitations=rt.LIMITATIONS +
+                            (GAS_PROVENANCE['limitations'] if args.gas_bkg == 'yes' else []),
                             status='preflight', coverage=f'0/{len(matrix["contributions"])}', scientific_validity='unvalidated',
                             job_records={r['id']: dict(status='not_started') for r in matrix['contributions']},
                             snapshots={name: rt.digest(output/name) for name in
@@ -291,6 +300,8 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config', type=Path, default=rt.REPO/'config/study/samuele.json')
     p.add_argument('--matrix', type=Path, help='Defaults to the matrix matching the configured transport model')
+    p.add_argument('--gas-bkg', choices=('yes', 'no'), default='no',
+                   help='Add optimistic C14 and Rn222 gas backgrounds to v4; new campaign required (default: no)')
     p.add_argument('--build', type=Path, help='Directory containing rdecay01 and geometry_quantities')
     p.add_argument('--output', type=Path, help='Campaign directory outside the checkout')
     p.add_argument('--primaries', type=int, help='Primaries per contribution; default canonical target 10000000')

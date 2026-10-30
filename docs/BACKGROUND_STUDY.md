@@ -5,8 +5,11 @@
 The single current model is `cygno-copper-cathode-v4 / uniform-volume-v1`.
 Use `config/study/cygno-11x7-v4.json` for the planar 77-module campaign;
 `samuele.json` and smoke A/B also select v4 with their retained layouts.
-The matching `cygno-radioassay-v4.json` has 23 contributions, nine physical
-families and seven reporting categories. `GEMs = GEMsCopper + GEMsPolyimide`,
+The default `cygno-radioassay-v4.json` has 23 material contributions, nine physical
+families and seven reporting categories. `--gas-bkg yes` adds C14/Rn222 in sensitive
+gas, yielding `cygno-radioassay-v4-gas-v1` with 25 contributions and nine categories.
+See [gas science and operation](GAS_BACKGROUNDS.md). Gas mode is fingerprinted;
+changing it requires a new campaign directory. The default remains `no`. `GEMs = GEMsCopper + GEMsPolyimide`,
 `Cathodes = Cathode`, `Field Cage = RingStrips + RingSupports`.
 Each source is normalized before category sums. Lens Bq/piece uses actual
 placement count; no Geant4 lens mass enters its activity.
@@ -109,7 +112,7 @@ concurrency is absent from config and campaign/job fingerprints. Completed
 contributions are verified and reused. As in sequential execution, an individual
 job failure is recorded while the remaining selected contributions continue;
 `--retry-failed` is still required to retry failures. Full matrix coverage
-(23/23 v4) exits 0;
+(23/23 v4, or 25/25 with gas) exits 0;
 runner, configuration and preflight errors exit 1.
 
 Ctrl-C stops new submissions and signals all active invocations to cancel. At
@@ -134,7 +137,7 @@ build/data paths to exist. Changing source/build/data/config cannot resume it.
 ## Packaging and transfer
 
 `--archive` or `python3 -m study.archive --input CAMPAIGN` requires the selected matrix
-to be complete (23/23 v4). Archives include failed earlier attempts
+to be complete (23/23 v4, or 25/25 with gas). Archives include failed earlier attempts
 as well as successful ones, probe/preflight logs, all snapshots and provenance. `SHA256SUMS.json` covers
 every packaged regular file except itself; the external `.tar.gz.sha256` checks
 the entire archive. The archive is verified before publication. Existing archives

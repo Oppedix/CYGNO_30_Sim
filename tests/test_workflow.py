@@ -21,18 +21,20 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(provenance['files_sha256'], {'study/analyze.py': rt.digest(source/'study/analyze.py')})
 
     def test_v4_and_historical_cli_select_matching_matrix_and_transport(self):
-        for model,matrix_id,count in [('cygno-copper-cathode-v4','cygno-radioassay-v4',23),
-                                      ('cygno-acrylic-v3','cygno-300elj-radioassay-v3',26)]:
+        for model,matrix_id,count,gas_bkg in [('cygno-copper-cathode-v4','cygno-radioassay-v4',23,False),
+                                      ('cygno-copper-cathode-v4','cygno-radioassay-v4-gas-v1',25,True),
+                                      ('cygno-acrylic-v3','cygno-300elj-radioassay-v3',26,False)]:
             with tempfile.TemporaryDirectory() as d:
                 base=Path(d);template=base/'template'
-                config,_,_=campaign_fixture(template,model)
-                config_path=base/'config.json';rt.save(config_path,config)
+                config,_,_=campaign_fixture(template,model,gas_bkg)
+                config_path=base/'config.json';rt.save(config_path,{k:v for k,v in config.items() if k!='gas_bkg'})
                 build=base/'build';build.mkdir()
                 for name in ('rdecay01','geometry_quantities','CMakeCache.txt'):
                     (build/name).write_text('fixture')
                 env=environment();seen=[]
                 def invoke(command,cwd,label,timeout,**options):
-                    self.assertEqual(command[-2:],['--model',model])
+                    self.assertEqual(command[command.index('--model')+1],model)
+                    if label=='quantities': self.assertEqual('--gas-bkg' in command,gas_bkg)
                     seen.append(label)
                     if label=='environment':return '\n'.join('CYGNO_ENV '+k+' '+v for k,v in env.items())
                     if label=='quantities':
@@ -45,7 +47,7 @@ class WorkflowTests(unittest.TestCase):
                     output.mkdir();rt.save(output/'preflight.json',rt.read(template/'preflight/preflight.json'))
                     return 0
                 args=simulate.parser().parse_args(['--config',str(config_path),'--build',str(build),
-                    '--output',str(base/'campaign'),'--only','Lens_K40'])
+                    '--output',str(base/'campaign'),'--only','Lens_K40','--gas-bkg','yes' if gas_bkg else 'no'])
                 with patch.object(rt,'invoke',side_effect=invoke),patch.object(rt,'dataset_state',return_value={}), \
                      patch.object(rt,'source_state',return_value={'files_sha256':{}}), \
                      patch.object(rt,'compiled_source_hash',return_value=env['source_hash']), \

@@ -5,6 +5,12 @@ Start with the [Internal guide](../README.md) for smoke, production and analysis
 Geant4 build. All commands here use `CYGNO_SRC` = repository root. Historical
 `study/`, `config/` and `analysis/` paths remain supported through relative links.
 
+Gas contamination is optional: append `--gas-bkg yes` to any simulation or
+cluster command below for C14 and Rn222. Default `--gas-bkg no` retains 23
+material contributions; enabled campaigns have 25, with a separate fingerprint
+and output directory. Keep the flag identical when resuming. Analysis discovers
+the saved scenario. See [gas science and commands](../../docs/GAS_BACKGROUNDS.md).
+
 ## Cluster entry point
 
 First select the [private Linux setup](../../docs/SETUP.md#private-linux-simulation-environment)
@@ -44,7 +50,7 @@ two owners of the same campaign directory.
 | Wrapper variable | Required/default |
 |---|---|
 | `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS`, `CYGNO_CAMPAIGN`, `CYGNO_PRIMARIES` | Required; repository root, shared build, campaign parent, unique name, count per contribution |
-| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v4.json`; v4 selects 23 contributions |
+| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v4.json`; v4 selects 23 material contributions, or 25 with `--gas-bkg yes` |
 | `CYGNO_JOBS` | Positive concurrency limit; default 1 |
 | `CYGNO_OUTPUT_MODE` | Default compact |
 | `CYGNO_PYTHON` | Default python3, version ≥3.10 |

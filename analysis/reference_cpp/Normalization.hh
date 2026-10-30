@@ -28,6 +28,7 @@ inline Normalization ReadNormalization(const std::string& path) {
   std::ifstream in(path);
   if (!in) throw std::runtime_error("Cannot open normalization configuration: " + path);
   Normalization result;
+  std::map<std::string,std::string> componentCategories;
   std::string line;
   bool provenance=false, quantityFormat=false, formatSeen=false;
   while (std::getline(in,line)) {
@@ -76,10 +77,12 @@ inline Normalization ReadNormalization(const std::string& path) {
     if (result.files[component].count(isotope)) throw std::runtime_error("Duplicate normalization row");
     if (result.quantities.count(component) &&
         (result.quantities.at(component)!=quantity || result.quantityUnits.at(component)!=quantityUnit ||
-         result.activityUnits.at(component)!=activityUnit || result.categories.at(component)!=category))
+         result.activityUnits.at(component)!=activityUnit ||
+         (component!="Gas" && componentCategories.at(component)!=category)))
       throw std::runtime_error("Inconsistent component quantity, units or category");
     result.quantities[component]=quantity; result.quantityUnits[component]=quantityUnit;
-    result.activityUnits[component]=activityUnit; result.categories[component]=category;
+    result.activityUnits[component]=activityUnit; result.categories[component+"_"+isotope]=category;
+    componentCategories[component]=category;
     result.activities[component][isotope]=activity;
     result.events[component][isotope]=events; result.files[component][isotope]=file;
     if (!std::isfinite(result.Scale(component,isotope))) throw std::runtime_error("Nonfinite normalization scale");

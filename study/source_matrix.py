@@ -4,6 +4,7 @@ No jobs are launched here. Run scheduling, completion and primary accounting
 belong to the study runner. Only the published matrix schema is accepted.
 """
 import csv
+import copy
 import json
 import math
 from pathlib import Path
@@ -20,10 +21,55 @@ V1_COMPONENTS = {
     'Resistors': ('Al2O3', 'Resistors'),
 }
 IONS = {'U238': (92, 238), 'Th232': (90, 232), 'K40': (19, 40),
-        'U235': (92, 235), 'Ra226': (88, 226), 'Th228': (90, 228)}
+        'U235': (92, 235), 'Ra226': (88, 226), 'Th228': (90, 228),
+        'C14': (6, 14), 'Rn222': (86, 222), 'Pb210': (82, 210)}
 MATRIX_MODELS = {'cygno-300elj-radioassay-v2': 'cygno-300elj-v2',
                  'cygno-300elj-radioassay-v3': 'cygno-acrylic-v3',
-                 'cygno-radioassay-v4': 'cygno-copper-cathode-v4'}
+                 'cygno-radioassay-v4': 'cygno-copper-cathode-v4',
+                 'cygno-radioassay-v4-gas-v1': 'cygno-copper-cathode-v4'}
+
+# Same partial densities and molar masses as the unchanged constructed mixture.
+GAS_CARBON_MASS_FRACTION = (3574.736*.4)/(162.488*.6+3574.736*.4)*12.0107/(12.0107+4*18.998)
+GAS_C14_ACTIVITY = math.log(2)/(5730*31536000)*6.02214076e23*1000/12.0107*GAS_CARBON_MASS_FRACTION*.9893*1.94e-18
+GAS_PROVENANCE = {
+    'scenario': 'optimistic-feasibility-v1; extrapolations, NOT CYGNO measurements',
+    'C14': {'reference': 'G. Alimonti et al., Phys. Lett. B 422 (1998) 349-358',
+            'doi': '10.1016/S0370-2693(97)01565-7', 'C14_C12_ratio': 1.94e-18,
+            'published_ratio_uncertainty': .09e-18, 'half_life_years': 5730,
+            'carbon12_atom_fraction': .9893, 'carbon_molar_mass_g_mol': 12.0107,
+            'avogadro_mol_inverse': 6.02214076e23,
+            'carbon_mass_fraction': GAS_CARBON_MASS_FRACTION,
+            'activity_Bq_kg_mixture': GAS_C14_ACTIVITY,
+            'conversion': 'ln(2)/(5730*31536000) * NA * (1000/12.0107) * carbon_mass_fraction * 0.9893 * C14/C12',
+            'limitation': 'Borexino petroleum-derived liquid scintillator benchmark transferred to CF4 carbon; CF4 supply and cosmogenic activation unmeasured'},
+    'Rn222': {'reference': 'E. Aprile et al., Phys. Rev. X 15 (2025) 031079',
+              'doi': '10.1103/zc1w-88p6', 'published_activity_uBq_kg_LXe': .90,
+              'published_uncertainty_stat_sys_uBq_kg': [.02, .07],
+              'activity_Bq_kg_mixture': 1e-6,
+              'gas_purification_context': 'G. Alimonti et al., Astropart. Phys. 16 (2002) 205-234: nitrogen at approximately 1 uBq/m3, DOI 10.1016/S0927-6505(01)00110-4; different gas and supply system, not an operating He/CF4 TPC',
+              'limitation': 'Rounded optimistic LXe benchmark transferred per kg to He/CF4; not a demonstrated gas purification capability or an emanation calculation'},
+    'transport': 'uniform in constructed sensitive GasVolume placements only; gas in GEM gaps, pipes and reservoirs excluded',
+    'chain': 'C14 -> stable N14; Rn222 short chain through Po214, stop BEFORE ground-state Pb210 (Z82 A210); no Pb210/Bi210/Po210 equilibrium',
+    'limitations': ['Constant parent activity; stationary short-lived radon daughters retained at birth positions, no ion drift, plate-out, diffusion, flow or removal kinetics',
+                    'Existing internal at-rest heavy-ion policy excludes recoil transport; ER group rates are not an alpha/recoil or readout model',
+                    'No CYGNO contamination measurement; no propagated contamination uncertainty; neither benchmark establishes a background upper bound'],
+}
+
+
+def with_gas_backgrounds(matrix):
+    """Extend the canonical v4 matrix without changing any material row."""
+    require(matrix['matrix_id'] == 'cygno-radioassay-v4', 'Gas backgrounds require the current v4 material matrix')
+    matrix = copy.deepcopy(matrix)
+    matrix['matrix_id'] = 'cygno-radioassay-v4-gas-v1'
+    matrix['provenance']['gas'] = copy.deepcopy(GAS_PROVENANCE)
+    for isotope, activity in (('C14', GAS_C14_ACTIVITY), ('Rn222', 1e-6)):
+        z, a = IONS[isotope]
+        matrix['contributions'].append(dict(id='Gas_'+isotope, component='Gas', category='Gas '+isotope,
+            assay_material='CYGNO_gas', chain_start=dict(name=isotope, Z=z, A=a),
+            activity=activity, activity_unit='Bq/kg', activity_basis='optimistic-extrapolation', full_chain=True,
+            stop_before=dict(name='Pb210', Z=82, A=210) if isotope == 'Rn222' else None,
+            chain_policy='short-chain-to-Pb210' if isotope == 'Rn222' else 'single-parent', equilibrium_daughters=[]))
+    return matrix
 
 
 # Arnquist et al., arXiv:1910.04317v1, sec. 2.2: specific activities in
@@ -161,6 +207,17 @@ def ion_name(ion):
 
 def validate_matrix(matrix, *, historical=False):
     v1 = historical and matrix.get('matrix_id') == 'cygno-300elj-radioassay-v1'
+    gas = matrix.get('matrix_id') == 'cygno-radioassay-v4-gas-v1'
+    if gas:
+        require(matrix.get('provenance', {}).get('gas') == GAS_PROVENANCE, 'Missing/changed gas provenance')
+        base = copy.deepcopy(matrix)
+        base['matrix_id'] = 'cygno-radioassay-v4'
+        del base['provenance']['gas']
+        base['contributions'] = [r for r in base['contributions'] if r.get('component') != 'Gas']
+        validate_matrix(base)
+        require(matrix == with_gas_backgrounds(base), 'Missing/changed canonical gas contributions')
+        return matrix
+    require('gas' not in matrix.get('provenance', {}), 'Gas provenance requires gas matrix identity')
     v4 = matrix.get('matrix_id') == 'cygno-radioassay-v4'
     acrylic = matrix.get('matrix_id') == 'cygno-300elj-radioassay-v3'
     components = V4_COMPONENTS if v4 else V1_COMPONENTS if v1 else ACRYLIC_COMPONENTS if acrylic else COMPONENTS
@@ -249,7 +306,7 @@ def decay_commands(row):
             f"/stopChain/AStopDecay {stop['A']}"]
 
 
-def read_quantities(path, *, layout, model, geometry_hash):
+def read_quantities(path, *, layout, model, geometry_hash, gas_bkg=False):
     require(layout in LAYOUTS and model in MATRIX_MODELS.values(), 'Unsupported constructed detector')
     lines = Path(path).read_text().splitlines()
     headers = {}
@@ -263,12 +320,21 @@ def read_quantities(path, *, layout, model, geometry_hash):
         require(headers.get(key) == expected, f'Quantities {key} mismatch')
     require(headers.get('provenance'), 'Missing constructed quantities provenance')
     components = V4_COMPONENTS if model == 'cygno-copper-cathode-v4' else COMPONENTS
+    if gas_bkg:
+        require(model == 'cygno-copper-cathode-v4', 'Gas quantities require v4')
+        components = components | {'Gas': ('CYGNO_gas', 'Gas')}
     result = {}
     for row in csv.DictReader((line for line in lines if not line.startswith('#')), delimiter='\t'):
         component = row['component']
         require(component in components and component not in result, 'Unknown/duplicate quantity component')
         mass, pieces = float(row['mass_kg']), int(row['pieces'])
         require(positive(mass) and pieces > 0 and row['geometry_material'], 'Invalid constructed quantity')
+        if component == 'Gas':
+            require(row['geometry_material'] == 'CYGNO_gas' and pieces == 2*LAYOUT_MODULE_COUNTS[layout],
+                    'Invalid constructed gas quantity')
+            require(math.isclose(float(row['density_g_cm3']), .0015273872, rel_tol=1e-12) and
+                    math.isclose(mass, float(row['volume_mm3'])*1e-6*.0015273872, rel_tol=1e-12),
+                    'Gas mixture density/mass mismatch')
         if model in ('cygno-acrylic-v3', 'cygno-copper-cathode-v4') and component in ('GEMsPolyimide', 'CathodesPolyimide'):
             require(row['geometry_material'] == 'PMMA', 'Acrylic core transport must be PMMA')
         if model == 'cygno-copper-cathode-v4' and component == 'Cathode':

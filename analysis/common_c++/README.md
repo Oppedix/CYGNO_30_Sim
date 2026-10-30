@@ -2,14 +2,20 @@
 
 `AnalyzeCompactCampaign.cpp` reproduces the current Samuele electron-recoil
 analysis in `analysis/common/` using a native, streaming ROOT loop. It is a
-separate implementation. Historical Python spectra/reporting and
-`analysis/reference_cpp/` are unchanged; `analysis/common/topology.py` is a small
+separate implementation. Python spectra/reporting and
+`analysis/reference_cpp/` share the optional gas contribution/category contract; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked v4 campaign (23 contributions)** produced by
+Input is a **completed, unpacked v4 campaign (23 material contributions, or 25 with gas)** produced by
 `study/simulate.py` with compact output, campaign schema 3, output schema 1.
 The analyzer uses saved layouts, quantities and generated-primary accounting.
-`cygno-copper-cathode-v4` requires `cygno-radioassay-v4`. It checks EFCu cathode
+`cygno-copper-cathode-v4` accepts `cygno-radioassay-v4` or the gas-enabled
+`cygno-radioassay-v4-gas-v1`, strictly matching the saved campaign flag.
+The latter adds separate `Gas C14` and `Gas Rn222` categories to every stack,
+legend, total, full/zoom figure and all four contribution/category cutflows.
+Normalization uses each source activity times total constructed sensitive-gas
+kg; the gas mixture and Rn stop-before-Pb210 contract are validated.
+No analysis flag is needed. See [gas science and limitations](../../docs/GAS_BACKGROUNDS.md). It checks EFCu cathode
 and GEM activities, Bq/piece lens values and provenance, PMMA GEM transport and
 copper cathode quantities. Lens scales are exact matrix Bq/piece × actual lens
 placements × 31536000 / generated primaries. The reference 3.843 kg physical lens
@@ -121,7 +127,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all 23 saved v4 physical rows,
+1. The ordered `matrix.json.contributions` array supplies all 23 saved v4 material rows (25 including optional gas),
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -321,7 +327,10 @@ the campaign matrix:
 | Resistors | Resistors: U238, Th232, K40, Bq/piece | 3 |
 | GEMs | PMMA core U238, Th232, K40; Cu skins U238, Th232 | 5 |
 | Field Cage | RingSupports U238, Th232, K40; RingStrips U238, Th232 | 5 |
-| **Total** | Nine physical families | **23** |
+| **Default total** | Nine material families | **23** |
+| Gas C14 (optional) | Gas: C14, Bq/kg mixture | 1 |
+| Gas Rn222 (optional) | Same Gas mass: Rn222 short chain, Bq/kg mixture | 1 |
+| **Gas-enabled total** | Ten physical source families | **25** |
 
 The completed MBNL resistor assay supplies U238/Th232 equilibrium-assumption jobs and one K40 job. Per-piece activity is based on the nominal 17-mm Suprasil reference tube, never the compact transport-box mass. See [material provenance](../../docs/STUDY_SOURCES.md).
 GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
@@ -375,8 +384,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: N × 4 × 6 (N=23 v4) explicit selection windows
-ExactEnergyWindows                TTree: N × 2 × 6 (N=23 v4) contribution windows
+SelectionEnergyWindows            TTree: N × 4 × 6 (N=23, or 25 with gas) explicit selection windows
+ExactEnergyWindows                TTree: N × 2 × 6 (N=23, or 25 with gas) contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -413,7 +422,7 @@ its unchanged `Fiducial` field. Provenance includes numeric
 
 `cutflow.md` has four clearly labelled stages, each with one table of actual
 matrix contributions (component, category, integer MC groups, annual rate and
-efficiencies) and one table of the seven categories plus TOTAL. The tables use
+efficiencies) and one table of the seven material categories (plus two gas categories when enabled) and TOTAL. The tables use
 `all`, including flows, and retain historical group counting rather than counting
 unique primaries. Step efficiency divides by the previous stage; cumulative
 efficiency divides by no-cut. No-cut is 100% when nonempty; every zero denominator

@@ -131,8 +131,8 @@ class TopologyTests(unittest.TestCase):
             np.testing.assert_array_equal(hist[:2],old_hist)
 
 
-def make_campaign(path, layout, model='cygno-300elj-v2'):
-    config,matrix,campaign=campaign_fixture(path,model)
+def make_campaign(path, layout, model='cygno-300elj-v2', gas_bkg=False):
+    config,matrix,campaign=campaign_fixture(path,model,gas_bkg)
     geom=geometry(layout)
     saved_geom=rt.read(path/'geometry.json') | geom | dict(layout=layout)
     config.update(layout=layout,output_mode='compact',output_schema_version=1,primaries_per_job=10000)
@@ -144,6 +144,10 @@ def make_campaign(path, layout, model='cygno-300elj-v2'):
         pieces=308 if layout=='cygno-11x7-v1' else 300
         campaign['quantities']['Lens'].update(mass_kg=.512833584772, pieces=pieces)
         quantities=quantities.replace('Lens\t2\t3\t',f'Lens\t.512833584772\t{pieces}\t')
+    if gas_bkg and layout == 'cygno-11x7-v1':
+        campaign['quantities']['Gas'].update(mass_kg=154e6*1e-6*.0015273872, pieces=154)
+        quantities=quantities.replace('Gas\t0.22910808\t150\tCYGNO_gas\t.0015273872\t150000000',
+            f'Gas\t{154e6*1e-6*.0015273872}\t154\tCYGNO_gas\t.0015273872\t154000000')
     (path/'quantities.tsv').write_text(quantities)
     expected=dict(layout=layout,model=config['model'],source_policy=config['source_policy'],geometry_hash=saved_geom['geometry_hash'])
     full=synthetic_groups()
@@ -281,6 +285,22 @@ class CppTopologyTests(unittest.TestCase):
         self.assertNotEqual(run.returncode,0)
         self.assertFalse(rejected.exists())
 
+    def test_gas_v4_all_selections_stacks_and_rejection(self):
+        campaign=self.root/'gas-campaign'
+        geom,inputs=make_campaign(campaign,'legacy-25x3','cygno-copper-cathode-v4',gas_bkg=True)
+        output=self.root/'gas-analysis'
+        self.run_analysis(campaign,output)
+        self.check_output(output,[(row,scale,*oracle(groups,geom)) for row,scale,groups in inputs],1.)
+        self.assertEqual(rt.read(output/'normalization-scenario.json')['scenario_id'],'cygno-radioassay-v4-gas-v1')
+        config=rt.read(campaign/'config.json');config.pop('gas_bkg')
+        rt.save(campaign/'config.json',config)
+        document=rt.read(campaign/'campaign.json');document['identity']['config']=config
+        rt.save(campaign/'campaign.json',document)
+        rejected=self.root/'gas-rejected'
+        run=subprocess.run([str(self.binary),str(campaign),str(rejected)],capture_output=True,text=True)
+        self.assertNotEqual(run.returncode,0)
+        self.assertFalse(rejected.exists())
+
     def check_output(self, output, expected, coincidence):
         for name in ('figure7.5','figure7.6','figure_multivolume_veto','figure_multisite_veto'):
             for ext in ('png','pdf'): self.assertGreater((output/(name+'.'+ext)).stat().st_size,100)
@@ -293,10 +313,11 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(f['provenance/MultisiteDistance_mm'].member('fVal'),10.)
             new=f['SelectionEnergyWindows'].arrays(library='np'); old=f['ExactEnergyWindows'].arrays(library='np')
             self.assertEqual(len(new['Count']),len(expected)*4*6);self.assertEqual(len(old['Count']),len(expected)*2*6)
-            rates=np.zeros((4,7)); raw_counts=np.zeros((4,7))
-            hist=np.zeros((4,7,902)); variance=np.zeros_like(hist)
+            categories=CATEGORIES + (('Gas C14','Gas Rn222') if any(row['component']=='Gas' for row,*_ in expected) else ())
+            rates=np.zeros((4,len(categories))); raw_counts=np.zeros_like(rates)
+            hist=np.zeros((4,len(categories),902)); variance=np.zeros_like(hist)
             for row,scale,counts,bins in expected:
-                c=CATEGORIES.index(row['category'])
+                c=categories.index(row['category'])
                 for cut,selection in enumerate(SELECTIONS):
                     np.testing.assert_array_equal(f['contributions/'+row['id']+'/raw_'+selection].values(flow=True),bins[cut])
                     for w,window in enumerate(WINDOWS):
@@ -315,7 +336,7 @@ class CppTopologyTests(unittest.TestCase):
             weighted_diff=False
             for cut,selection in enumerate(SELECTIONS):
                 total=np.zeros(902)
-                for c,category in enumerate(CATEGORIES):
+                for c,category in enumerate(categories):
                     h=f[selection+'/categories/'+category]
                     np.testing.assert_array_equal(h.values(flow=True),hist[cut,c]/widths)
                     np.testing.assert_array_equal(h.errors(flow=True),np.sqrt((np.sqrt(variance[cut,c])/widths)**2))

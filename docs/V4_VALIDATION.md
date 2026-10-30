@@ -1,7 +1,10 @@
 # v4 implementation and validation — 2026-10-29
 
 Current detector: `cygno-copper-cathode-v4` in both modes.
-Current internal matrix: `cygno-radioassay-v4`, **23 contributions**.
+Default internal matrix: `cygno-radioassay-v4`, **23 material contributions**.
+This record covers the material-only v4 baseline. The optional 25-contribution
+C14/Rn222 gas scenario has separate [gas validation](GAS_VALIDATION.md) and
+[scientific assumptions](GAS_BACKGROUNDS.md).
 
 ## Implemented contract
 

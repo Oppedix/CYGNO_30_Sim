@@ -2,7 +2,11 @@
 
 The canonical pair is **`cygno-copper-cathode-v4` / `cygno-radioassay-v4`**.
 The [machine-readable matrix](../config/study/cygno-radioassay-v4.json) defines
-**23 contributions**, nine physical families and seven reporting categories.
+**23 material contributions**, nine physical families and seven reporting categories
+by default. Optional `--gas-bkg yes` extends it to `cygno-radioassay-v4-gas-v1`: 25
+contributions, ten families and nine categories. [Gas provenance](GAS_BACKGROUNDS.md)
+defines C14 = 4.716324681686152e-5 and Rn222 = 1e-6 Bq/kg of gas mixture,
+the published benchmarks, calculations, short-chain boundary and limitations.
 `config/study/cygno-11x7-v4.json`, `samuele.json` and smoke A/B select v4.
 Both internal and external use the identical detector construction; external
 uses environmental GPS sources and never this internal radioactive matrix.
@@ -77,11 +81,13 @@ Contributions: GEM core3 + GEM copper2 + Cathode2 + supports3 + strips2 +
 vessel2 + lenses3 + sensors3 + resistors3 = **23**. No cathode PMMA/Polyimide
 jobs, duplicate cathode copper skins, extra equilibrium daughters or omitted-K
 zero jobs exist. U/Th secular equilibrium is a modelling assumption; K40 is a
-single parent. Full-chain macros reset stop-before controls to 0/0.
+single parent. Material full-chain macros reset stop-before controls to 0/0. Gas C14 also
+resets to 0/0; gas Rn222 alone stops before Pb210 (82/210).
 
 Both Python and native ROOT use, in the same multiplication order:
 `activity * quantity * 60 * 60 * 24 * 365 / actual_generated_primaries`.
-For Bq/kg, quantity is actual constructed component kg. For Bq/piece (Lens and
+For Bq/kg, quantity is actual constructed component kg (the full sensitive gas mass for
+each optional gas contribution). For Bq/piece (Lens and
 Resistors), quantity is actual placement count. Contributions are scaled before
 category sums; no assay or geometry uncertainty is propagated into group-Poisson
 errors. Geometry export supplies material, density, mass, volume and pieces.

@@ -5,7 +5,7 @@ import numpy as np
 import uproot
 from study import runtime as rt
 from analysis.raw.io import LEGACY_HITS_SCHEMA as HITS_SCHEMA, METADATA
-from study.source_matrix import COMPONENTS, V4_COMPONENTS, read_matrix, MATRIX_MODELS
+from study.source_matrix import COMPONENTS, V4_COMPONENTS, read_matrix, MATRIX_MODELS, with_gas_backgrounds
 
 
 def chunk(rows):
@@ -47,11 +47,14 @@ def log_for(env, requested):
         RunID=0, RequestedEvents=requested, GeneratedPrimaries=requested, ProcessedEvents=requested, AbortedEvents=0))+'\n')
 
 
-def campaign_fixture(root, model='cygno-300elj-v2'):
+def campaign_fixture(root, model='cygno-300elj-v2', gas_bkg=False):
     root.mkdir()
     cfg = rt.load_config(rt.REPO/'config/study/samuele.json') | dict(mode='smoke', primaries_per_job=2, model=model)
     matrix_id = next(k for k,v in MATRIX_MODELS.items() if v == model)
     matrix = read_matrix(rt.REPO/'config/study'/(matrix_id+'.json'))
+    if gas_bkg:
+        matrix = with_gas_backgrounds(matrix)
+        cfg['gas_bkg'] = 'yes'
     env = environment()
     identity = dict(config=cfg, matrix=matrix, effective_environment=env, source={'files_sha256': {}})
     rt.save(root/'config.json', cfg)
@@ -63,6 +66,14 @@ def campaign_fixture(root, model='cygno-300elj-v2'):
     components = V4_COMPONENTS if model == 'cygno-copper-cathode-v4' else COMPONENTS
     quantities = {name:dict(mass_kg=2., pieces=3, geometry_material='G4_Cu' if name == 'Cathode' else 'PMMA' if model in ('cygno-acrylic-v3','cygno-copper-cathode-v4') and name in ('GEMsPolyimide','CathodesPolyimide') else 'fixture') for name in components}
     (root/'quantities.tsv').write_text(f"# layout: {cfg['layout']}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# geometry-hash: {env['geometry_hash']}\n# compiled-source-hash: {env['source_hash']}\n# provenance: synthetic fixture\ncomponent\tmass_kg\tpieces\tgeometry_material\n"+''.join(f'{name}\t2\t3\t{quantities[name]["geometry_material"]}\n' for name in components))
+    if gas_bkg:
+        gas_mass = 150e6*1e-6*.0015273872
+        quantities['Gas'] = dict(mass_kg=gas_mass, pieces=150, geometry_material='CYGNO_gas')
+        table = (root/'quantities.tsv').read_text().splitlines()
+        table = [line if line.startswith('#') else line+'\tdensity_g_cm3\tvolume_mm3' if line.startswith('component\t')
+                 else line+'\t0\t0' for line in table]
+        table.append(f'Gas\t{gas_mass}\t150\tCYGNO_gas\t.0015273872\t150000000')
+        (root/'quantities.tsv').write_text('\n'.join(table)+'\n')
     checks = {name:dict(status='passed', PART122=False, environment=env) for name in
               ('u238-default', 'u238-enabled', 'th232-full', 'bi212-full')}
     preflight = root/'preflight'; preflight.mkdir()

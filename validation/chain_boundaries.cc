@@ -43,7 +43,7 @@ int main() {
     require(track.GetKineticEnergy()==0,"Inherited recoil stopping changed");
     return track.GetTrackStatus();
   };
-  for (const auto& boundary : {std::pair<int,int>{88,226},{90,228}}) {
+  for (const auto& boundary : {std::pair<int,int>{88,226},{90,228},{82,210}}) {
     const auto z=boundary.first,a=boundary.second;
     require(ui->ApplyCommand("/stopChain/ZStopDecay "+std::to_string(z))==0,"stop Z failed");
     require(ui->ApplyCommand("/stopChain/AStopDecay "+std::to_string(a))==0,"stop A failed");
@@ -56,5 +56,5 @@ int main() {
     require(probe(z,a,1,0)==fStopButAlive,"Restart must permit boundary primary decay");
     require(probe(z,a,2,0)==fStopButAlive,"Reset must permit downstream tracking");
   }
-  G4cout << "PASS: Ra226/Th228 ground-state stop-before, excited-state policy, explicit restart/reset; no decay transport" << G4endl;
+  G4cout << "PASS: Ra226/Th228/Pb210 ground-state stop-before, excited-state policy, explicit restart/reset; no decay transport" << G4endl;
 }

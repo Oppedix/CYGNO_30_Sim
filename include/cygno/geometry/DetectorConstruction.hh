@@ -93,6 +93,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   std::vector<G4String> GetResistorList() {return fListResistors;}
   std::vector<G4String> GetLensList() {return fListLens;}
   std::vector<G4String> GetSensorsList() {return fListSensors;}
+  std::vector<G4String> GetGasList() {return fListDetector;}
 
   // G4LogicalVolume stores its sensitive detector separately for each worker.
   SensitiveDetector* GetSensitiveDetector();

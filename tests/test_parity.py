@@ -10,7 +10,7 @@ from study import runtime as rt
 from analysis.raw.preprocess import groups
 from analysis.raw.io import header, hit_chunks
 from analysis.common.spectra import accumulate, scale_for, WINDOWS
-from study.source_matrix import read_matrix, read_quantities
+from study.source_matrix import read_matrix, read_quantities, with_gas_backgrounds
 from fixtures import raw_fixture
 
 
@@ -18,13 +18,15 @@ from fixtures import raw_fixture
 class ReferenceParity(unittest.TestCase):
     def test_all_layouts(self):
         build=Path(os.environ['CYGNO_REFERENCE_BUILD']).resolve()
-        for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1'):
+        cases=[(layout,'cygno-300elj-v2',False) for layout in ('legacy-25x3','cygno-5x5x3-v1','cygno-11x7-v1')]
+        cases.append(('cygno-11x7-v1','cygno-copper-cathode-v4',True))
+        for layout,model,gas in cases:
             with self.subTest(layout=layout), tempfile.TemporaryDirectory() as d:
                 folder=Path(d)
-                subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json','--model','cygno-300elj-v2'],
+                subprocess.run([build/'geometry_quantities', folder/'quantities.tsv',layout,folder/'geometry.json','--model',model,*(['--gas-bkg','yes'] if gas else [])],
                     check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 geometry=rt.read(folder/'geometry.json')
-                expected=dict(layout=layout,model='cygno-300elj-v2',source_policy='uniform-volume-v1',geometry_hash=geometry['geometry_hash'])
+                expected=dict(layout=layout,model=model,source_policy='uniform-volume-v1',geometry_hash=geometry['geometry_hash'])
                 center=geometry['gas_centers_mm']['0']
                 def row(**kw):
                     return dict(x_hits=center[0],y_hits=center[1],z_hits=center[2]) | kw
@@ -68,9 +70,10 @@ class ReferenceParity(unittest.TestCase):
                         for index,field in enumerate(('EDep_Out','X_Vertex','Y_Vertex','Z_Vertex')):
                             np.testing.assert_array_equal(list(c[field]),[getattr(v, ("energy","x","y","z")[index]) for v in p.volumes.values()])
                 counts,hist,_=accumulate(py,geometry)
-                matrix=read_matrix(rt.REPO/'config/study/cygno-300elj-radioassay-v2.json')
-                quantities=read_quantities(folder/'quantities.tsv',layout=layout,model='cygno-300elj-v2',geometry_hash=geometry['geometry_hash'])
-                lines=['# normalization-format: quantity-v2',f'# layout: {layout}', '# detector-model: cygno-300elj-v2',
+                matrix=read_matrix(rt.REPO/'config/study'/('cygno-radioassay-v4.json' if gas else 'cygno-300elj-radioassay-v2.json'))
+                if gas: matrix=with_gas_backgrounds(matrix)
+                quantities=read_quantities(folder/'quantities.tsv',layout=layout,model=model,geometry_hash=geometry['geometry_hash'],gas_bkg=gas)
+                lines=['# normalization-format: quantity-v2',f'# layout: {layout}', f'# detector-model: {model}',
                        '# source-policy: uniform-volume-v1','# provenance: synthetic parity; not simulated backgrounds']
                 category_hist={}
                 from study.source_matrix import quantity_for
@@ -97,5 +100,19 @@ class ReferenceParity(unittest.TestCase):
                         self.assertAlmostEqual(windows['RatePerYear'][i],count*scale,delta=max(1e-12,abs(count*scale)*1e-14))
                     for (category,cut),histogram in category_hist.items():
                         np.testing.assert_allclose(f['Categories/'+category+('_cut' if cut else '')].values(flow=True),histogram,rtol=1e-14)
+
+                if gas:
+                    for program in ('PlotNormalizedSpectra_single','PlotNormalizedSpectra_GEMchain'):
+                        subprocess.run([build/'analysis'/program,folder/'norm.tsv'],cwd=folder,check=True,stdout=subprocess.DEVNULL)
+                        with uproot.open(folder/'NormalizedHisto.root') as f:
+                            for category in ('Gas C14','Gas Rn222'):
+                                for cut in (0,1):
+                                    suffix='_cut' if cut else ''
+                                    values=f['Categories/'+category+suffix].values(flow=True)
+                                    contribution=category.replace(' ','_')
+                                    np.testing.assert_array_equal(values,f[contribution+suffix].values(flow=True))
+                                    # These two historical plotters use 1200 bins; compare flow-inclusive counts.
+                                    self.assertAlmostEqual(values.sum(),counts[cut,0]*scales[contribution],
+                                                           delta=counts[cut,0]*scales[contribution]*1e-14)
 
 if __name__ == '__main__': unittest.main()

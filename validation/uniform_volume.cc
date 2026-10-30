@@ -34,7 +34,7 @@ int main() {
     {"Cathode",detector.GetCathodeList()}, {"CathodesPolyimide",detector.GetCathodesPolyimideList()}, {"CathodesCopper",detector.GetCathodesCopperList()},
     {"RingSupports",detector.GetRingsSupportList()}, {"RingStrips",detector.GetRingStripstList()},
     {"Resistors",detector.GetResistorList()}, {"Lens",detector.GetLensList()},
-    {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
+    {"Gas",detector.GetGasList()}, {"Sensors",detector.GetSensorsList()}, {"Vessel",{"Vessel"}}};
   for (auto it=sources.begin(); it!=sources.end();) {
     if (it->second.empty()) it=sources.erase(it); else ++it;
   }
