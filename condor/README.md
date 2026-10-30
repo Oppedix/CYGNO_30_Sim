@@ -12,6 +12,27 @@ All four campaigns use `cygno-copper-cathode-v4`, `cygno-11x7-v1` and compact RO
 | `external-gamma.sub` | 1,000,000; existing Hall C gamma proxy, copper20 | `external-gamma-v4-11x7-1M` |
 | `external-neutron.sub` | 1,000,000; existing Hall C neutron proxy, copper20 | `external-neutron-v4-11x7-1M` |
 
+The storage mount is only the campaign-data destination. Source, software,
+builds, Condor logs/config copies and analysis output belong to the private
+workspace:
+
+| Purpose | Path |
+|---|---|
+| Workspace | `/private/SolarNu/MC30/geant4-private` (`G4LAB`) |
+| Checkout | `$G4LAB/projects/CYGNO_30_Sim` |
+| Common build | `$G4LAB/build/cygno-common-11.3.1-linux` |
+| Geant4 activation | `$G4LAB/activate.sh` |
+| Geant4 installation | `$G4LAB/software/geant4-11.3.1-serial` |
+| Condor logs / external config copies | `$G4LAB/runs/condor-logs` / `$G4LAB/runs/condor-config` |
+| Analysis binaries / output parent | `$G4LAB/build/root-analysis` / `$G4LAB/runs` |
+| Campaign data (ROOT, manifests, provenance) | `/cnaf/cygno-sim/Users/goppedis/SolarNu` |
+
+The build subdirectory is the convention in [common setup](../docs/SETUP.md),
+not a claim about an existing binary. If yours differs, change `build_dir` in
+`site.conf` and `CYGNO_BUILD` below to the directory containing **both**
+`rdecay01` and `geometry_quantities`. `src/` and `tools/` stay in the workspace;
+neither is the detector checkout.
+
 ## 1. Establish the CNAF paths and software
 
 Start in a **Bash terminal in Jupyter**. The historical `CYGNO-MC` notes establish
@@ -23,9 +44,12 @@ Geant4 installation; the full internal radioactive-decay gate must pass there.
 The historical Geant4 11.2 setup is not evidence that this application's gate or
 all its required datasets will work.
 
-Ask CNAF for the approved native submit host/schedd, worker software activation,
-Python path, compatible OS/container, credentials, accounting requirements and
-maximum job wall time. Put the supplied Condor settings in `site.conf`.
+Confirm CNAF's native submit host/schedd, compatible worker OS/container,
+credentials, accounting requirements and maximum job wall time. Put the supplied
+Condor settings in `site.conf`. The job sources `$G4LAB/activate.sh` and resolves
+`python3` in that environment; its Python ≥3.10 check fails visibly if necessary.
+Set `python` to another interpreter path in `site.conf` if activation selects an
+older version.
 An activation script must work in noninteractive Bash, set the executable/library
 search paths and matching Geant4 datasets, and fail if activation fails. It may
 source the site's setup and modules; a Jupyter-only `cygno_setup` alias is not
@@ -33,8 +57,10 @@ available in the job. Do not inherit Jupyter's entire environment.
 
 This setup deliberately uses **shared files**, with `should_transfer_files = NO`.
 The checkout (including `.git` and relative symlinks), build, activation script,
-Python and external config files must be reachable at their configured absolute
-paths on workers. Shared libraries and datasets must also be readable there.
+Python and external config files must be reachable in the configured worker
+environment. In particular, `/private/...` must be visible to workers as well as
+the submit/build host; its existence in a Jupyter terminal alone is insufficient.
+Shared libraries and datasets must also be readable there.
 The runner checks effective dataset paths and hashes their contents, including
 G4NDL for neutrons. An environment probe alone can take time for these hashes.
 
@@ -55,10 +81,13 @@ requires another shared source/build location, and use those same paths here.
 ```bash
 bash
 export CYGNO_CNAF=/cnaf/cygno-sim/Users/goppedis/SolarNu
-export CYGNO_SRC="$CYGNO_CNAF/CYGNO_30_Sim"
-export CYGNO_BUILD="$CYGNO_CNAF/build/cygno-common"
-cd "$CYGNO_CNAF"             # stop here if this mount is unavailable
-test -w . && test -x .
+export G4LAB=/private/SolarNu/MC30/geant4-private
+export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
+export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
+export CYGNO_ANALYSIS_BIN="$G4LAB/build/root-analysis"
+export CYGNO_ANALYSIS_RUNS="$G4LAB/runs"
+mkdir -p "$G4LAB/projects" "$G4LAB/runs/condor-logs"
+cd "$G4LAB/projects"
 git clone --branch main https://github.com/Oppedix/CYGNO_30_Sim.git "$CYGNO_SRC"
 ```
 
@@ -73,13 +102,13 @@ git switch main
 git pull --ff-only origin main
 ```
 
-Activate the actual CNAF software (replace the three explicit site placeholders):
+Activate the private Linux software and build with the documented installation:
 
 ```bash
-export CYGNO_G4_SETUP=/EDIT/absolute/path/to/cnaf-geant4-activation.sh
-export CYGNO_PYTHON=/EDIT/absolute/path/to/python3
+export CYGNO_G4_SETUP="$G4LAB/activate.sh"
+export CYGNO_PYTHON=python3
 source "$CYGNO_G4_SETUP"
-export Geant4_DIR=/EDIT/absolute/path/to/geant4/lib/cmake/Geant4
+export Geant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
 "$CYGNO_PYTHON" -c 'import sys; assert sys.version_info >= (3,10); print(sys.version)'
 geant4-config --version
 cmake -S "$CYGNO_SRC" -B "$CYGNO_BUILD" -DCMAKE_BUILD_TYPE=Release \
@@ -96,8 +125,9 @@ build alone.
 ## 3. Edit one settings file; set the external timeout before starting
 
 Edit **`condor/site.conf`**. It uses HTCondor syntax, not shell syntax; do not
-`source` it. Set `source_dir`, `build_dir`, `output_parent`, `log_dir`, `g4_setup`
-and `python` to absolute paths. Set `internal_jobs` and memory as described below.
+`source` it. Check `workspace`, `source_dir`, `build_dir`, `output_parent`,
+`log_dir` and `g4_setup`; `python` is a command resolved after activation or an
+absolute interpreter path. Set `internal_jobs` and memory as described below.
 Add only the actual CNAF requirements/accounting/container/wall-time settings.
 Paths containing literal quotes are not supported by this simple template.
 Finish these edits before starting campaigns: `site.conf` itself is included in
@@ -111,7 +141,7 @@ submission. This example uses seven days per external attempt; measure smoke
 throughput and choose an appropriate value and compatible site wall time.
 
 ```bash
-"$CYGNO_PYTHON" - "$CYGNO_SRC" "$CYGNO_CNAF/condor-config" <<'PY'
+"$CYGNO_PYTHON" - "$CYGNO_SRC" "$G4LAB/runs/condor-config" <<'PY'
 import json, sys
 from pathlib import Path
 src, dest = map(Path, sys.argv[1:])
@@ -125,12 +155,9 @@ for name in ('hall-c-gamma-2026-proxy.json', 'hall-c-neutron-wulandari-proxy.jso
 PY
 ```
 
-Then set these two lines in `site.conf`:
-
-```text
-gamma_config = $(output_parent)/condor-config/hall-c-gamma-2026-proxy.json
-neutron_config = $(output_parent)/condor-config/hall-c-neutron-wulandari-proxy.json
-```
+`site.conf` already points at these copies in `$G4LAB/runs/condor-config`.
+If you prepared equivalent copies previously, check their contents and point
+`gamma_config` / `neutron_config` at them instead of overwriting them.
 
 Keep their Hall C spectra, fluxes, shielding, layout and model unchanged. Internal
 `cygno-11x7-v4.json` already has a 604800-second timeout **per contribution**.
@@ -144,7 +171,7 @@ Create the configured log directory **outside the checkout**, visible to the
 submit host, so logs never enter the runners' source snapshots:
 
 ```bash
-mkdir -p "$CYGNO_CNAF/condor-logs"
+mkdir -p "$G4LAB/runs/condor-logs"
 cd "$CYGNO_SRC/condor"
 command -v condor_submit
 condor_version
@@ -165,10 +192,10 @@ bash -n run.sh
 # Optional local dispatch self-check: no Geant4 or scheduler needed.
 "$CYGNO_PYTHON" ../validation/test_condor.py
 for file in internal-no-gas.sub internal-with-gas.sub external-gamma.sub external-neutron.sub; do
-  condor_submit -dry-run "$CYGNO_CNAF/condor-logs/$file.ad" "$file"
+  condor_submit -dry-run "$G4LAB/runs/condor-logs/$file.ad" "$file"
 done
 # Inspect generated ClassAds: command, environment, CPU, memory and requirements.
-cat "$CYGNO_CNAF/condor-logs/internal-with-gas.sub.ad"
+cat "$G4LAB/runs/condor-logs/internal-with-gas.sub.ad"
 
 # Four separate SMALL campaigns, never the production directories.
 # Keep this tag to repeat exactly the same smoke command later.
@@ -245,8 +272,8 @@ condor_q
 condor_q -hold
 condor_q -better-analyze JOBID       # replace JOBID with the returned cluster ID
 condor_history JOBID -af ClusterId ProcId JobStatus ExitCode ExitBySignal MemoryUsage
-ls -lt "$CYGNO_CNAF/condor-logs"
-tail -f "$CYGNO_CNAF/condor-logs/internal-with-gas-1M.JOBID.0.out"
+ls -lt "$G4LAB/runs/condor-logs"
+tail -f "$G4LAB/runs/condor-logs/internal-with-gas-1M.JOBID.0.out"
 ```
 
 Check `.out` (runner progress), `.err` (runner errors), `.log` (Condor events and
@@ -344,5 +371,16 @@ Internal selected ROOT files live at
 manifest-selected paths printed above; a recursive file search also finds old
 failed attempts. ROOT structural/scientific analysis remains the separate
 [internal](../internal/README.md) / [external](../external/README.md) workflow.
+For analysis, keep these stored campaigns as input and write results under
+`$CYGNO_ANALYSIS_RUNS` (`$G4LAB/runs`), using a new directory for each analysis.
+For example, the gas-enabled Python analysis is:
+
+```bash
+cd "$CYGNO_SRC"
+# Activate the Python analysis environment from common setup first.
+python internal/study/analyze.py \
+  --input "$CYGNO_CNAF/internal-with-gas-v4-11x7-1M" \
+  --output "$CYGNO_ANALYSIS_RUNS/internal-with-gas-v4-11x7-1M-python-NEW"
+```
 
 HTCondor syntax reference: [official condor_submit manual](https://htcondor.readthedocs.io/en/24.0/man-pages/condor_submit.html).

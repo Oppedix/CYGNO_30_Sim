@@ -76,8 +76,9 @@ macOS neutron Cu-capture failure remains open.
 
 Use [the cluster recipe](docs/WORKFLOW.md#cluster-entry-point), which defines every
 wrapper variable and invokes **`external/cluster/run.sh`**. It uses the same
-build/configs and one CPU per invocation. Private Linux activation is known;
-CNAF login, scheduler and Geant4 activation must come from the site.
+build/configs and one CPU per invocation. For the private workspace and CNAF
+storage paths, use the [HTCondor guide](../condor/README.md); native queue access
+and worker mount visibility still require site confirmation.
 
 ## C++ ROOT compact analysis
 
@@ -102,9 +103,9 @@ then analyze both complete campaigns:
 # Directory: $CYGNO_SRC on the analysis machine; Python venv active.
 cd "$CYGNO_SRC"
 python external/analysis/analyze.py --input "$CYGNO_RUNS/external-v4-gamma-production-NEW" \
-  --output "$CYGNO_RUNS/external-gamma-python-NEW"
+  --output "$CYGNO_ANALYSIS_RUNS/external-gamma-python-NEW"
 python external/analysis/analyze.py --input "$CYGNO_RUNS/external-v4-neutron-production-NEW" \
-  --output "$CYGNO_RUNS/external-neutron-python-NEW"
+  --output "$CYGNO_ANALYSIS_RUNS/external-neutron-python-NEW"
 ```
 
 Python accepts raw/compact/both **unpacked directories**, not internal archives;

@@ -11,9 +11,9 @@ Geant4 installation.
 |---|---|
 | `/private/SolarNu/MC30/geant4-private` | Documented private Linux Geant4 workspace, with `activate.sh` and the serial 11.3.1 installation below |
 | `$G4LAB/projects/CYGNO_30_Sim` | Documented source-checkout convention inside that private workspace |
-| `/cnaf/cygno-sim/Users/goppedis/SolarNu` | Documented CNAF analysis/data base, including the historical `25x3Samuele-1M` input |
+| `/cnaf/cygno-sim/Users/goppedis/SolarNu` | CNAF campaign storage only, including the historical `25x3Samuele-1M` input; source, builds and analysis output stay in the private workspace |
 | Build/run names below | Configurable output choices, not assertions that those directories already exist |
-| Local/CNAF Geant4 or ROOT activation | Site-specific; no login host, scheduler, ROOT setup script or CNAF Geant4 installation is established by this repository |
+| Worker access and ROOT activation | Site-specific; private Geant4 paths are documented below, but worker mount visibility, native scheduler access and a ROOT setup script still need confirmation |
 
 ## Local workstation
 
@@ -30,6 +30,7 @@ git clone --branch main git@github.com:Oppedix/CYGNO_30_Sim.git CYGNO_30_Sim
 export CYGNO_SRC="$CYGNO_WORK/CYGNO_30_Sim"
 export CYGNO_BUILD="$CYGNO_WORK/build/cygno-common"
 export CYGNO_RUNS="$CYGNO_WORK/runs"
+export CYGNO_ANALYSIS_RUNS="$CYGNO_WORK/runs"
 cd "$CYGNO_SRC"
 
 # Directory: $CYGNO_SRC. Use your installed Geant4 prefix, not a ROOT prefix.
@@ -89,6 +90,8 @@ git clone --branch main git@github.com:Oppedix/CYGNO_30_Sim.git CYGNO_30_Sim
 export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
 export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
 export CYGNO_RUNS="$G4LAB/runs"
+export CYGNO_ANALYSIS_RUNS="$G4LAB/runs"
+export CYGNO_ANALYSIS_BIN="$G4LAB/build/root-analysis"
 export Geant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
 cd "$CYGNO_SRC"
 mkdir -p "$CYGNO_RUNS"
@@ -101,22 +104,28 @@ not a universal Geant4 fix. See [known issues](KNOWN_ISSUES.md).
 
 ## CNAF analysis worker
 
-First connect to the CNAF worker through your established access procedure.
-The known base is **not** the private Linux Geant4 workspace. The following clone,
-binary and run directories are explicit configurable choices under that base;
-only the historical campaign path is a documented existing input.
+First connect through your established access procedure. The `/cnaf/...` mount
+is **storage only**. Use the private workspace for the checkout, builds, software
+and analysis results. Clone under `projects/` only if the checkout is absent;
+otherwise update the existing `$G4LAB/projects/CYGNO_30_Sim` with
+`git switch main` and `git pull --ff-only origin main` after inspecting/saving
+local changes. Never update a checkout while its campaigns are active or need
+an identical retry.
 
 ```bash
-# Directory: known CNAF SolarNu base, on the analysis worker.
+# Directory: private workspace, with the CNAF storage mount available.
+export G4LAB=/private/SolarNu/MC30/geant4-private
 export CYGNO_CNAF=/cnaf/cygno-sim/Users/goppedis/SolarNu
-cd "$CYGNO_CNAF"
+mkdir -p "$G4LAB/projects"
+cd "$G4LAB/projects"
 git clone --branch main git@github.com:Oppedix/CYGNO_30_Sim.git CYGNO_30_Sim
-export CYGNO_SRC="$CYGNO_CNAF/CYGNO_30_Sim"
-export CYGNO_BUILD="$CYGNO_CNAF/build/cygno-common"
+export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
+export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
 export CYGNO_RUNS="$CYGNO_CNAF"
-export CYGNO_ANALYSIS_BIN="$CYGNO_CNAF/build/root-analysis"
+export CYGNO_ANALYSIS_RUNS="$G4LAB/runs"
+export CYGNO_ANALYSIS_BIN="$G4LAB/build/root-analysis"
 cd "$CYGNO_SRC"
-mkdir -p "$CYGNO_ANALYSIS_BIN"
+mkdir -p "$CYGNO_ANALYSIS_BIN" "$CYGNO_ANALYSIS_RUNS"
 ```
 
 For analysis, activate the worker's actual ROOT environment using its site
@@ -127,11 +136,19 @@ instructions, then follow the complete
 `-lRooFitJSONInterface`; tested ROOT 6.40.04 provides JSON through HS3 alone.**
 No ROOT activation path is assumed. Geant4 is unnecessary for either analyzer.
 
-To simulate at CNAF, obtain the approved Geant4 environment/dataset activation
-and actual `Geant4_DIR` from that site, then use the common build and the
-[internal](../internal/docs/WORKFLOW.md#cluster-entry-point) or
-[external](../external/docs/WORKFLOW.md#cluster-entry-point) wrapper inside an
-allocation. No CNAF Geant4 installation or scheduler command is inferred here.
+For simulation, source `$G4LAB/activate.sh` and use
+`Geant4_DIR=$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4` as in the private
+Linux setup above. The build subdirectory is a documented configurable choice;
+set `CYGNO_BUILD` to your actual compatible build containing `rdecay01` and
+`geometry_quantities`, or compile both there. For batch jobs follow the
+[CNAF HTCondor instructions](../condor/README.md). Workers must see both the
+private workspace (source/build/software) and CNAF storage (campaign data);
+submit-host visibility does not prove worker access.
+
+`CYGNO_RUNS` is the simulation campaign/input parent; `CYGNO_ANALYSIS_RUNS` is the
+separate analysis output parent. With this setup, analysis reads stored campaigns
+from `/cnaf/...` and writes results below `$G4LAB/runs`. `src/` and `tools/` remain
+private workspace directories, not locations for the detector checkout.
 
 ## Python analysis environment (either workflow)
 
@@ -142,6 +159,7 @@ ROOT is required. Use this environment for both Python analyzers:
 ```bash
 # Directory: repository root on the analysis machine.
 cd "$CYGNO_SRC"
+export CYGNO_ANALYSIS_RUNS="${CYGNO_ANALYSIS_RUNS:-$CYGNO_RUNS}"
 python3 -m venv .venv-analysis
 source .venv-analysis/bin/activate
 python -m pip install -r study/requirements-analysis.txt

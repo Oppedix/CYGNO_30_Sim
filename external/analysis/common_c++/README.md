@@ -7,6 +7,8 @@ runtime libraries available), then use the
 [local/private Linux/CNAF path setup](../../../docs/SETUP.md).
 `CYGNO_SRC` is the repository root; `CYGNO_RUNS` is the campaign parent on this
 machine. `CYGNO_ANALYSIS_BIN` is a configurable binary directory outside source.
+`CYGNO_ANALYSIS_RUNS` is the analysis output parent (`$G4LAB/runs` in the CNAF
+setup), separate from stored campaign inputs in `CYGNO_RUNS`.
 This compilation is separate from the common Geant4 build. No Geant4, Python,
 CMake or extra JSON package is needed; minimal ROOT without RooFit/HS3 is
 insufficient. The source uses the existing ROOT JSON/typed-leaf idiom.
@@ -49,9 +51,9 @@ analysis runs elsewhere. Output directories must be new and outside the inputs:
 # Directory: $CYGNO_SRC on the analysis machine; ROOT runtime active.
 cd "$CYGNO_SRC"
 "$CYGNO_ANALYSIS_BIN/AnalyzeExternal" \
-  "$CYGNO_RUNS/external-gamma-production-NEW" "$CYGNO_RUNS/external-gamma-root-NEW"
+  "$CYGNO_RUNS/external-gamma-production-NEW" "$CYGNO_ANALYSIS_RUNS/external-gamma-root-NEW"
 "$CYGNO_ANALYSIS_BIN/AnalyzeExternal" \
-  "$CYGNO_RUNS/external-neutron-production-NEW" "$CYGNO_RUNS/external-neutron-root-NEW"
+  "$CYGNO_RUNS/external-neutron-production-NEW" "$CYGNO_ANALYSIS_RUNS/external-neutron-root-NEW"
 ```
 
 With the CNAF setup, these inputs are below

@@ -22,8 +22,8 @@ with tempfile.TemporaryDirectory(prefix='condor-test-') as tmp:
     for name in ('rdecay01', 'geometry_quantities'):
         (build/name).symlink_to(shutil.which('true'))
     setup = folder/'activate.sh'
-    setup.write_text('export CONDOR_TEST_ACTIVATED=yes\n')
-    spy = folder/'python-spy'
+    setup.write_text(f'export PATH="{folder}:$PATH"\nexport CONDOR_TEST_ACTIVATED=yes\n')
+    spy = folder/'python3'
     spy.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
 from pathlib import Path
 if sys.argv[1] == '-c':
@@ -35,7 +35,7 @@ else:
 ''')
     spy.chmod(0o755)
     env = dict(PATH=os.defpath, CYGNO_SRC=str(repo), CYGNO_BUILD=str(build),
-               CYGNO_RUNS=str(runs), CYGNO_G4_SETUP=str(setup), CYGNO_PYTHON=str(spy),
+               CYGNO_RUNS=str(runs), CYGNO_G4_SETUP=str(setup), CYGNO_PYTHON='python3',
                CYGNO_JOBS='13', CYGNO_PRIMARIES='1000000', CYGNO_TAG='1M',
                CYGNO_GAMMA_CONFIG=str(repo/'external/config/hall-c-gamma-2026-proxy.json'),
                CYGNO_NEUTRON_CONFIG=str(repo/'external/config/hall-c-neutron-wulandari-proxy.json'),

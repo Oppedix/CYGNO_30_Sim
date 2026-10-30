@@ -35,6 +35,8 @@ and runtime libraries must be available). Use the
 [local/private Linux/CNAF path setup](../../docs/SETUP.md); `CYGNO_SRC` is the
 repository root, `CYGNO_RUNS` is the campaign parent on **this** machine, and
 `CYGNO_ANALYSIS_BIN` is a configurable binary directory outside the checkout.
+`CYGNO_ANALYSIS_RUNS` is the analysis output parent (`$G4LAB/runs` in the CNAF
+setup); it is separate from stored campaign inputs in `CYGNO_RUNS`.
 No detector rebuild, Geant4, Python, Jupyter, CMake or extra JSON package is
 needed. The include path is the repository root, not a generated build header.
 
@@ -90,7 +92,7 @@ For the compact v4 production campaign from the Internal guide:
 cd "$CYGNO_SRC"
 "$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign" \
   "$CYGNO_RUNS/internal-v4-production-NEW" \
-  "$CYGNO_RUNS/internal-v4-root-NEW" --coincidence-ns 1
+  "$CYGNO_ANALYSIS_RUNS/internal-v4-root-NEW" --coincidence-ns 1
 ```
 
 Both paths are on the analysis machine after transfer if needed. Always use a
@@ -406,7 +408,7 @@ by category or across contributions; do not derive exact windows from bins.
 The `Normalization` tree and raw contribution histograms also permit independent
 reconstruction of each normalized contribution without rereading the campaign.
 
-For example, in ROOT started from `$CYGNO_RUNS` (the analysis output parent):
+For example, in ROOT started from `$CYGNO_ANALYSIS_RUNS` (the analysis output parent):
 
 ```cpp
 TFile file("internal-v4-root-NEW/analysis.root");

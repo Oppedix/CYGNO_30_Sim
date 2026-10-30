@@ -109,11 +109,14 @@ the ROOT file or discard source/attempt metadata.
 ## Analysis on a separate worker
 
 Set `CYGNO_SRC` to that worker's checkout and `CYGNO_RUNS` to the transferred
-campaign parent. CNAF's known base is `/cnaf/cygno-sim/Users/goppedis/SolarNu`;
+campaign parent. CNAF's storage base is `/cnaf/cygno-sim/Users/goppedis/SolarNu`;
 `external/gamma-cu20` under that base is a configurable example input, not an
 assertion of an existing validated production. Use the complete
 [native ROOT recipe](../analysis/common_c++/README.md#compile) or
 [Python recipe](../README.md#python-analysis).
+Keep the checkout and binaries in the private workspace and write analysis
+results to `CYGNO_ANALYSIS_RUNS=/private/SolarNu/MC30/geant4-private/runs`, as in
+[common setup](../../docs/SETUP.md#cnaf-analysis-worker).
 
 Native ROOT reads compact data in compact/both campaigns and checks structure
 and identity. Python accepts raw/compact/both, performs the full SHA256/source

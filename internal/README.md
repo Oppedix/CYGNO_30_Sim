@@ -69,8 +69,9 @@ configured model. Historical workflows are documented separately in
 
 Use [the cluster recipe](docs/WORKFLOW.md#cluster-entry-point), which defines every
 wrapper variable and invokes **`internal/cluster/run.sh`**. It uses the same
-build, config and production rules as above. Private Linux activation is known;
-CNAF login, scheduler and Geant4 activation must come from the site.
+build, config and production rules as above. For the private workspace and CNAF
+storage paths, use the [HTCondor guide](../condor/README.md); native queue access
+and worker mount visibility still require site confirmation.
 
 ## C++ ROOT compact analysis
 
@@ -96,9 +97,9 @@ then run either input form below (different outputs):
 # Directory: $CYGNO_SRC on the analysis machine; Python venv active.
 cd "$CYGNO_SRC"
 python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-production-NEW" \
-  --output "$CYGNO_RUNS/internal-v4-python-NEW"
+  --output "$CYGNO_ANALYSIS_RUNS/internal-v4-python-NEW"
 python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-production-NEW.tar.gz" \
-  --output "$CYGNO_RUNS/internal-v4-python-archive-NEW"
+  --output "$CYGNO_ANALYSIS_RUNS/internal-v4-python-archive-NEW"
 ```
 
 Python accepts raw/compact/both, verifies full artifact integrity, and checks

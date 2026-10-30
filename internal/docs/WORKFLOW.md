@@ -75,7 +75,7 @@ python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.
   --primaries 1000 --output-mode both --jobs 1
 # Stage B checks raw/compact parity from the same transport.
 python internal/study/analyze.py --input "$CYGNO_RUNS/internal-v4-parity-NEW" \
-  --output "$CYGNO_RUNS/internal-v4-parity-analysis-NEW"
+  --output "$CYGNO_ANALYSIS_RUNS/internal-v4-parity-analysis-NEW"
 ```
 
 The last command needs the [Python analysis environment](../../docs/SETUP.md#python-analysis-environment-either-workflow);
