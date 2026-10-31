@@ -48,6 +48,9 @@ Geant4 StepRecord ───┤                                   │
 - `common/reporting.py` owns tables, reference transcription and figures.
 - `reference_cpp/` remains the active optional ROOT reference, including all three
   normalized plotters and the per-volume macro. These are not legacy files.
+  `UniformBinning.hh` retains the canonical uniform bin-edge convention on ROOT
+  6.30.02 and 6.40.x, including entries, Poisson variances and original energy
+  moments. See [ROOT compatibility and executable checks](../docs/ROOT_COMPATIBILITY.md).
 
 The three walkthroughs import these functions, show their source, and include
 sanity/parity cells. They default to small **synthetic** examples and can read

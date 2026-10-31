@@ -1,5 +1,6 @@
 #include "DetectorGeometry.hh"
 #include "FileIdentity.hh"
+#include "UniformBinning.hh"
 #include "TFile.h"
 #include "TTree.h"
 #include "TH1D.h"
@@ -87,10 +88,10 @@ void PlotSpectra(std::string filename, std::string expectedLayout="", std::strin
       for(int j=0; j<(*EDep).size();j++ ){
 
 	if(isWithin( VolCentroidMap,(*X_Vertex)[j],(*Y_Vertex)[j],(*Z_Vertex)[j],(*VolNum)[j] )){
-	  alphaplot_cut->Fill( (*EDep)[j]*1000 );
+	  FillSpectrum(*alphaplot_cut,(*EDep)[j]*1000);
 	}//chiudo if within the volume
 
-	alphaplot->Fill( (*EDep)[j]*1000 ); 
+	FillSpectrum(*alphaplot,(*EDep)[j]*1000);
 	
       }//chiudo for on vector
     }//chiudo if on e-
@@ -99,10 +100,10 @@ void PlotSpectra(std::string filename, std::string expectedLayout="", std::strin
       for(int j=0; j<(*EDep).size();j++ ){
 
 	if(isWithin( VolCentroidMap,(*X_Vertex)[j],(*Y_Vertex)[j],(*Z_Vertex)[j],(*VolNum)[j] )){
-	  betaplot_cut->Fill( (*EDep)[j]*1000 );
+	  FillSpectrum(*betaplot_cut,(*EDep)[j]*1000);
 	}//chiudo if within the volume
 
-	betaplot->Fill( (*EDep)[j]*1000 ); 
+	FillSpectrum(*betaplot,(*EDep)[j]*1000);
 	
       }//chiudo for on vector
     }//chiudo if on e-

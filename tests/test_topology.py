@@ -154,7 +154,7 @@ def make_campaign(path, layout, model='cygno-300elj-v2', gas_bkg=False):
     inputs=[]
     for index,row in enumerate(matrix['contributions']):
         # Different per-row efficiencies are essential to test weighted categories.
-        groups=copy.deepcopy(full if index%3==0 else [group(x=40),group(event=1)] if index%3==1 else [])
+        groups=copy.deepcopy(full if index%3==0 or row['id']=='Gas_C14' else [group(x=40),group(event=1)] if index%3==1 else [])
         tracks=[]; previous=-1; group_index=0
         for g in groups:
             if g.event!=previous: group_index=0
@@ -301,6 +301,39 @@ class CppTopologyTests(unittest.TestCase):
         self.assertNotEqual(run.returncode,0)
         self.assertFalse(rejected.exists())
 
+    def test_gas_chain_metadata_requires_literal_null_and_pb210(self):
+        campaign=self.root/'gas-json-campaign'
+        geom,inputs=make_campaign(campaign,'cygno-11x7-v1','cygno-copper-cathode-v4',gas_bkg=True)
+        original=rt.read(campaign/'matrix.json')
+        # Keep both snapshots consistent so rejection must come from scientific validation.
+        cases=[('Gas_C14',value) for value in ({},[], '', 'null',False,0,{'Z':7,'A':14,'name':'N14'})]
+        cases += [('Gas_C14','missing'),('Gas_Rn222',None),
+                  ('Gas_Rn222',{'Z':82,'A':210,'name':'Bi210'})]
+        for index,(contribution,value) in enumerate(cases):
+            with self.subTest(contribution=contribution,value=value):
+                matrix=copy.deepcopy(original)
+                row=next(r for r in matrix['contributions'] if r['id']==contribution)
+                if value=='missing': row.pop('stop_before')
+                else: row['stop_before']=value
+                rt.save(campaign/'matrix.json',matrix)
+                document=rt.read(campaign/'campaign.json');document['identity']['matrix']=matrix
+                rt.save(campaign/'campaign.json',document)
+                output=self.root/f'gas-json-rejected-{index}'
+                run=subprocess.run([str(self.binary),str(campaign),str(output)],capture_output=True,text=True)
+                self.assertNotEqual(run.returncode,0,run.stdout+run.stderr)
+                if contribution=='Gas_C14' and value!='missing':
+                    self.assertIn('C14 must reach stable N14',run.stderr)
+                self.assertFalse(output.exists())
+        rt.save(campaign/'matrix.json',original)
+        document['identity']['matrix']=original;rt.save(campaign/'campaign.json',document)
+        snapshots={p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()}
+        output=self.root/'gas-json-valid'
+        self.run_analysis(campaign,output)
+        self.check_output(output,[(row,scale,*oracle(groups,geom)) for row,scale,groups in inputs],1.)
+        with uproot.open(output/'analysis.root') as file:
+            self.assertEqual(str(file['provenance/matrix.json']),(campaign/'matrix.json').read_text())
+        self.assertEqual(snapshots,{p:p.read_bytes() for p in snapshots})
+
     def check_output(self, output, expected, coincidence):
         for name in ('figure7.5','figure7.6','figure_multivolume_veto','figure_multisite_veto'):
             for ext in ('png','pdf'): self.assertGreater((output/(name+'.'+ext)).stat().st_size,100)
@@ -312,11 +345,15 @@ class CppTopologyTests(unittest.TestCase):
             self.assertEqual(f['provenance/CoincidenceWindow_ns'].member('fVal'),coincidence)
             self.assertEqual(f['provenance/MultisiteDistance_mm'].member('fVal'),10.)
             new=f['SelectionEnergyWindows'].arrays(library='np'); old=f['ExactEnergyWindows'].arrays(library='np')
+            normalization=f['Normalization'].arrays(library='np')
             self.assertEqual(len(new['Count']),len(expected)*4*6);self.assertEqual(len(old['Count']),len(expected)*2*6)
             categories=CATEGORIES + (('Gas C14','Gas Rn222') if any(row['component']=='Gas' for row,*_ in expected) else ())
             rates=np.zeros((4,len(categories))); raw_counts=np.zeros_like(rates)
             hist=np.zeros((4,len(categories),902)); variance=np.zeros_like(hist)
             for row,scale,counts,bins in expected:
+                mask=normalization['Contribution']==row['id']
+                self.assertEqual(normalization['Scale'][mask].tolist(),[scale])
+                self.assertEqual(normalization['Activity'][mask].tolist(),[row['activity']])
                 c=categories.index(row['category'])
                 for cut,selection in enumerate(SELECTIONS):
                     np.testing.assert_array_equal(f['contributions/'+row['id']+'/raw_'+selection].values(flow=True),bins[cut])

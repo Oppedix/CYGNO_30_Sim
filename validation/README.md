@@ -38,6 +38,14 @@ to the fresh build when running optional tests outside their CTest wrappers.
 The external World expands to enclose the GPS sphere; detector placements are
 identical. Source/geometry/model hashes and matrix pairing prevent relabeling.
 
+For ROOT API regressions, run the [ROOT compatibility checks](../docs/ROOT_COMPATIBILITY.md)
+in **both 6.30.02 and 6.40.x**. They compile and execute the production internal
+and external analyzers, all four reference programs and the per-volume macro;
+the reference compatibility test needs no Geant4 build. It checks every 900/1200
+bin edge and adjacent float against the canonical convention, plus category
+sums, variances, entries and energy moments. Gas metadata tests reject missing
+or non-null C14 endpoints and incorrect Rn222 endpoints before output publication.
+
 The full four-case internal production preflight is a separate environment gate;
 PART122 is a failure, never a waiver. See [v4 execution results](../docs/V4_VALIDATION.md)
 and [production gates](../docs/TWO_STAGE_VALIDATION.md). Historical evidence is

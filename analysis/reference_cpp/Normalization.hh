@@ -2,6 +2,7 @@
 #define CYGNO_NORMALIZATION_HH
 // Study inputs are supplied explicitly; no geometry-dependent mass defaults.
 #include "FileIdentity.hh"
+#include "UniformBinning.hh"
 #include "TH1D.h"
 #include "THStack.h"
 #include <cmath>

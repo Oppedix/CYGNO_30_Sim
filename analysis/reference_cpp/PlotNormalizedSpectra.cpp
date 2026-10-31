@@ -114,7 +114,7 @@ int main(int argc, char** argv) try {
 	  const bool fiducial=isWithin( VolumeMap,(*X_Vertex)[0],(*Y_Vertex)[0],(*Z_Vertex)[0],(*VolNum)[0] );
           windows.Observe(totEdep,fiducial);
           if(fiducial){
-	    temp_histocut->Fill( totEdep );
+	    FillSpectrum(*temp_histocut,totEdep);
 	  }//chiudo if within the volume  
 
 	  if(totEdep>10){
@@ -127,7 +127,7 @@ int main(int argc, char** argv) try {
 
 	  }
 	  
-	  temp_histo->Fill(totEdep); 
+	  FillSpectrum(*temp_histo,totEdep);
 	  totEdep=0;
 	  
 	}//chiudo if on e-	

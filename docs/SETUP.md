@@ -134,6 +134,9 @@ instructions, then follow the complete
 [external analyzer](../external/analysis/common_c++/README.md#compile) recipe.
 **ROOT 6.30.02 on CNAF needs both `-lRooFitHS3` and
 `-lRooFitJSONInterface`; tested ROOT 6.40.04 provides JSON through HS3 alone.**
+6.30.02 remains a required supported version. Compile and run the
+[cross-version regression checks](ROOT_COMPATIBILITY.md) after changing C++
+analysis or ROOT installations; a successful newer-version build is insufficient.
 No ROOT activation path is assumed. Geant4 is unnecessary for either analyzer.
 
 For simulation, source `$G4LAB/activate.sh` and use

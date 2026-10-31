@@ -12,6 +12,9 @@ setup), separate from stored campaign inputs in `CYGNO_RUNS`.
 This compilation is separate from the common Geant4 build. No Geant4, Python,
 CMake or extra JSON package is needed; minimal ROOT without RooFit/HS3 is
 insufficient. The source uses the existing ROOT JSON/typed-leaf idiom.
+ROOT **6.30.02 and 6.40.x** are supported. Both gamma and neutron analyzer
+execution, Python parity and compilation on 6.30.02/6.40.04 are covered in the
+[cross-version validation record](../../../docs/ROOT_COMPATIBILITY.md).
 
 For **ROOT 6.30.02 on CNAF**, link both JSON libraries:
 

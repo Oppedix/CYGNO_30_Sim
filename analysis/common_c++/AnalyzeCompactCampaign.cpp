@@ -634,7 +634,9 @@ int main(int argc, char** argv) try {
                     row["full_chain"].val_bool() && row["equilibrium_daughters"].num_children() == 0 &&
                     row["chain_policy"].val() == (carbon ? "single-parent" : "short-chain-to-Pb210"),
                     "Changed gas activity/chain assumption");
-            if (carbon) require(row["stop_before"].is_null(), "C14 must reach stable N14");
+            // writeJSON is available in ROOT 6.30; distinguish null from empty containers/strings.
+            if (carbon) require(row.has_child("stop_before") && jsonText(row["stop_before"]) == "null",
+                                "C14 must reach stable N14");
             else require(integer(row["stop_before"]["Z"]) == 82 && integer(row["stop_before"]["A"]) == 210 &&
                          row["stop_before"]["name"].val() == "Pb210", "Radon must stop before Pb210");
             const auto& provenance = matrix["provenance"]["gas"][isotope];

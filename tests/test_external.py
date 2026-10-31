@@ -35,9 +35,10 @@ def records():
                               (0,2,'F19',.001,1),(1,1,'gamma',0,0),(2,1,'proton',.4,0),(3,1,'e-',1.,0)]]
 
 
-def fixture(folder,mode='both',layout='cygno-11x7-v1',model='cygno-acrylic-v3'):
+def fixture(folder,mode='both',layout='cygno-11x7-v1',model='cygno-acrylic-v3',particle='gamma'):
     folder.mkdir();attempt=folder/'attempt-0002';attempt.mkdir()
-    cfg=load(CONFIG)|dict(primaries=5,output_mode=mode,layout=layout)
+    config=CONFIG if particle=='gamma' else rt.REPO/'external/config/hall-c-neutron-wulandari-proxy.json'
+    cfg=load(config)|dict(primaries=5,output_mode=mode,layout=layout)
     if model is None:cfg.pop('model') # original pre-model v2 campaign
     else:cfg['model']=model
     actual_model=cfg.get('model','cygno-300elj-v2')
@@ -220,9 +221,14 @@ class ExternalRootTests(unittest.TestCase):
     def tearDownClass(cls):cls.tmp.cleanup()
 
     def test_native_root_matches_python_and_rejects_mixed_identity(self):
-        for layout,mode,model in [('legacy-25x3','compact',None),('cygno-11x7-v1','both','cygno-acrylic-v3'),('cygno-5x5x3-v1','compact','cygno-300elj-v2')]:
-            with self.subTest(layout=layout),tempfile.TemporaryDirectory() as tmp:
-                root=Path(tmp);c,data,_,_=fixture(root/'campaign',mode,layout,model)
+        cases=[('legacy-25x3','compact',None,'gamma'),
+               ('cygno-11x7-v1','both','cygno-acrylic-v3','gamma'),
+               ('cygno-5x5x3-v1','compact','cygno-300elj-v2','gamma')]
+        cases += [('cygno-11x7-v1',mode,'cygno-copper-cathode-v4',particle)
+                  for mode in ('compact','both') for particle in ('gamma','neutron')]
+        for layout,mode,model,particle in cases:
+            with self.subTest(layout=layout,mode=mode,model=model,particle=particle),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp);c,data,_,_=fixture(root/'campaign',mode,layout,model,particle)
                 python=analyze(root/'campaign',root/'python')
                 result=subprocess.run([str(self.exe),str(root/'campaign'),str(root/'cpp')],capture_output=True,text=True)
                 self.assertEqual(result.returncode,0,result.stderr)

@@ -68,8 +68,14 @@ c++ -O3 -std=c++17 -ffp-contract=off \
   -o "$CYGNO_ANALYSIS_BIN/AnalyzeCompactCampaign"
 ```
 
-The 6.30.02 command was previously verified on CNAF; 6.40.04 was tested with
-Apple Clang. Use the compiler/standard compatible with your ROOT installation;
+ROOT **6.30.02 is a required supported baseline**, alongside **6.40.x**.
+The current sources were compiled and executed with 6.30.02 (official Linux
+container, GCC 11.4) and 6.40.04 (macOS, Apple Clang 21); see the
+[cross-version validation record](../../docs/ROOT_COMPATIBILITY.md).
+C14 requires an explicit JSON `stop_before: null`, checked through ROOT 6.30's
+`has_child()` and `writeJSON()` APIs. Missing keys, empty objects/arrays, strings,
+booleans and numbers are rejected; Rn222 still requires stop-before-Pb210.
+Use the compiler/standard compatible with your ROOT installation;
 `root-config --cflags` supplies its flags. The source requires
 `RooFit/Detail/JSONInterface.h` and matching RooFit JSON libraries; minimal ROOT
 without HS3 is insufficient. `RooFit::Detail::JSONTree` is a ROOT **Detail**
