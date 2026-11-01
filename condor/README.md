@@ -1,386 +1,216 @@
-# CNAF: run the existing campaigns through HTCondor
+# CNAF CYGNO submissions: frozen external replicas
 
-One vanilla job owns one complete campaign. `run.sh` activates the worker's
-environment, checks shared paths/write access, then `exec`s the unchanged Python
-runner. There is no splitting, merging, packaging or additional campaign manager.
-All four campaigns use `cygno-copper-cathode-v4`, `cygno-11x7-v1` and compact ROOT.
-
-| Submit file | Primaries | Output directory under `/cnaf/cygno-sim/Users/goppedis/SolarNu` |
-|---|---|---|
-| `internal-no-gas.sub` | 1,000,000 × 23 contributions; `--gas-bkg no` | `internal-no-gas-v4-11x7-1M` |
-| `internal-with-gas.sub` | 1,000,000 × 25 contributions; `--gas-bkg yes` | `internal-with-gas-v4-11x7-1M` |
-| `external-gamma.sub` | 1,000,000; existing Hall C gamma proxy, copper20 | `external-gamma-v4-11x7-1M` |
-| `external-neutron.sub` | 1,000,000; existing Hall C neutron proxy, copper20 | `external-neutron-v4-11x7-1M` |
-
-The storage mount is only the campaign-data destination. Source, software,
-builds, Condor logs/config copies and analysis output belong to the private
-workspace:
-
-| Purpose | Path |
-|---|---|
-| Workspace | `/private/SolarNu/MC30/geant4-private` (`G4LAB`) |
-| Checkout | `$G4LAB/projects/CYGNO_30_Sim` |
-| Common build | `$G4LAB/build/cygno-common-11.3.1-linux` |
-| Geant4 activation | `$G4LAB/activate.sh` |
-| Geant4 installation | `$G4LAB/software/geant4-11.3.1-serial` |
-| Condor logs / external config copies | `$G4LAB/runs/condor-logs` / `$G4LAB/runs/condor-config` |
-| Analysis binaries / output parent | `$G4LAB/build/root-analysis` / `$G4LAB/runs` |
-| Campaign data (ROOT, manifests, provenance) | `/cnaf/cygno-sim/Users/goppedis/SolarNu` |
-
-The build subdirectory is the convention in [common setup](../docs/SETUP.md),
-not a claim about an existing binary. If yours differs, change `build_dir` in
-`site.conf` and `CYGNO_BUILD` below to the directory containing **both**
-`rdecay01` and `geometry_quantities`. `src/` and `tools/` stay in the workspace;
-neither is the detector checkout.
-
-## 1. Establish the CNAF paths and software
-
-Start in a **Bash terminal in Jupyter**. The historical `CYGNO-MC` notes establish
-neither this repository's worker environment nor native scheduler access. Their
-Python 3.9.12 is too old: this repository needs **Python ≥3.10**, Git, CMake ≥3.16,
-a C++17 compiler and Geant4 11 with matching datasets. No CERN ROOT, PyROOT or
-Python analysis packages are needed for simulation. Use a site-qualified Linux
-Geant4 installation; the full internal radioactive-decay gate must pass there.
-The historical Geant4 11.2 setup is not evidence that this application's gate or
-all its required datasets will work.
-
-Confirm CNAF's native submit host/schedd, compatible worker OS/container,
-credentials, accounting requirements and maximum job wall time. Put the supplied
-Condor settings in `site.conf`. The job sources `$G4LAB/activate.sh` and resolves
-`python3` in that environment; its Python ≥3.10 check fails visibly if necessary.
-Set `python` to another interpreter path in `site.conf` if activation selects an
-older version.
-An activation script must work in noninteractive Bash, set the executable/library
-search paths and matching Geant4 datasets, and fail if activation fails. It may
-source the site's setup and modules; a Jupyter-only `cygno_setup` alias is not
-available in the job. Do not inherit Jupyter's entire environment.
-
-This setup deliberately uses **shared files**, with `should_transfer_files = NO`.
-The checkout (including `.git` and relative symlinks), build, activation script,
-Python and external config files must be reachable in the configured worker
-environment. In particular, `/private/...` must be visible to workers as well as
-the submit/build host; its existence in a Jupyter terminal alone is insufficient.
-Shared libraries and datasets must also be readable there.
-The runner checks effective dataset paths and hashes their contents, including
-G4NDL for neutrons. An environment probe alone can take time for these hashes.
-
-The requested `/cnaf/...` output path has **not been verified by a real CNAF batch
-execution as part of this integration**. Jupyter historically used
-`/jupyter-workspace/cnaf-storage/...`; that alias does not establish a `/cnaf`
-mount on workers. Confirm the mapping with CNAF. If Jupyter cannot see the same
-absolute paths, use its terminal to connect to the approved submit/build host
-with those mounts before continuing. Do not simply point jobs at a Jupyter-local
-`/jupyter-workspace/private` checkout. This shared-file setup needs mounts/OS
-selection supplied by CNAF; it does not deploy software or mount storage.
-
-## 2. Clone/update and compile once
-
-These commands use the defaults from `site.conf`. Change the paths there if CNAF
-requires another shared source/build location, and use those same paths here.
+This replaces the former native Condor workflow. It follows the three historically
+working supplied scripts: `prepare_condor_assets.sh`, `run_geant4_worker.sh`, and
+`subber_geant4.sh`. Submission **only** uses:
 
 ```bash
-bash
-export CYGNO_CNAF=/cnaf/cygno-sim/Users/goppedis/SolarNu
+source /cvmfs/sft-cygno.infn.it/config/lib/subcreator.sh
+source /cvmfs/sft-cygno.infn.it/config/cygno_htc -s "$CONFOUTPATH/sub" "$CE"
+```
+
+There are no `.sub` files, `site.conf`, native scheduler commands or mounted-worker
+workspace assumptions. The site interface deliberately spells the bucket `BACKET`.
+**Submit from a fresh CYGNO Jupyter terminal without running `cygno_setup`.**
+Compiling/freezing assets is a separate terminal with the Geant4 environment active.
+All commands below are instructions for CNAF, not evidence of a live submission.
+
+## 1. Compile and prepare once: Geant4 terminal
+
+Use the Ubuntu 22.04 / CYGNO:v3.0 environment, actual custom **serial Geant4
+11.3.1**, and Python >=3.10. In this terminal only:
+
+```bash
 export G4LAB=/private/SolarNu/MC30/geant4-private
+source "$G4LAB/activate.sh"
 export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
 export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
-export CYGNO_ANALYSIS_BIN="$G4LAB/build/root-analysis"
-export CYGNO_ANALYSIS_RUNS="$G4LAB/runs"
-mkdir -p "$G4LAB/projects" "$G4LAB/runs/condor-logs"
-cd "$G4LAB/projects"
-git clone --branch main https://github.com/Oppedix/CYGNO_30_Sim.git "$CYGNO_SRC"
-```
-
-For an **existing** checkout, use this instead of cloning; save local work before
-updating. Never update source or rebuild while campaigns are running or awaiting
-an identical retry.
-
-```bash
 cd "$CYGNO_SRC"
-git status --short
 git switch main
 git pull --ff-only origin main
+cmake -S . -B "$CYGNO_BUILD" \
+  -DGeant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4" \
+  -DWITH_GEANT4_UIVIS=OFF -DCYGNO_BUILD_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities -j2
+export CYGNO_ASSETS="$G4LAB/condor-assets"
+export CYGNO_TIMEOUT_SECONDS=2592000  # runner limit, 30 days; NOT a scheduler request
+bash condor/prepare_condor_assets.sh
+(cd "$CYGNO_ASSETS" && sha256sum -c submission-assets.sha256)
+du -sh "$CYGNO_ASSETS"
 ```
 
-Activate the private Linux software and build with the documented installation:
+Adjust the Geant4 installation directory to the actual serial installation if
+needed. Preparation refuses dirty source, missing/stale/foreign executables,
+non-Linux binaries, a multithreaded build and any version other than 11.3.1.
+It initializes the existing application for an environment probe, **without
+transport primaries**, and records receipts, linked libraries and effective data.
+It freezes tracked source plus the true originating Git record, the two Linux
+executables, non-system linked libraries and every resolved Geant4 dataset.
+Only runner timeouts change in copies of the canonical Hall C gamma/neutron
+configs. Physics, spectra, fluxes, radius convention, v4 geometry, copper20,
+11x7 and compact output stay unchanged. No old LIME/CYGNO04 geometry is used.
+The assets directory must be **new and outside source**. Never edit it; prepare
+a new directory for a different build/configuration. Keep it until jobs finish.
+
+The executable worker shell is also frozen and checksummed. `OTHERFILE` transfers
+`worker-assets.tar`; `EXECUTEPATH`/`EXECUTE` transfer that frozen worker shell.
+Source snapshots use `.frozen-source.json` instead of a fabricated Git repository;
+the existing runner verifies every original source checksum and records that
+original provenance in each campaign. No new simulation engine is introduced.
+
+## 2. Submit nine billion-primary replicas: fresh submission terminal
+
+Open a **new** CYGNO Jupyter terminal. **Do not source `activate.sh` or run
+`cygno_setup` in this terminal.** Use the Jupyter Python and the existing site
+submission environment, not the Geant4 build environment.
 
 ```bash
-export CYGNO_G4_SETUP="$G4LAB/activate.sh"
-export CYGNO_PYTHON=python3
-source "$CYGNO_G4_SETUP"
-export Geant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
-"$CYGNO_PYTHON" -c 'import sys; assert sys.version_info >= (3,10); print(sys.version)'
-geant4-config --version
-cmake -S "$CYGNO_SRC" -B "$CYGNO_BUILD" -DCMAKE_BUILD_TYPE=Release \
-  -DWITH_GEANT4_UIVIS=OFF -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
-  -DGeant4_DIR="$Geant4_DIR"
-cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities --parallel 2
+export G4LAB=/private/SolarNu/MC30/geant4-private
+cd "$G4LAB/projects/CYGNO_30_Sim"
+export CYGNO_ASSETS="$G4LAB/condor-assets"
+export CYGNO_SUBMISSIONS="$G4LAB/condor-submissions"
+# Optional: inspect the real original seed before sending anything.
+# export CYGNO_EXISTING_CAMPAIGN=/cnaf/cygno-sim/Users/goppedis/SolarNu/ACTUAL_ORIGINAL_1B
+bash condor/submit_replicas.sh gamma 9 1000000000
+# Optional CE selection: append 3 instead of the default 2.
 ```
 
-Compile on the site-approved Linux build host/container compatible with execution
-nodes. Do not reuse a macOS binary. The worker smoke test below is the check for
-binary/library/dataset accessibility and compatibility, not a successful Jupyter
-build alone.
+This submits **nine independent one-CPU jobs**, named
+`external-gamma-v4-11x7-1B-set01-r01` through `-r09`, using deterministic base
+seeds **730000001..730000009**. The actual two Ranecu seeds are generated by the
+existing runner's `seeds_for(seed, source_id)` and saved in each macro. Each job
+runs one transport process (plus the unchanged initialization/identity probes).
+After the site accepts the jobs, the laptop and Jupyter terminal need not stay open.
 
-## 3. Edit one settings file; set the external timeout before starting
+The original CNAF 1B metadata was unavailable during local development. With
+`CYGNO_EXISTING_CAMPAIGN` set, the launcher rejects a base-seed overlap before
+submission. The joiner also checks actual derived seed overlap and scientific
+identity. **If the original cannot be verified, exclude it and join the nine new
+campaigns (9B), or launch ten new replicas for 10B.** Never assume the old seed.
 
-Edit **`condor/site.conf`**. It uses HTCondor syntax, not shell syntax; do not
-`source` it. Check `workspace`, `source_dir`, `build_dir`, `output_parent`,
-`log_dir` and `g4_setup`; `python` is a command resolved after activation or an
-absolute interpreter path. Set `internal_jobs` and memory as described below.
-Add only the actual CNAF requirements/accounting/container/wall-time settings.
-Paths containing literal quotes are not supported by this simple template.
-Finish these edits before starting campaigns: `site.conf` itself is included in
-the runners' source provenance. Keep it unchanged for subsequent retries; use
-command-line resource overrides instead of editing it after a campaign starts.
-
-Both supplied external JSON configs have **`timeout_seconds: 3600`**, a per-attempt
-transport timeout, not the queue wall time. For million-primary runs, make
-timeout-only copies **outside the checkout**, before the first smoke/production
-submission. This example uses seven days per external attempt; measure smoke
-throughput and choose an appropriate value and compatible site wall time.
+For later batches use both a new prefix and a disjoint seed base, for example:
 
 ```bash
-"$CYGNO_PYTHON" - "$CYGNO_SRC" "$G4LAB/runs/condor-config" <<'PY'
-import json, sys
-from pathlib import Path
-src, dest = map(Path, sys.argv[1:])
-dest.mkdir(parents=True, exist_ok=True)
-for name in ('hall-c-gamma-2026-proxy.json', 'hall-c-neutron-wulandari-proxy.json'):
-    cfg = json.loads((src/'external/config'/name).read_text())
-    cfg['timeout_seconds'] = 604800
-    with (dest/name).open('x') as f:  # refuses to overwrite an existing config
-        json.dump(cfg, f, indent=2)
-        f.write('\n')
-PY
+CYGNO_REPLICA_PREFIX=external-gamma-v4-11x7-1B-set02 \
+CYGNO_SEED_BASE=730001000 bash condor/submit_replicas.sh gamma 9 1000000000 2
 ```
 
-`site.conf` already points at these copies in `$G4LAB/runs/condor-config`.
-If you prepared equivalent copies previously, check their contents and point
-`gamma_config` / `neutron_config` at them instead of overwriting them.
-
-Keep their Hall C spectra, fluxes, shielding, layout and model unchanged. Internal
-`cygno-11x7-v4.json` already has a 604800-second timeout **per contribution**.
-With `--jobs 1`, a whole internal campaign can take much longer than one
-contribution: request a suitable site wall-time class. Queue limits can still
-interrupt a campaign before the runner timeout. No wall-time class is invented
-here. Timeout changes are part of identity; do not change configs during a retry.
-Choose a new output tag/directory when changing an existing campaign's identity.
-
-Create the configured log directory **outside the checkout**, visible to the
-submit host, so logs never enter the runners' source snapshots:
+For one explicit new replica (also useful for still-unsubmitted members after a
+partial failure):
 
 ```bash
-mkdir -p "$G4LAB/runs/condor-logs"
-cd "$CYGNO_SRC/condor"
-command -v condor_submit
-condor_version
+bash condor/subber_geant4.sh gamma external-gamma-v4-11x7-1B-extra01 1000000000 730002001 2
 ```
 
-## 4. Check submission syntax and run small campaigns on workers
+The launcher prints name, seed, primary count, CE, asset hash, image and exact
+S3 destination, followed by the **verbatim site response/job identifier**. It
+saves these under `$CYGNO_SUBMISSIONS/NAME/{request.txt,submission.log,submitted.txt}`.
+Names **and seeds** are reserved atomically before contacting the site. A repeated
+command refuses the reservation. On any failure the replica loop stops and reports
+how far it got; already submitted jobs remain independent. A random destination
+leaf also avoids overwriting old S3 outputs if another host loses its ledger.
+Do not delete reservations or blindly rerun after a timeout/ambiguous failure.
+Inspect the queue and response first. Submit only definitely unsubmitted replicas
+with unused names/seeds; ambiguous submissions need site investigation.
 
-All `condor_*` commands here are **native HTCondor**. If unavailable or unable to
-contact a schedd, obtain CNAF's native submit access first. Historical
-`cygno_htc -m 2` / `cygno_htc -r JOBID 2` are site-specific monitoring/removal
-examples from another repository; they are not substitutes for these submissions.
-Do not feed these files to the old CYGNO-MC submission wrapper without CNAF
-confirming that it can execute this shell entry point and honor these resources.
+`CPUs=1` is the only verified resource request in the supplied site interface.
+Memory/disk/wall-time requests were **not** documented there: this implementation
+does not invent variables for them. Confirm the site's default memory, scratch,
+maximum file/transfer sizes and wall time accommodate 1B primaries, or obtain the
+actual supported site settings. The 30-day runner timeout does not extend a batch
+wall-time limit. Frozen datasets/libraries can be large. Worker scratch needs the
+input archive, unpacked assets, campaign, and an uncompressed campaign tar
+(approximately twice campaign size plus assets). No smoke submission is required.
+
+`CYGNO_WORKER_IMAGE` can select a site-provided image; the historical default is
+`/cvmfs/sft-cygno.infn.it/dockers/images/cygno-wn_v2.4.sif`. That old image is **not
+assumed compatible**. The frozen libraries/datasets travel with the job; the
+image must supply working Linux ABI/system libraries, Bash, tar, sha256sum, ldd
+and Python >=3.10. Every real worker verifies SHA256, dependency resolution,
+architecture, actual Geant4 version, compiled source/geometry and dataset contents
+against the preparation observations. No private paths or alternate Geant4
+versions are silently substituted. An image failure is a production failure with
+explicit diagnostics, not permission to change physics.
+
+External neutron replicas use the same command with `neutron` and the canonical
+Hall C neutron config. Internal local/cluster runner workflows remain available
+unchanged. This transfer submission path supports external gamma/neutron only;
+it does not advertise internal campaigns without their full decay-preflight and
+multi-contribution transfer design.
+
+## 3. Monitor, retrieve diagnostics, cancel
+
+From the fresh submission terminal, for CE 2:
 
 ```bash
-cd "$CYGNO_SRC/condor"
-bash -n run.sh
-# Optional local dispatch self-check: no Geant4 or scheduler needed.
-"$CYGNO_PYTHON" ../validation/test_condor.py
-for file in internal-no-gas.sub internal-with-gas.sub external-gamma.sub external-neutron.sub; do
-  condor_submit -dry-run "$G4LAB/runs/condor-logs/$file.ad" "$file"
-done
-# Inspect generated ClassAds: command, environment, CPU, memory and requirements.
-cat "$G4LAB/runs/condor-logs/internal-with-gas.sub.ad"
-
-# Four separate SMALL campaigns, never the production directories.
-# Keep this tag to repeat exactly the same smoke command later.
-smoke_tag=smoke-$(date +%Y%m%d-%H%M%S)
-for file in internal-no-gas.sub internal-with-gas.sub external-gamma.sub external-neutron.sub; do
-  condor_submit "$file" primaries=2 tag="$smoke_tag" internal_jobs=1
-done
+cygno_htc -m 2
+cygno_htc -f JOBID 2
+cygno_htc -r JOBID 2
 ```
 
-Wait for all four to finish. The `.out` logs identify the worker, Git revision,
-Python version, successful output-parent write probe and exact runner command.
-The real runs verify source/build/library/dataset access; the internal runs retain
-the full four-case decay preflight even at two primaries. The gas-enabled smoke
-also actually runs C14 and **Rn222** contributions. Inspect its preflight and
-per-contribution logs; a failed preflight or gas contribution must remain failed.
-Do not disable the gate or accept a ROOT file alone as success. Use section 8
-with `CYGNO_CHECK_TAG="$smoke_tag"` and `CYGNO_CHECK_PRIMARIES=2` to validate all
-four smoke campaigns before submitting production. Smoke statistics do not
-establish physical validity or a reliable full-run wall-time estimate.
+Replace JOBID with the identifier in the saved site response. For another CE use
+that CE as the final argument. These are the documented site commands; no other
+`cygno_htc` flags are assumed. A successful submission/absence from the queue is
+not campaign completion or proof of an S3 upload.
 
-## 5. Submit the four production campaigns
+First-production diagnostics: SHA failure means changed/corrupt transferred
+assets; `not found`/GLIBC/GLIBCXX/loader/ELF errors mean image/system ABI; Python
+version errors mean the image interpreter is too old; environment/compiled-hash/
+geometry errors mean an incompatible build; dataset mismatch means wrong/corrupt
+data. Runner failures retain normal receipts, logs, probes and failed status in
+worker scratch; retrieve site stdout/stderr with `-f`. Only **completed validated
+campaigns** are packaged, so failed jobs have no declared success archive. Site
+scratch retention after failure/eviction is unknown; do not promise those local
+files survive. Correct assets/image in a new preparation directory and use new
+names/seeds; never relabel failed work as complete.
 
-From `condor/`, with the configured defaults `primaries = 1000000`, `tag = 1M`:
+## 4. Locate S3 outputs and restore safely on CNAF
+
+Outputs declared in `FILENAMES` are `NAME.tar` and `NAME.tar.sha256`, containing the
+**entire campaign**, not just a ROOT file. Packaging verifies the tar's complete
+SHA256 inventory. It uses no compression (ROOT data are already compressed).
+Both upload completion and restoration verification are required.
+
+`request.txt` records the requested destination:
+`s3://cygno-sim/Users/goppedis/SolarNu/NAME/RANDOM_LEAF/` by default. The exact site
+upload response is authoritative if the site appends another prefix. The scripts
+do **not** establish that S3 key `K` is mounted at `/cnaf/cygno-sim/K`. Verify that
+mapping with site documentation or matching archive and sidecar bytes at both
+locations. Do not derive a mount path merely by changing `s3://` to `/cnaf/`.
+
+With an **already configured and authorized S3 client**, these are standard
+[AWS CLI list](https://docs.aws.amazon.com/cli/latest/reference/s3/ls.html) and
+[download](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html) operations,
+not new site commands. No credential setup is guessed. In a data/analysis terminal:
 
 ```bash
-condor_submit internal-no-gas.sub
-condor_submit internal-with-gas.sub
-condor_submit external-gamma.sub
-condor_submit external-neutron.sub
+export G4LAB=/private/SolarNu/MC30/geant4-private
+cd "$G4LAB/projects/CYGNO_30_Sim"
+export STORE=/cnaf/cygno-sim/Users/goppedis/SolarNu
+export DOWNLOADS="$STORE/replica-transfers-set01"
+mkdir "$DOWNLOADS"  # a new directory; do not reuse old downloads
+endpoint=https://s3.cr.cnaf.infn.it:7480/
+# Paste the actual destination recorded for r01, including its random leaf:
+S3_DEST='s3://cygno-sim/Users/goppedis/SolarNu/NAME/ACTUAL_LEAF/'
+name=external-gamma-v4-11x7-1B-set01-r01
+aws --endpoint-url "$endpoint" s3 ls "$S3_DEST"
+aws --endpoint-url "$endpoint" s3 cp "${S3_DEST}${name}.tar" "$DOWNLOADS/$name.tar"
+aws --endpoint-url "$endpoint" s3 cp "${S3_DEST}${name}.tar.sha256" "$DOWNLOADS/$name.tar.sha256"
+python3 condor/campaign_transfer.py restore "$DOWNLOADS/$name.tar" "$STORE/$name"
 ```
 
-Or submit all four with ordinary shell commands:
+Repeat download/restore for the other eight exact recorded destinations. If the
+mount mapping has been verified and both files are already available there,
+restore directly from that archive path without downloading a second copy.
+`restore` requires the sidecar, verifies the entire archive and internal index,
+rejects traversal/symlinks/devices/duplicate members, validates the completed
+campaign, and refuses existing output. Failure leaves a `.partial` directory for
+inspection; it never overwrites a campaign. Keep downloads until verification.
 
-```bash
-for file in internal-no-gas.sub internal-with-gas.sub external-gamma.sub external-neutron.sub; do
-  condor_submit "$file" || break
-done
-```
+## 5. Join and analyze: data/ROOT terminal
 
-Each command queues exactly one owner of its separate directory. Do not submit
-another owner while that campaign is queued, running or held. The existing
-runner lock is retained, but must not be used as scheduling. No `--archive` is
-passed and no additional archives are created. All manifests, source/config
-snapshots, probes, attempts and ROOT outputs keep their native structure.
-
-## 6. CPUs and memory
-
-`internal_jobs = 1` is the conservative default: each internal Condor job requests
-one CPU and 5120 MiB. `internal_jobs = 13` runs the unchanged runner with
-`--jobs 13`, requesting 13 CPUs and 54272 MiB (1 GiB runner allowance + 4 GiB per
-simultaneous Geant4 process). External jobs always request one CPU and 5120 MiB.
-The runner explicitly launches each Geant4 process with one worker. Four jobs at
-the default can therefore use four CPUs in total; at 13, both internal campaigns
-plus both external campaigns can use 28 CPUs.
-
-Change `internal_jobs` in `site.conf`, or override it for an individual submission:
-
-```bash
-condor_submit internal-with-gas.sub internal_jobs=13
-```
-
-Do not override `request_cpus` independently of concurrency. Memory is a starting
-budget, not a measurement; adjust `memory_per_process_mb` from observed peak
-usage and CNAF limits before increasing concurrency. Disk/I/O and source/dataset
-hashing overhead also grow. Changing only concurrency/resources on retry is
-allowed by the existing runner; changing physics/config/source/build is not.
-On retry, keep `site.conf` frozen and use, for example,
-`condor_submit internal-with-gas.sub internal_jobs=13 memory_per_process_mb=6144`.
-
-## 7. Queue, logs and retry
-
-```bash
-condor_q
-condor_q -hold
-condor_q -better-analyze JOBID       # replace JOBID with the returned cluster ID
-condor_history JOBID -af ClusterId ProcId JobStatus ExitCode ExitBySignal MemoryUsage
-ls -lt "$G4LAB/runs/condor-logs"
-tail -f "$G4LAB/runs/condor-logs/internal-with-gas-1M.JOBID.0.out"
-```
-
-Check `.out` (runner progress), `.err` (runner errors), `.log` (Condor events and
-exit/signal status), plus native `simulation.log` / `simulation.command.json`
-inside campaign attempts and probes. Nonzero exits/signals are held by
-`on_exit_hold`; absence from `condor_q` alone is not proof of success. Site
-eviction/termination can still happen; the requested SIGINT and 60-second vacate
-window allow the runner to retain interrupted attempts where site policy permits.
-
-For an interrupted/failed campaign, first establish that no old owner is active.
-For a held job, inspect the reason, fix environment/resource access **without
-changing campaign identity**, and release that same owner:
-
-```bash
-condor_release JOBID
-```
-
-Alternatively remove the old job, wait until removal completes, then repeat the
-same original `condor_submit` command (including any tag/count overrides):
-
-```bash
-condor_rm JOBID
-condor_q JOBID                    # wait until removed; check its event log too
-condor_submit internal-with-gas.sub
-```
-
-Every invocation includes the existing `--retry-failed`; internal also spells
-out `--resume`. Completed contributions are checked/reused, interrupted/failed
-ones get new numbered attempts. External retries rerun their single transport
-in a new attempt, or verify/reuse a complete campaign. Never delete manifests,
-locks or attempts to force success. Keep source (including Git revision/status),
-build path/binaries, configs, datasets and relevant environment identical.
-The internal identity includes Python/platform/environment, so heterogeneous
-workers may reject a retry: constrain the pool to an equivalent worker/container
-environment or return to the original environment. If identity really changes,
-use a fresh tag, e.g. `tag=1M-v2`; earlier output is not overwritten or relabeled.
-A failed radioactive-decay preflight cannot be repaired by `--retry-failed`:
-qualify a working environment and start a new campaign/tag; the saved failed
-gate must not be edited or bypassed.
-
-## 8. Verify completion and locate ROOT files
-
-After the queue jobs have stopped, run the repository's own validators from the
-checkout with Python ≥3.10. They check manifests, preflight, receipts, generated
-primary accounting, artifact checksums and saved provenance without running new
-transport or requiring analysis packages. This snippet also checks the requested
-model, layout, gas scenarios and statistics, and prints the selected ROOT paths:
-
-```bash
-cd "$CYGNO_SRC"
-export CYGNO_CHECK_TAG=1M CYGNO_CHECK_PRIMARIES=1000000
-# For smoke instead: export CYGNO_CHECK_TAG="$smoke_tag" CYGNO_CHECK_PRIMARIES=2
-"$CYGNO_PYTHON" - "$CYGNO_CNAF" <<'PY'
-import os, sys
-from pathlib import Path
-from study import runtime as rt
-from study.campaign import validate_campaign
-from external.study.simulate import check_campaign
-base = Path(sys.argv[1])
-tag = os.environ['CYGNO_CHECK_TAG']
-n = int(os.environ['CYGNO_CHECK_PRIMARIES'])
-for name, count, gas in [('internal-no-gas', 23, 'no'), ('internal-with-gas', 25, 'yes')]:
-    out = base/f'{name}-v4-11x7-{tag}'
-    jobs = validate_campaign(out)
-    c = rt.read(out/'campaign.json')
-    cfg = c['identity']['config']
-    assert c['coverage'] == f'{count}/{count}' and len(jobs) == count
-    assert cfg['model'] == 'cygno-copper-cathode-v4' and cfg['layout'] == 'cygno-11x7-v1'
-    assert cfg['output_mode'] == 'compact' and cfg.get('gas_bkg', 'no') == gas
-    assert cfg['primaries_per_job'] == n
-    print(name, c['status'], c['coverage'])
-    for job, root in jobs.values():
-        print(root)
-for particle in ('gamma', 'neutron'):
-    out = base/f'external-{particle}-v4-11x7-{tag}'
-    c, root = check_campaign(out)
-    cfg = c['identity']['config']
-    assert cfg['model'] == 'cygno-copper-cathode-v4' and cfg['layout'] == 'cygno-11x7-v1'
-    assert cfg['output_mode'] == 'compact' and cfg['primaries'] == n
-    assert cfg['particle'] == particle and cfg['hall'] == 'C' and cfg['shield'] == 'copper20'
-    print('external-'+particle, c['status'], c['accounting'])
-    print(root)
-PY
-```
-
-Expect **23/23**, **25/25**, and both external campaigns **complete** with
-RequestedEvents = GeneratedPrimaries = ProcessedEvents = 1000000 and AbortedEvents
-= 0. For internal campaigns these counts apply to **each** contribution.
-Validation failures exit nonzero; do not treat partial coverage as completion.
-
-Internal selected ROOT files live at
-`CAMPAIGN/jobs/CONTRIBUTION/attempt-NNNN/outfiles_V2/compact.root` (or
-`compact_t0.root`); external files at
-`CAMPAIGN/attempt-NNNN/outfiles_V2/compact.root` (or `compact_t0.root`). Use the
-manifest-selected paths printed above; a recursive file search also finds old
-failed attempts. ROOT structural/scientific analysis remains the separate
-[internal](../internal/README.md) / [external](../external/README.md) workflow.
-For analysis, keep these stored campaigns as input and write results under
-`$CYGNO_ANALYSIS_RUNS` (`$G4LAB/runs`), using a new directory for each analysis.
-For example, the gas-enabled Python analysis is:
-
-```bash
-cd "$CYGNO_SRC"
-# Activate the Python analysis environment from common setup first.
-python internal/study/analyze.py \
-  --input "$CYGNO_CNAF/internal-with-gas-v4-11x7-1M" \
-  --output "$CYGNO_ANALYSIS_RUNS/internal-with-gas-v4-11x7-1M-python-NEW"
-```
-
-HTCondor syntax reference: [official condor_submit manual](https://htcondor.readthedocs.io/en/24.0/man-pages/condor_submit.html).
+See [external/merge](../external/merge/README.md) for complete validation rules,
+original-plus-nine and new-only examples, and the compatible external analyzer
+build. Join and analysis outputs can both remain on CNAF. The original analyzer
+source stays untouched; the additional external entry point handles logical joins
+and totals greater than 2^31-1 while preserving single-campaign behavior.

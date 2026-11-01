@@ -11,9 +11,9 @@ Geant4 installation.
 |---|---|
 | `/private/SolarNu/MC30/geant4-private` | Documented private Linux Geant4 workspace, with `activate.sh` and the serial 11.3.1 installation below |
 | `$G4LAB/projects/CYGNO_30_Sim` | Documented source-checkout convention inside that private workspace |
-| `/cnaf/cygno-sim/Users/goppedis/SolarNu` | CNAF campaign storage only, including the historical `25x3Samuele-1M` input; source, builds and analysis output stay in the private workspace |
+| `/cnaf/cygno-sim/Users/goppedis/SolarNu` | CNAF campaign storage, including the historical `25x3Samuele-1M` input; source/builds stay private; joined manifests and new analysis outputs may also be stored here |
 | Build/run names below | Configurable output choices, not assertions that those directories already exist |
-| Worker access and ROOT activation | Site-specific; private Geant4 paths are documented below, but worker mount visibility, native scheduler access and a ROOT setup script still need confirmation |
+| Worker access and ROOT activation | Workers receive frozen assets and return S3 archives through the CYGNO site scripts; image ABI/Python, resource limits, S3-to-mount mapping and ROOT activation need site confirmation |
 
 ## Local workstation
 
@@ -144,9 +144,11 @@ For simulation, source `$G4LAB/activate.sh` and use
 Linux setup above. The build subdirectory is a documented configurable choice;
 set `CYGNO_BUILD` to your actual compatible build containing `rdecay01` and
 `geometry_quantities`, or compile both there. For batch jobs follow the
-[CNAF HTCondor instructions](../condor/README.md). Workers must see both the
-private workspace (source/build/software) and CNAF storage (campaign data);
-submit-host visibility does not prove worker access.
+[CNAF HTCondor instructions](../condor/README.md). The scripts transfer frozen
+assets and return complete campaign archives
+through the proven CYGNO S3 mechanism; workers do not need the private workspace
+or CNAF storage mounted. Asset preparation and fresh-terminal submission use
+separate environments as documented there.
 
 `CYGNO_RUNS` is the simulation campaign/input parent; `CYGNO_ANALYSIS_RUNS` is the
 separate analysis output parent. With this setup, analysis reads stored campaigns

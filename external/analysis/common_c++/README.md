@@ -1,5 +1,9 @@
 # Native ROOT external analysis
 
+For logical multi-campaign joins and billion-primary totals, build the
+[compatible external entry point](../../merge/README.md). It includes this
+original source unchanged and retains the same standalone invocation.
+
 ## Compile
 
 Activate the analysis machine's actual ROOT environment (`root-config` and

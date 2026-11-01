@@ -77,15 +77,19 @@ macOS neutron Cu-capture failure remains open.
 Use [the cluster recipe](docs/WORKFLOW.md#cluster-entry-point), which defines every
 wrapper variable and invokes **`external/cluster/run.sh`**. It uses the same
 build/configs and one CPU per invocation. For the private workspace and CNAF
-storage paths, use the [HTCondor guide](../condor/README.md); native queue access
-and worker mount visibility still require site confirmation.
+storage paths, use the [CNAF submission guide](../condor/README.md). The proven CYGNO site
+scripts transfer frozen assets and return S3 campaign archives; no private
+workspace or campaign mount is required on workers. For combined replicas, see
+the [logical campaign joiner](merge/README.md).
 
 ## C++ ROOT compact analysis
 
 The standalone [native ROOT guide](analysis/common_c++/README.md#compile) gives
 complete compile/run commands, including CNAF ROOT 6.30.02 and ROOT 6.40.04
 link differences. It compiles `AnalyzeExternal` separately from Geant4 into
-`CYGNO_ANALYSIS_BIN`; no Geant4 or Python is needed on the ROOT worker.
+`CYGNO_ANALYSIS_BIN`; single-campaign analysis needs no Geant4 or Python.
+For logical joins, use the [compatible external entry point](merge/README.md),
+which also checks saved input inventories with Python stdlib.
 
 Use a complete **unpacked** external compact/both campaign and a new analysis
 directory. Output: `analysis.root`, `spectra.tsv`, `windows.tsv`, `summary.txt`,

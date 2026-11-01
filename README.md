@@ -52,7 +52,7 @@ compiled separately on an analysis machine, as shown in their
 `analysis/` and validation paths; keep those links when copying the checkout.
 
 For CNAF batch submission of the existing runners, see the
-[minimal HTCondor setup](condor/README.md).
+[CNAF frozen-asset replica submissions](condor/README.md).
 
 ## Technical references
 

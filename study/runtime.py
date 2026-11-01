@@ -64,6 +64,22 @@ def compiled_source_hash():
 
 
 def source_state():
+    # A checksummed worker bundle retains the real originating Git record, without a fake .git.
+    frozen = REPO/'.frozen-source.json'
+    if frozen.exists():
+        state = read(frozen)
+        require(set(state) in ({'revision', 'branch', 'status', 'files_sha256'},
+                              {'revision', 'branch', 'status', 'files_sha256', 'worker_build'}) and
+                re.fullmatch('[0-9a-f]{40}', state['revision']) and not state['status'] and
+                bool(state['files_sha256']), 'Invalid originating frozen Git provenance')
+        for name, checksum in state['files_sha256'].items():
+            path = REPO/name
+            require(path.resolve().is_relative_to(REPO), 'Unsafe frozen source path: '+name)
+            if checksum == 'missing':
+                require(not path.is_file(), 'Unexpected frozen source file: '+name)
+            else:
+                require(digest(path) == checksum, 'Frozen source snapshot mismatch: '+name)
+        return state
     def git(*args):
         return subprocess.check_output(['git', *args], cwd=REPO).decode().strip()
     # Never read/reference-hash local_refs; the matrix already records its citation.

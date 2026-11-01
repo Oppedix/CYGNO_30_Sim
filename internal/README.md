@@ -70,8 +70,10 @@ configured model. Historical workflows are documented separately in
 Use [the cluster recipe](docs/WORKFLOW.md#cluster-entry-point), which defines every
 wrapper variable and invokes **`internal/cluster/run.sh`**. It uses the same
 build, config and production rules as above. For the private workspace and CNAF
-storage paths, use the [HTCondor guide](../condor/README.md); native queue access
-and worker mount visibility still require site confirmation.
+storage paths, see [common setup](../docs/SETUP.md). This internal cluster
+entry point still needs accessible source/build/storage. The replacement
+[CNAF transfer submitter](../condor/README.md) supports external replicas only;
+it does not submit internal multi-contribution campaigns.
 
 ## C++ ROOT compact analysis
 

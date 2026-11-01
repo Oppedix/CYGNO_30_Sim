@@ -4,6 +4,42 @@ ROOT **6.30.02 (CNAF baseline)** and **6.40.x** remain supported. This record
 concerns analysis only: detector geometry, transport/physics, activities,
 normalization, selections and existing campaign products are unchanged.
 
+## External logical joins and CNAF replacement, 2026-11-01
+
+The external-only `external/merge/AnalyzeExternal.cpp` entry point includes
+`external/analysis/common_c++/AnalyzeExternal.cpp` unchanged (SHA256
+`3c5daebfda29825a6551d76d949c9488f50f35ef8fd26be76fc8920f3ef83ec7`).
+Its standalone dispatch executes the original implementation. Logical joins
+sum per-member integer primary-event counts and normalize once by the combined
+generated-primary denominator; all original event namespaces remain separate.
+The new code uses only the established JSON `child`, `has_child`, `val` and
+serialization interfaces, keeps `-ffp-contract=off`, and introduces no `is_null`.
+Internal analysis, canonical bins and transport inputs were not modified.
+
+Actual final checks for this change:
+
+| Environment | Executed checks | Result |
+|---|---|---|
+| Local ROOT 6.40.04, macOS arm64, Apple Clang | Full offline `tests/` suite | 93 tests: 85 passed, 8 optional skips |
+| Official `rootproject/root:6.30.02-ubuntu22.04`, Linux amd64 under Docker on Apple Silicon, GCC 11.4 | `test_external_merge.py`, `test_condor.py`, `test_external.py` | 19 tests passed (6 + 6 + 7); actual original and new entry-point compilation/execution |
+
+Both versions execute the joined C++ analysis on synthetic 1B and 1.5B campaign
+denominators (2.5B total), compare all count bins, annual rates/Poisson variances
+and exact window counters against an independent Python count reference, test
+single-campaign dispatch, and reject changed originals. Python tests additionally
+cover failed/incompatible campaigns, duplicates, source/build evidence and
+checksummed safe restoration. Submission tests substitute explicitly synthetic
+site responses to check the supplied shell interface and partial-failure handling.
+All new shell entry points pass `bash -n`; Python compilation and `git diff --check`
+pass. No optional Geant4 test was enabled; no new transport was run.
+
+These tests establish local software/ROOT compatibility, **not** CNAF submissions,
+worker-image compatibility, worker Python/ABI, site resource limits, S3 upload
+limits/credentials or S3-to-Jupyter-mount mapping. No live CNAF environment was
+accessed. The original CNAF 1B campaign's seed/build remain unknown. Other
+6.40.x patch releases were not available for execution. See the
+[submission guide](../condor/README.md) and [join guide](../external/merge/README.md).
+
 ## Fixes and audit
 
 `AnalyzeCompactCampaign.cpp` used `JSONNode::is_null()`, which does not exist
