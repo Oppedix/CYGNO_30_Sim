@@ -1,9 +1,9 @@
 # Optional internal gas backgrounds
 
 `--gas-bkg yes` adds `Gas_C14` and `Gas_Rn222` to the current v4 internal
-campaign. Default `--gas-bkg no` retains the original 23 material contributions,
+campaign. Default `--gas-bkg no` uses the combined 22 material contributions,
 their seeds, macros, source activities, normalization and reporting categories.
-The enabled matrix is `cygno-radioassay-v4-gas-v1`: 25 contributions, ten physical
+The enabled matrix is `cygno-radioassay-v4-gas-v1`: 24 contributions, ten physical
 source families, nine reporting categories. The detector model remains
 `cygno-copper-cathode-v4 / uniform-volume-v1`. External is unchanged.
 
@@ -132,17 +132,17 @@ Start at the repository root with the common build/environment from
 [setup](SETUP.md). Use distinct new campaign directories:
 
 ```bash
-# Original 23-source campaign; omitting --gas-bkg is identical.
+# Default 22-source combined-assay campaign; omitting --gas-bkg is identical.
 python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.json \
   --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-materials-NEW" \
   --mode smoke --primaries 2 --output-mode compact --gas-bkg no
 
-# 25-source campaign with both gas contributions.
+# 24-source campaign with both gas contributions.
 python3 internal/study/simulate.py --config internal/config/study/cygno-11x7-v4.json \
   --build "$CYGNO_BUILD" --output "$CYGNO_RUNS/internal-gas-NEW" \
   --mode smoke --primaries 2 --output-mode compact --gas-bkg yes
 
-# Inspect all 25 macros without Geant4; --macros-dir NEW_DIR exports them.
+# Inspect all 24 macros without Geant4; --macros-dir NEW_DIR exports them.
 python3 internal/study/simulate.py --gas-bkg yes --list
 ```
 

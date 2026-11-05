@@ -52,7 +52,7 @@ contracts and retained physical limits are in
 The final geometry report retains executed-check counts and environment details;
 [TWO_STAGE_VALIDATION](TWO_STAGE_VALIDATION.md) records smoke/archive/offline/parity
 evidence and remaining gates. Historical 28/28 Linux smoke requirements refer to
-v2; current v4 must qualify all its 23 material contributions (25 with `--gas-bkg yes`) with new transport.
+v2; current v4 must qualify all its 22 material contributions (24 with `--gas-bkg yes`) with new transport.
 See [gas validation](../../docs/GAS_VALIDATION.md) for the additional source,
 normalization, archive, plotting and decay-transport checks.
 A fresh four-case decay preflight is required on the target environment before

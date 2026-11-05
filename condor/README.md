@@ -1,5 +1,12 @@
 # CNAF CYGNO submissions: frozen external replicas
 
+The combined SNO-acrylic/Heraeus-quartz v4 assay is an internal activity update
+(22 material contributions, 24 with optional gas). This submitter remains
+**external-only** and does not launch those internal sources. Use the existing
+[internal cluster runner and CNAF recipe](../internal/docs/WORKFLOW.md) inside a
+site-approved allocation. External GPS normalization is unaffected by the assay
+substitution; old campaign artifacts and frozen replicas remain immutable.
+
 This replaces the former native Condor workflow. It follows the three historically
 working supplied scripts: `prepare_condor_assets.sh`, `run_geant4_worker.sh`, and
 `subber_geant4.sh`. Submission **only** uses:

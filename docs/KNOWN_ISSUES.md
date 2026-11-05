@@ -1,10 +1,12 @@
 # Known issues and scientific decisions
 
-The current model is `cygno-copper-cathode-v4` in both modes. All 23 internal material
-contributions (25 with optional gas) and external transport require new campaigns. The solid EFCu
+The current model is `cygno-copper-cathode-v4` in both modes. The combined default has 22 internal material
+contributions (24 with optional gas). This assay-only update requires fresh
+internal campaigns because activity overrides are unsupported; external GPS
+transport does not need repeating for this change. The solid EFCu
 cathode fills the retained 60 µm envelope; GEMs alone retain PMMA50/Cu5 skins.
 The 500 mm gas volumes meet cathode and first GEM faces exactly.
-Lens activity uses physical-lens Bq/piece from `CYGNO_radioactivity_excel_suprasil`;
+Lens activity uses physical-lens Bq/piece from `nEXO-1805.11142v2-table6.1-Heraeus-quartz`;
 its 3.843 kg reference mass changes no Geant4 geometry or transport.
 See [geometry and masses](SINGLE_MODULE_GEOMETRY.md) and [assays](STUDY_SOURCES.md).
 Dated model qualifications below are historical evidence, not v4 rate validation.
@@ -47,8 +49,9 @@ The new overlay/range figures change presentation only.
 The original Figure 7.5 production inputs/revision remain unresolved. Historical
 normalization TSVs and the historical Table 7.1 geometry are references; their
 old masses/model cannot normalize the updated detector. v4 retains
-selected Table 7.1 component activities, with the separate per-piece lens update with its own new transport and actual
-constructed quantities, as detailed in [source provenance](STUDY_SOURCES.md).
+selected Table 7.1 component activities, with SNO acrylic GEM U/Th limits
+(unreported K assumed zero and omitted) and Heraeus quartz lens activities per
+3.843 kg physical piece, without geometry/material changes, as detailed in [source provenance](STUDY_SOURCES.md).
 Published Table 7.2's no-cut (10,400] value
 exceeds its >10 value; it remains a reference discrepancy, never a rate-tuning
 constraint.

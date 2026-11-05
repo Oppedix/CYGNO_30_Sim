@@ -28,8 +28,8 @@ class GasTests(unittest.TestCase):
         original = copy.deepcopy(base)
         gas = with_gas_backgrounds(base)
         self.assertEqual(base, original)
-        self.assertEqual(len(gas['contributions']), 25)
-        self.assertEqual(gas['contributions'][:23], base['contributions'])
+        self.assertEqual(len(gas['contributions']), 24)
+        self.assertEqual(gas['contributions'][:22], base['contributions'])
         self.assertEqual(validate_matrix(gas), gas)
         # Independently count CF4 molecules per kg mixture from the partial density.
         cf4_mass_kg = 1429.8944/1527.3872
@@ -83,7 +83,7 @@ class GasTests(unittest.TestCase):
                 with patch.object(rt,'invoke',side_effect=fake_invoke):
                     for row in matrix['contributions']: simulate.run_job(root,row,config,campaign,'fixture')
                 simulate.update_campaign(root,campaign,matrix)
-                self.assertEqual(len(validate_campaign(root)), 25)
+                self.assertEqual(len(validate_campaign(root)), 24)
                 with patch.object(rt,'invoke',side_effect=AssertionError('Reuse complete job')):
                     row=matrix['contributions'][-1]
                     self.assertEqual(simulate.run_job(root,row,config,campaign,'fixture')['attempt'],'attempt-0001')
@@ -110,14 +110,14 @@ class GasTests(unittest.TestCase):
                                 source=''.join(cell['source']).replace('CAMPAIGN_DIR = None',f'CAMPAIGN_DIR = {str(root)!r}')
                                 exec(compile(source,'gas-campaign-walkthrough','exec'),namespace)
                         self.assertEqual(namespace['spectra'],data)
-                        self.assertEqual(namespace['summary']['coverage'],'25/25')
+                        self.assertEqual(namespace['summary']['coverage'],'24/24')
                         self.assertEqual(len(rt.read(namespace['OUTPUT_DIR']/'tables.json')['table7_3']),18)
                     finally:
                         if 'output_directory' in namespace: namespace['output_directory'].cleanup()
                 for name in ('figure7.5','figure7.6'):
                     for suffix in ('.png','.pdf'): self.assertGreater((output/(name+suffix)).stat().st_size,100)
                 with open_campaign(package(root)) as unpacked:
-                    self.assertEqual(len(validate_campaign(unpacked)),25)
+                    self.assertEqual(len(validate_campaign(unpacked)),24)
             self.assertEqual(spectra[0],spectra[1]); self.assertEqual(spectra[1],spectra[2])
 
 

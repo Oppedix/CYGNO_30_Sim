@@ -36,13 +36,13 @@ scheduling can change source histories; archive seeds, build/data and metadata.
 
 ## Assays and normalization
 
-The [v4 matrix](../config/study/cygno-radioassay-v4.json) has 23 material contributions by default. `--gas-bkg yes` appends two
+The [v4 matrix](../config/study/cygno-radioassay-v4.json) has 22 material contributions by default. `--gas-bkg yes` appends two
 gas contributions using `GasVolume` placements and total sensitive-gas mass.
 See [gas provenance](GAS_BACKGROUNDS.md) for C14 conversion, Rn short-chain
 termination before Pb210, assumptions and limitations.
-EFCu U/Th applies to the entire `Cathode` mass; Acrylic U/Th/K applies only to
-GEM cores. Lenses use exact Bq/piece values from
-`CYGNO_radioactivity_excel_suprasil`: 3.843 kg is ONE physical lens, converted
+EFCu U/Th applies to the entire `Cathode` mass; SNO acrylic U/Th upper limits apply only to
+GEM cores; unreported K is optimistically assumed zero and its job is omitted. Lenses use exact Bq/piece values from
+`nEXO-1805.11142v2-table6.1-Heraeus-quartz`: 3.843 kg is ONE physical lens, converted
 once; normalize by actual placements without changing lens transport.
 [STUDY_SOURCES.md](STUDY_SOURCES.md) specifies activities and assumptions.
 

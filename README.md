@@ -13,16 +13,23 @@ The active detector uses analytical Geant4 solids, not an imported CAD detector.
 Both modes default to **`cygno-copper-cathode-v4`**: one solid EFCu cathode
 per module, with Acrylic/PMMA cores and copper skins only in the GEMs.
 The cathode envelope remains 500 × 800 × 0.060 mm. Internal radioactivity uses
-23 contributions from `cygno-radioassay-v4` by default; `--gas-bkg yes` adds
-C14 and Rn222 gas contamination (25 contributions), with documented
+22 contributions from `cygno-radioassay-v4` by default; `--gas-bkg yes` adds
+C14 and Rn222 gas contamination (24 contributions), with documented
 [optimistic assumptions](docs/GAS_BACKGROUNDS.md). Lens activity is **Bq/piece**, from
-`CYGNO_radioactivity_excel_suprasil`, normalized by actual lens placements.
+`nEXO-1805.11142v2-table6.1-Heraeus-quartz`, normalized by actual lens placements.
 The 3.843 kg reference mass describes **one physical lens**; Geant4 lens geometry
 and transport remain unchanged. External gamma/neutron sources use this same
 detector with their separate physics and environmental normalization.
 
-**v4 requires new transport and new campaign directories in both modes.**
-Existing results are never converted or resumed as v4. Historical reconstruction
+The combined default uses SNO acrylic U/Th limits for GEM cores, with unreported
+K omitted under an optimistic zero assumption, and the Heraeus quartz lens assay.
+This changes radioactivity only; PMMA cores and SiO2 lens transport remain intact.
+
+**This assay update requires fresh internal campaigns in new directories.**
+Stored matrices, fingerprints and checksums are immutable; neither analyzer has
+an activity override. External GPS campaigns do not use the internal assays and
+need no new transport for this substitution. Earlier detector models cannot be
+converted or resumed as v4. Historical reconstruction
 is isolated in the [model history](docs/history/DETECTOR_MODELS.md).
 
 ## Install and build the common application

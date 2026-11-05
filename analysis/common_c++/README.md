@@ -6,7 +6,7 @@ separate implementation. Python spectra/reporting and
 `analysis/reference_cpp/` share the optional gas contribution/category contract; `analysis/common/topology.py` is a small
 opt-in semantic oracle for the two additional detector-topology selections.
 
-Input is a **completed, unpacked v4 campaign (23 material contributions, or 25 with gas)** produced by
+Input is a **completed, unpacked v4 campaign (22 material contributions, or 24 with gas)** produced by
 `study/simulate.py` with compact output, campaign schema 3, output schema 1.
 The analyzer uses saved layouts, quantities and generated-primary accounting.
 `cygno-copper-cathode-v4` accepts `cygno-radioassay-v4` or the gas-enabled
@@ -15,16 +15,19 @@ The latter adds separate `Gas C14` and `Gas Rn222` categories to every stack,
 legend, total, full/zoom figure and all four contribution/category cutflows.
 Normalization uses each source activity times total constructed sensitive-gas
 kg; the gas mixture and Rn stop-before-Pb210 contract are validated.
-No analysis flag is needed. See [gas science and limitations](../../docs/GAS_BACKGROUNDS.md). It checks EFCu cathode
-and GEM activities, Bq/piece lens values and provenance, PMMA GEM transport and
+No analysis flag is needed. See [gas science and limitations](../../docs/GAS_BACKGROUNDS.md). It checks EFCu cathode/Cu-skin
+and SNO acrylic GEM-core activities, Bq/piece lens values and provenance, PMMA GEM transport and
 copper cathode quantities. Lens scales are exact matrix Bq/piece × actual lens
 placements × 31536000 / generated primaries. The reference 3.843 kg physical lens
 mass has already been used once in the conversion and is never applied here.
 
 The original matrix is embedded verbatim under `provenance/`, including
-`CYGNO_radioactivity_excel_suprasil`. A separate `normalization-scenario.json`
+`nEXO-1805.11142v2-table6.1-Heraeus-quartz`. A separate `normalization-scenario.json`
 records model, simulation matrix and interpretation in ROOT and beside it.
-Python records the same descriptor. Existing v3 data cannot become v4 by
+Python records the same descriptor. Earlier v4 campaigns have their original
+stored matrix and cannot use this combined assay through an override. Fresh
+internal campaigns are required; old campaign snapshots/checksums stay intact.
+Existing v3 data cannot become v4 by
 reweighting or changing metadata. Historical analysis compatibility is for
 [reproducibility only](../../docs/history/DETECTOR_MODELS.md).
 
@@ -135,7 +138,7 @@ CAMPAIGN_DIR/
         └── <manifest.data_path>
 ```
 
-1. The ordered `matrix.json.contributions` array supplies all 23 saved v4 material rows (25 including optional gas),
+1. The ordered `matrix.json.contributions` array supplies all 22 saved v4 material rows (24 including optional gas),
    each row's activity, activity unit, component, and reporting category.
 2. `jobs/<id>/manifest.json` supplies the completed job's **`attempt`** and
    **`data_path`**. The program checks agreement with `campaign.json.job_records`
@@ -333,12 +336,12 @@ the campaign matrix:
 | Camera Sensors | Sensors: U238, Th232, K40 | 3 |
 | Cathodes | Solid Cathode: U238, Th232 | 2 |
 | Resistors | Resistors: U238, Th232, K40, Bq/piece | 3 |
-| GEMs | PMMA core U238, Th232, K40; Cu skins U238, Th232 | 5 |
+| GEMs | PMMA core U238, Th232; Cu skins U238, Th232 | 4 |
 | Field Cage | RingSupports U238, Th232, K40; RingStrips U238, Th232 | 5 |
-| **Default total** | Nine material families | **23** |
+| **Default total** | Nine material families | **22** |
 | Gas C14 (optional) | Gas: C14, Bq/kg mixture | 1 |
 | Gas Rn222 (optional) | Same Gas mass: Rn222 short chain, Bq/kg mixture | 1 |
-| **Gas-enabled total** | Ten physical source families | **25** |
+| **Gas-enabled total** | Ten physical source families | **24** |
 
 The completed MBNL resistor assay supplies U238/Th232 equilibrium-assumption jobs and one K40 job. Per-piece activity is based on the nominal 17-mm Suprasil reference tube, never the compact transport-box mass. See [material provenance](../../docs/STUDY_SOURCES.md).
 GEMs, Cathodes and Field Cage combine separately normalized component histograms. The
@@ -392,8 +395,8 @@ contributions/<contribution-id>/
   raw_fiducial_20mm                TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume  TH1D, unweighted MC group counts
   raw_fiducial_20mm_single_volume_prompt_single_site  TH1D, unweighted counts
-SelectionEnergyWindows            TTree: N × 4 × 6 (N=23, or 25 with gas) explicit selection windows
-ExactEnergyWindows                TTree: N × 2 × 6 (N=23, or 25 with gas) contribution windows
+SelectionEnergyWindows            TTree: N × 4 × 6 (N=22, or 24 with gas) explicit selection windows
+ExactEnergyWindows                TTree: N × 2 × 6 (N=22, or 24 with gas) contribution windows
 Normalization                     TTree: activity/unit, quantity, measured
                                         primaries, scale, processed groups, path
 provenance/                       Campaign/layout/fingerprint/ROOT version,
@@ -442,7 +445,7 @@ for `all`, `gt10`, and `gt10_le400`.
 ## Equivalence checks
 
 Current v4 regression coverage is recorded in [v4 validation](../../docs/V4_VALIDATION.md).
-Synthetic 23-contribution campaigns compare all Python/native ROOT scales,
+Synthetic 22-contribution campaigns compare all Python/native ROOT scales,
 windows, bins, flows, variances and category sums. Lens rows use Bq/piece and
 placement counts. Historical equivalence evidence is preserved in
 [the archived record](../../docs/history/ROOT_EQUIVALENCE-pre-v4.md).
@@ -464,7 +467,7 @@ times remain analyzable. The topology oracle rejects missing/nonfinite times
 instead of inventing them.
 
 `tests/test_topology.py` compiles the production C++ executable when `root-config`
-is available and creates synthetic v4 23-contribution compact campaigns plus historical compatibility cases, including both
+is available and creates synthetic v4 22-contribution compact campaigns plus historical compatibility cases, including both
 `legacy-25x3` and `cygno-11x7-v1`. It checks default/custom timing, endpoint and
 partner policies, every historical histogram edge and neighboring floats, exact
 windows, raw bins, annual rates/variances, category density/errors, cut-flow

@@ -114,7 +114,8 @@ python validation/compact_transport.py --build "$CYGNO_BUILD" \
 python -m analysis.compact.benchmark --raw raw.root --compact compact.root
 ```
 
-The small integration defaults to the unchanged GEMsPolyimide_K40 matrix contribution;
+The small integration defaults to the current RingSupports_K40 matrix contribution
+(the unreported GEM-core K source is omitted from the combined default);
 `--contribution GEMsPolyimide_U238` selects the chain on a validated environment.
 It compares raw-only against both-mode raw rows and accounting, then checks both
 representations and standalone compact spectra. Benchmark bytes are separately

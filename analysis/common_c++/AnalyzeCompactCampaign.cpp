@@ -466,8 +466,9 @@ int main(int argc, char** argv) try {
         sourceIsotopes.erase("CathodesPolyimide");
         sourceIsotopes.erase("CathodesCopper");
         sourceIsotopes["Cathode"] = {"U238","Th232"};
+        sourceIsotopes["GEMsPolyimide"] = {"U238","Th232"};
         const auto& lens = matrix["provenance"]["lens"];
-        require(lens["source"].val() == "CYGNO_radioactivity_excel_suprasil" &&
+        require(lens["source"].val() == "nEXO-1805.11142v2-table6.1-Heraeus-quartz" &&
                 number(lens["reference_mass_kg_per_piece"]) == 3.843,
                 "Missing physical-lens provenance");
     }
@@ -601,22 +602,27 @@ int main(int argc, char** argv) try {
         if (acrylic && (result.category == "GEMs" || result.category == "Cathodes")) {
             const bool core = component == "GEMsPolyimide" || component == "CathodesPolyimide";
             const std::map<std::string,double> activities = core
-                ? std::map<std::string,double>{{"U238",.000296},{"Th232",5.69e-5},{"K40",7.12e-5}}
+                ? (v4 ? std::map<std::string,double>{{"U238",1.364e-5},{"Th232",4.466e-6}}
+                      : std::map<std::string,double>{{"U238",.000296},{"Th232",5.69e-5},{"K40",7.12e-5}})
                 : std::map<std::string,double>{{"U238",1.31e-7},{"Th232",3.4e-8}};
             require(result.unit == "Bq/kg" && result.activity == activities.at(row["chain_start"]["name"].val()) &&
-                    row["assay_material"].val() == (core ? "Acrylic" : "EFCu") &&
+                    row["assay_material"].val() == (core ? (v4 ? "SNOAcrylic" : "Acrylic") : "EFCu") &&
                     row["activity_basis"].val() == (core ? "upper-limit-used-as-value" : "table-value"),
                     "Changed layer activity/basis");
+            if (v4 && core)
+                require(row["provenance"].val() == "Leonard-0709.4524v2-table3-row38-SNO-acrylic",
+                        "Changed SNO acrylic source");
         }
         if (v4) {
             const bool perPiece = component == "Lens" || component == "Resistors";
             require(result.unit == (perPiece ? "Bq/piece" : "Bq/kg"), "Wrong v4 activity unit");
             if (component == "Lens") {
                 const std::map<std::string,double> activities{
-                    {"U238",4.72689e-4},{"Th232",1.564101e-4},{"K40",1.19133e-3}};
+                    {"U238",7.14798e-5},{"Th232",3.5885934e-6},{"K40",6.4466325e-5}};
                 require(result.activity == activities.at(row["chain_start"]["name"].val()) &&
+                        row["assay_material"].val() == "HeraeusQuartz" &&
                         row["activity_basis"].val() == "reference-physical-lens-per-piece" &&
-                        row["provenance"].val() == "CYGNO_radioactivity_excel_suprasil",
+                        row["provenance"].val() == "nEXO-1805.11142v2-table6.1-Heraeus-quartz",
                         "Changed physical-lens activity/basis");
             }
         }

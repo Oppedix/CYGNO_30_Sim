@@ -1,5 +1,23 @@
 # C++ analysis ROOT compatibility, 2026-10-31
 
+**Current assay update (2026-11-05):** the only active default now has
+22 material contributions (24 with optional gas): SNO acrylic GEM U/Th,
+unreported GEM K omitted by optimistic assumption, and Heraeus quartz lens
+U/Th/K normalized per physical piece. See [current source specification](STUDY_SOURCES.md).
+The dated execution evidence below predates this assay update; its 23/25 counts
+and old lens values describe historical runs, not an active assay alternative.
+Fresh internal campaigns are required; old artifacts and checksums are preserved.
+
+Combined-assay checks executed on 2026-11-05: local ROOT 6.40.04 passes the
+96-test suite (four optional skips; constructed geometry enabled). The official
+`rootproject/root:6.30.02-ubuntu22.04` image, Linux amd64 under Docker with a
+read-only checkout, passes `test_v4.py` (5 tests, geometry skipped),
+`test_topology.py` (11 tests, no skips) and `test_root_compatibility.py`
+(1 test, no skips). Both ROOT versions execute the updated 22/24-contribution
+normalization, reject previous assay values and preserve per-piece lens scales.
+The actual CNAF host and full physical production were not exercised.
+
+
 ROOT **6.30.02 (CNAF baseline)** and **6.40.x** remain supported. This record
 concerns analysis only: detector geometry, transport/physics, activities,
 normalization, selections and existing campaign products are unchanged.

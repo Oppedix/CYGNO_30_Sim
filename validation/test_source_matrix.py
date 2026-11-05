@@ -197,7 +197,7 @@ q=read_quantities(path,layout=layout,model=model,geometry_hash=fingerprint)
 assert q['Lens']['pieces']==308
 lens=[r for r in read_matrix(repo/'config/study/cygno-radioassay-v4.json')['contributions'] if r['component']=='Lens']
 source=fixture(layout,model)
-headers=f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# provenance: SYNTHETIC v4; CYGNO_radioactivity_excel_suprasil; 3.843 kg per physical lens converted once\n'
+headers=f'# normalization-format: quantity-v2\n# layout: {layout}\n# detector-model: {model}\n# source-policy: uniform-volume-v1\n# provenance: SYNTHETIC v4; nEXO-1805.11142v2-table6.1-Heraeus-quartz; 3.843 kg per physical lens converted once\n'
 lines=''.join(f'Lens {r["chain_start"]["name"]} 308 piece {r["activity"]:.17g} Bq/piece 100 "Camera Lenses" "{source}"\n' for r in lens)
 config=out/'v4-lens.tsv';config.write_text(headers+lines)
 for plotter in plotters:

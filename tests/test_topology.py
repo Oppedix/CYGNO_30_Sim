@@ -285,6 +285,32 @@ class CppTopologyTests(unittest.TestCase):
         self.assertNotEqual(run.returncode,0)
         self.assertFalse(rejected.exists())
 
+    def test_v4_previous_activities_and_gem_k_rejected(self):
+        campaign=self.root/'previous-assay-campaign'
+        make_campaign(campaign,'cygno-11x7-v1','cygno-copper-cathode-v4')
+        original=rt.read(campaign/'matrix.json')
+        for index,(contribution,activity) in enumerate((('GEMsPolyimide_U238',.000296),
+                ('GEMsPolyimide_Th232',5.69e-5),('Lens_U238',4.72689e-4),
+                ('Lens_Th232',1.564101e-4),('Lens_K40',1.19133e-3),('extra-K',0))):
+            with self.subTest(contribution=contribution):
+                matrix=copy.deepcopy(original)
+                if contribution=='extra-K':
+                    row=copy.deepcopy(matrix['contributions'][0])
+                    row.update(id='GEMsPolyimide_K40',activity=7.12e-5,
+                               chain_start=dict(name='K40',Z=19,A=40))
+                    matrix['contributions'].append(row)
+                else:
+                    next(r for r in matrix['contributions'] if r['id']==contribution)['activity']=activity
+                rt.save(campaign/'matrix.json',matrix)
+                document=rt.read(campaign/'campaign.json');document['identity']['matrix']=matrix
+                rt.save(campaign/'campaign.json',document)
+                before={p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()}
+                output=self.root/f'previous-assay-rejected-{index}'
+                run=subprocess.run([str(self.binary),str(campaign),str(output)],capture_output=True,text=True)
+                self.assertNotEqual(run.returncode,0,run.stdout+run.stderr)
+                self.assertFalse(output.exists())
+                self.assertEqual(before,{p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()})
+
     def test_gas_v4_all_selections_stacks_and_rejection(self):
         campaign=self.root/'gas-campaign'
         geom,inputs=make_campaign(campaign,'legacy-25x3','cygno-copper-cathode-v4',gas_bkg=True)

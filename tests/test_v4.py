@@ -3,6 +3,7 @@ import copy
 import csv
 from decimal import Decimal
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -10,7 +11,7 @@ import unittest
 from unittest.mock import patch
 from study import runtime as rt, simulate
 from study.source_matrix import (read_matrix, validate_matrix, validate_matrix_model,
-                                read_quantities, quantity_for, LENS_PROVENANCE)
+                                read_quantities, quantity_for, LENS_PROVENANCE, GEM_PROVENANCE, assay_activity)
 from analysis.common.normalization import scale_for
 
 MODEL = 'cygno-copper-cathode-v4'
@@ -20,11 +21,11 @@ MATRIX = 'cygno-radioassay-v4'
 class V4SpecificationTests(unittest.TestCase):
     def test_sources_lens_units_and_exact_conversion(self):
         matrix=read_matrix(rt.REPO/'config/study'/f'{MATRIX}.json')
-        self.assertEqual(len(matrix['contributions']),23)
+        self.assertEqual(len(matrix['contributions']),22)
         self.assertEqual(matrix['provenance']['lens'],LENS_PROVENANCE)
-        self.assertEqual(LENS_PROVENANCE['source'],'CYGNO_radioactivity_excel_suprasil')
-        expected={'U238':('1.23e-4','4.72689e-4'), 'Th232':('4.07e-5','1.564101e-4'),
-                  'K40':('3.10e-4','1.19133e-3')}
+        self.assertEqual(LENS_PROVENANCE['source'],'nEXO-1805.11142v2-table6.1-Heraeus-quartz')
+        expected={'U238':('1.86e-5','7.14798e-5'), 'Th232':('9.338e-7','3.5885934e-6'),
+                  'K40':('1.6775e-5','6.4466325e-5')}
         quantities={'Lens':dict(mass_kg=.512833584772,pieces=308)}
         for row in matrix['contributions']:
             self.assertNotIn(row['component'],('CathodesPolyimide','CathodesCopper'))
@@ -55,7 +56,68 @@ class V4SpecificationTests(unittest.TestCase):
             self.assertEqual(rt.load_config(rt.REPO/'config/study'/f'{name}.json')['model'],MODEL)
         args=simulate.parser().parse_args(['--list'])
         with patch('builtins.print') as printed: self.assertEqual(simulate.run(args),0)
-        self.assertEqual(printed.call_count,23)
+        self.assertEqual(printed.call_count,22)
+
+    def test_combined_assays_limits_omission_and_documentation(self):
+        matrix=read_matrix(rt.REPO/'config/study'/f'{MATRIX}.json')
+        rows={r['id']:r for r in matrix['contributions']}
+        self.assertNotIn('GEMsPolyimide_K40',rows)
+        self.assertEqual(matrix['provenance']['gem_core'],GEM_PROVENANCE)
+        for isotope in ('U238','Th232'):
+            row=rows['GEMsPolyimide_'+isotope]
+            self.assertAlmostEqual(row['activity'],assay_activity(isotope,1.1),places=18)
+            self.assertTrue(GEM_PROVENANCE[isotope]['upper_limit'])
+            self.assertEqual(GEM_PROVENANCE[isotope]['confidence_level'],.95)
+            self.assertEqual(LENS_PROVENANCE[isotope]['confidence_level'],.90)
+        self.assertFalse(GEM_PROVENANCE['K40']['measured'])
+        self.assertEqual(GEM_PROVENANCE['K40']['assumed_activity_Bq_kg'],0.)
+        self.assertEqual(Decimal('.04')*Decimal('1e-6')*Decimal('30.5')*Decimal('3.843'),
+                         Decimal(str(LENS_PROVENANCE['activity_uncertainty_Bq_piece']['K40'])))
+        for section in ('gem_core','lens'):
+            bad=copy.deepcopy(matrix)
+            bad['provenance'][section]['U238']['confidence_level']=.68
+            with self.assertRaisesRegex(ValueError,'provenance'):validate_matrix(bad)
+        for isotope,value in [('U238',.000296),('Th232',5.69e-5)]:
+            bad=copy.deepcopy(matrix)
+            next(r for r in bad['contributions'] if r['id']=='GEMsPolyimide_'+isotope)['activity']=value
+            with self.assertRaisesRegex(ValueError,'activity'):validate_matrix(bad)
+        doc=(rt.REPO/'docs/STUDY_SOURCES.md').read_text()
+        for component in {r['component'] for r in rows.values()}:
+            self.assertIn('| '+component+' |',doc)
+        self.assertIn('**22 material',doc)
+        self.assertIn('**24 contributions**',doc)
+        for row in rows.values():
+            # Every active nominal activity must appear in the at-a-glance table.
+            table_line=next(line for line in doc.splitlines() if line.startswith('| '+row['component']+' |'))
+            cell=table_line.split('|')[4+('U238','Th232','K40').index(row['chain_start']['name'])]
+            nominal=re.sub(r'\s*±[^)]*','',cell).translate(str.maketrans('','','<() '))
+            self.assertEqual(Decimal(nominal),Decimal(str(row['activity'])))
+
+    def test_previous_v4_matrix_cannot_be_reweighted_or_resumed(self):
+        from fixtures import campaign_fixture
+        from study.campaign import validate_campaign
+        from study.analyze import analyze
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);output=root/'campaign'
+            config,matrix,campaign=campaign_fixture(output,MODEL)
+            # A self-consistent earlier v4 matrix still cannot acquire the new assay.
+            matrix['provenance'].pop('gem_core')
+            campaign['identity']['matrix']=matrix
+            campaign['fingerprint']=rt.object_digest(campaign['identity'])
+            rt.save(output/'matrix.json',matrix)
+            campaign['snapshots']['matrix.json']=rt.digest(output/'matrix.json')
+            rt.save(output/'campaign.json',campaign)
+            before={p:p.read_bytes() for p in output.rglob('*') if p.is_file()}
+            with self.assertRaisesRegex(ValueError,'SNO acrylic provenance'):validate_campaign(output)
+            report=root/'report'
+            with self.assertRaisesRegex(ValueError,'SNO acrylic provenance'):analyze(output,report)
+            self.assertFalse(report.exists())
+            build=root/'build';build.mkdir()
+            for name in ('rdecay01','geometry_quantities'):(build/name).touch()
+            args=simulate.parser().parse_args(['--build',str(build),'--output',str(output)])
+            with patch.object(rt,'invoke',side_effect=AssertionError('Must not launch')):
+                with self.assertRaisesRegex(ValueError,'identity changed'):simulate.run(args)
+            self.assertEqual(before,{p:p.read_bytes() for p in output.rglob('*') if p.is_file()})
 
     def test_old_campaign_rejected_before_writes_or_transport(self):
         with tempfile.TemporaryDirectory() as tmp:

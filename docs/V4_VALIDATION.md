@@ -1,5 +1,33 @@
 # v4 implementation and validation — 2026-10-29
 
+**Current assay update (2026-11-05):** the only active default now has
+22 material contributions (24 with optional gas): SNO acrylic GEM U/Th,
+unreported GEM K omitted by optimistic assumption, and Heraeus quartz lens
+U/Th/K normalized per physical piece. See [current source specification](STUDY_SOURCES.md).
+The dated execution evidence below predates this assay update; its 23/25 counts
+and old lens values describe historical runs, not an active assay alternative.
+Fresh internal campaigns are required; old artifacts and checksums are preserved.
+
+Checks executed for the combined assay on 2026-11-05 (macOS/arm64,
+ROOT 6.40.04): **96 Python regression tests, OK, four optional checks skipped**,
+with `CYGNO_ACRYLIC_BUILD` set to the existing v4 geometry build. This includes
+source/provenance validation, complete 22/24-source synthetic campaigns,
+normalization, Python/native ROOT parity and rejection of stale activities
+without campaign writes. All three layout audits pass with unchanged transport.
+Separately, the optional **30-primary raw/compact/both transport check passes
+on all three layouts**, using the active `RingSupports_K40` row. Notebook
+outputs/hashes were refreshed; exact Decimal conversions, Markdown links and
+`git diff --check` pass. No full internal physical campaign or CNAF remote run
+was executed for this assay update; the target four-case decay gate is mandatory.
+
+ROOT 6.30.02 was also checked in the official Linux amd64 container with a
+read-only checkout: source/v4 tests (5, one geometry skip), standalone campaign
+parity/rejection tests (11, no skips), and all reference-program normalization
+checks (1, no skips) pass. See [ROOT compatibility](ROOT_COMPATIBILITY.md).
+
+## Historical execution evidence (before the combined assay)
+
+
 Current detector: `cygno-copper-cathode-v4` in both modes.
 Default internal matrix: `cygno-radioassay-v4`, **23 material contributions**.
 This record covers the material-only v4 baseline. The optional 25-contribution

@@ -6,12 +6,21 @@ Geant4 build. All commands here use `CYGNO_SRC` = repository root. Historical
 `study/`, `config/` and `analysis/` paths remain supported through relative links.
 
 Gas contamination is optional: append `--gas-bkg yes` to any simulation or
-cluster command below for C14 and Rn222. Default `--gas-bkg no` retains 23
-material contributions; enabled campaigns have 25, with a separate fingerprint
+cluster command below for C14 and Rn222. Default `--gas-bkg no` retains 22
+material contributions; enabled campaigns have 24, with a separate fingerprint
 and output directory. Keep the flag identical when resuming. Analysis discovers
 the saved scenario. See [gas science and commands](../../docs/GAS_BACKGROUNDS.md).
 
 ## Cluster entry point
+
+The combined SNO-acrylic/Heraeus-quartz assay replaces the existing v4 default
+in place. Existing complete v4 transport is geometrically compatible in principle,
+but the saved matrix is part of its fingerprints/checksums; neither analyzer
+accepts an activity override. Use new internal campaign/output directories.
+Never edit old snapshots or remove their GEM K jobs. Rebuild to refresh the
+compiled-source fingerprint after updating the checkout. External GPS transport
+is unaffected. `condor/submit_replicas.sh` submits external replicas only; it
+cannot substitute for the internal wrapper below.
 
 First select the [private Linux setup](../../docs/SETUP.md#private-linux-simulation-environment)
 or the [CNAF setup](../../docs/SETUP.md#cnaf-analysis-worker). On the execution
@@ -20,9 +29,23 @@ Geant4 environment. Enter a site-approved allocation before invoking the wrapper
 no scheduler/login command is specified because none is established here.
 
 ```bash
-# Directory: $CYGNO_SRC on the allocated simulation node.
+# On an allocated CNAF simulation node, after updating the main checkout:
+export G4LAB=/private/SolarNu/MC30/geant4-private
+export CYGNO_CNAF=/cnaf/cygno-sim/Users/goppedis/SolarNu
+export CYGNO_SRC="$G4LAB/projects/CYGNO_30_Sim"
+export CYGNO_BUILD="$G4LAB/build/cygno-common-11.3.1-linux"
+export CYGNO_RUNS="$CYGNO_CNAF"
+export CYGNO_ANALYSIS_RUNS="$G4LAB/runs"
+export CYGNO_ANALYSIS_BIN="$G4LAB/build/root-analysis"
+source "$G4LAB/activate.sh"
+export Geant4_DIR="$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4"
 cd "$CYGNO_SRC"
-export CYGNO_CAMPAIGN=internal-v4-cluster-smoke-NEW
+mkdir -p "$CYGNO_RUNS" "$CYGNO_ANALYSIS_RUNS" "$CYGNO_ANALYSIS_BIN"
+cmake -S . -B "$CYGNO_BUILD" -DCMAKE_BUILD_TYPE=Release \
+  -DWITH_GEANT4_UIVIS=OFF -DCYGNO_BUILD_ANALYSIS=OFF -DBUILD_TESTING=OFF \
+  -DGeant4_DIR="$Geant4_DIR"
+cmake --build "$CYGNO_BUILD" --target rdecay01 geometry_quantities --parallel
+export CYGNO_CAMPAIGN=internal-v4-assay-20261105-smoke-NEW
 export CYGNO_CONFIG="$CYGNO_SRC/internal/config/study/cygno-11x7-v4.json"
 export CYGNO_PRIMARIES=2
 export CYGNO_JOBS=1
@@ -36,7 +59,7 @@ After qualification, production in a fresh campaign:
 ```bash
 # Directory: $CYGNO_SRC, same allocation/environment; one CPU for CYGNO_JOBS=1.
 cd "$CYGNO_SRC"
-export CYGNO_CAMPAIGN=internal-v4-cluster-production-NEW
+export CYGNO_CAMPAIGN=internal-v4-assay-20261105-production-NEW
 export CYGNO_PRIMARIES=10000000
 bash internal/cluster/run.sh --mode production --archive
 ```
@@ -50,7 +73,7 @@ two owners of the same campaign directory.
 | Wrapper variable | Required/default |
 |---|---|
 | `CYGNO_SRC`, `CYGNO_BUILD`, `CYGNO_RUNS`, `CYGNO_CAMPAIGN`, `CYGNO_PRIMARIES` | Required; repository root, shared build, campaign parent, unique name, count per contribution |
-| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v4.json`; v4 selects 23 material contributions, or 25 with `--gas-bkg yes` |
+| `CYGNO_CONFIG` | Defaults to `internal/config/study/cygno-11x7-v4.json`; v4 selects 22 material contributions, or 24 with `--gas-bkg yes` |
 | `CYGNO_JOBS` | Positive concurrency limit; default 1 |
 | `CYGNO_OUTPUT_MODE` | Default compact |
 | `CYGNO_PYTHON` | Default python3, version ≥3.10 |
@@ -136,8 +159,9 @@ optional topology cuts are specified in [ANALYSIS](ANALYSIS.md).
 The last tracked ion label (`Nucleus`) is not guaranteed per-hit ancestry.
 Published tables are comparisons, never normalization targets.
 
-v4 changes transport for **all** source components crossing the solid copper
-cathode. Lens activity is Bq/piece from `CYGNO_radioactivity_excel_suprasil`;
+The earlier v3-to-v4 geometry transition changed transport for **all** source
+components crossing the solid copper cathode. This assay update retains that
+geometry. Lens activity is Bq/piece from `nEXO-1805.11142v2-table6.1-Heraeus-quartz`;
 3.843 kg describes one physical lens and is already included in the activity. Do not replace `matrix.json`, relabel manifests or disable
 identity/checksum/preflight gates to reuse historical data. Both analyses retain the
 simulation matrix and a separate normalization-scenario descriptor; see

@@ -21,8 +21,8 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(provenance['files_sha256'], {'study/analyze.py': rt.digest(source/'study/analyze.py')})
 
     def test_v4_and_historical_cli_select_matching_matrix_and_transport(self):
-        for model,matrix_id,count,gas_bkg in [('cygno-copper-cathode-v4','cygno-radioassay-v4',23,False),
-                                      ('cygno-copper-cathode-v4','cygno-radioassay-v4-gas-v1',25,True),
+        for model,matrix_id,count,gas_bkg in [('cygno-copper-cathode-v4','cygno-radioassay-v4',22,False),
+                                      ('cygno-copper-cathode-v4','cygno-radioassay-v4-gas-v1',24,True),
                                       ('cygno-acrylic-v3','cygno-300elj-radioassay-v3',26,False)]:
             with tempfile.TemporaryDirectory() as d:
                 base=Path(d);template=base/'template'

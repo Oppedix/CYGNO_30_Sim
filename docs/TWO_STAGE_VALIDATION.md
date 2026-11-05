@@ -1,8 +1,8 @@
 # v4 validation and production gates
 
 Current model: `cygno-copper-cathode-v4`; internal matrix: `cygno-radioassay-v4`
-(23 material contributions by default), or `cygno-radioassay-v4-gas-v1`
-(25 with `--gas-bkg yes`). [Gas-specific validation](GAS_VALIDATION.md)
+(22 material contributions by default), or `cygno-radioassay-v4-gas-v1`
+(24 with `--gas-bkg yes`). [Gas-specific validation](GAS_VALIDATION.md)
 records the added checks and the Rn222 transport limitation. [Current module](SINGLE_MODULE_GEOMETRY.md) and
 [source provenance](STUDY_SOURCES.md) define the scientific contract.
 
@@ -16,7 +16,7 @@ per-source scales, spectra, category sums and rejected historical-model relabeli
 Campaign tests reject cross-model resume before transport or probe writes.
 
 Before production, run the four-case internal U238/Th232/Bi212 decay preflight,
-then all 23 small smoke jobs on the target installation and offline validation.
+then all 22 small smoke jobs on the target installation and offline validation.
 External gamma/neutron smoke and production qualification are independent.
 PART122 environment failures remain failures. Software parity alone does not
 validate physical background rates, detector response or source assumptions.

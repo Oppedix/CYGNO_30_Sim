@@ -143,8 +143,10 @@ For simulation, source `$G4LAB/activate.sh` and use
 `Geant4_DIR=$G4LAB/software/geant4-11.3.1-serial/lib/cmake/Geant4` as in the private
 Linux setup above. The build subdirectory is a documented configurable choice;
 set `CYGNO_BUILD` to your actual compatible build containing `rdecay01` and
-`geometry_quantities`, or compile both there. For batch jobs follow the
-[CNAF HTCondor instructions](../condor/README.md). The scripts transfer frozen
+`geometry_quantities`, or compile both there. For internal allocated-node execution use
+[`internal/cluster/run.sh`](../internal/docs/WORKFLOW.md); it runs the existing
+internal campaign runner and mandatory decay preflight. The
+[CNAF HTCondor instructions](../condor/README.md) support **external replicas only**. The scripts transfer frozen
 assets and return complete campaign archives
 through the proven CYGNO S3 mechanism; workers do not need the private workspace
 or CNAF storage mounted. Asset preparation and fresh-terminal submission use

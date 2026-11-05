@@ -40,7 +40,34 @@ There are 77 unrotated modules for `cygno-11x7-v1`.
 | Resistors | ResistorFusedSilica; 2.20 | box 1.6 × 0.55 × 3.2 | 52; 4004 | 6.1952e-6; 0.0248055808 |
 | Lens | Silicon Dioxide; 2.65 | full cylinder radius 10, thickness 2 | 4; 308 | 0.0016650441064; 0.512833584772 |
 | Sensors | G4_Si; 2.33 | box 10.6 × 18.8 × 1 | 4; 308 | 0.0004643224; 0.1430112992 |
-| Vessel | G4_Cu; 8.96 | outer 5560 × 5644 × 1028.420; inner 5550 × 5634 × 1018.420 | shared; 1 | constructed shell mass in export |
+| Vessel | G4_Cu; 8.96 | outer 5560 × 5644 × 1028.420; inner 5550 × 5634 × 1018.420 | shared; 1 | ≈3833.162680; ≈3833.162680 |
+
+| Additional volume | Material; density g/cm³ | Dimensions mm | Pieces/module; 11×7 | kg/piece; kg for 11×7 |
+|---|---|---|---:|---:|
+| Sensitive GasVolume | CYGNO_gas; 0.0015273872 | box 500 × 800 × 500 | 2; 154 | 0.30547744; 47.04352576 |
+| Transfer gaps | CYGNO_gas; 0.0015273872 | box 500 × 800 × 2 | 4; 308 | 0.00122190976; 0.37634820608 |
+
+Transfer gas is not a radioactive source even when optional gas backgrounds are
+selected. It remains non-sensitive. The vessel dimensions above give about
+3833.16268 kg for the shared copper shell; use the actual exported mass.
+
+| Component | Local placement in module (mm) |
+|---|---|
+| Cathode | X=Y=Z=0 |
+| GEM cores | X=Y=0; Z=±500.060, ±502.120, ±504.180 |
+| GEM copper skins | Same X/Y; each core centre Z ±0.0275 along Z |
+| Sensitive drift gas | X=Y=0; Z=±250.030 |
+| Transfer gaps | X=Y=0; Z=±501.090, ±503.150 |
+| RingSupports | X=−0.035, Y=−0.0175; Z=±250.030 |
+| RingStrips | X=−0.0091, Y=0; Z=±(10.030+20i), i=0…24 |
+| Resistors | X=0, Y=400.385; Z=±2.530, ±20.030…±480.030 (20-mm steps), ±497.530 |
+| Lens | X=0, Y=±95; Z=±1080.210 |
+| Sensors | X=0, Y=±95; Z=±1140.210 |
+| Vessel | Shared, centred at world origin; layout bounds determine its envelope |
+
+Module placement adds the layout centre to these local coordinates. The 11×7
+array is centred with X pitch 504 mm and Y pitch 804 mm (no rotation).
+See [layout definitions](LAYOUT.md) for all supported module centres.
 
 PMMA is C5H8O2. Gas is retained He/CF4 60/40 by volume at the existing density
 and state. Copper transport uses the existing NIST material, without any
@@ -65,8 +92,11 @@ strip/gas and strip/support intersections remain documented limitations.
 **Lens geometry and transport are unchanged.** Four/module, X=0, Y=±95 mm,
 Z=±1080.210 mm, full Ø20 × 2 mm cylinder at 2.65 g/cm³. Sensors lie at
 Z=±1140.210 mm with the same X/Y. The lens reference mass **3.843 kg is one
-physical lens**, used only to convert the spreadsheet activities to Bq/piece.
-`CYGNO_radioactivity_excel_suprasil` does not rescale these transport solids.
+physical lens**, used only to convert the Heraeus quartz assay to Bq/piece.
+The [nEXO Table 6.1 assay](https://arxiv.org/abs/1805.11142v2) does not rescale
+these transport solids. Its exact optical grade and finished CYGNO lens
+equivalence are not demonstrated. This is an assay substitution, not verified
+optical or manufacturing modification.
 
 The single copper vessel has closed 5 mm walls, no optical apertures; planar
 optics are outside. Current planar World is 14000 × 6644 × 3281.420 mm.
@@ -81,7 +111,12 @@ checks unique placements and matching component mass totals, and exports kg,
 pieces, material, density and volume. `geometry.json` carries model, layout,
 policy, compiled-source/geometry hashes and the actual gas map. Native and
 Python analyses choose mass or pieces from each matrix row's unit.
-See [source activities and provenance](STUDY_SOURCES.md).
+The combined assay default uses [SNO acrylic, Leonard Table 3 row 38](https://arxiv.org/abs/0709.4524v2)
+for GEM-core U/Th, with unreported K omitted under an optimistic zero assumption;
+lenses use Heraeus quartz, nEXO Table 6.1, printed p.141. Support PMMA and all
+other assays are retained. No construction code, composition, density, dimension
+or placement changes accompany these substitutions.
+See [all source activities and provenance](STUDY_SOURCES.md).
 
 `detector_v4` compares complete placement/material/solid audits between internal
 and external (excluding the externally enlarged GPS World), checks masses/counts on all layouts and compares all non-cathode

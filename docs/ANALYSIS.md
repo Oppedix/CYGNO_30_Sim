@@ -1,11 +1,14 @@
 # Internal v4 analysis and normalization
 
 The current model/matrix pair is `cygno-copper-cathode-v4` /
-`cygno-radioassay-v4` (23 material contributions), or the optional
-`cygno-radioassay-v4-gas-v1` (25 contributions). Analyze newly transported v4 campaigns
+`cygno-radioassay-v4` (22 material contributions), or the optional
+`cygno-radioassay-v4-gas-v1` (24 contributions). Analyze newly transported v4 campaigns
 in new output directories. Existing v3 transport cannot be relabeled or
 reweighted into v4. Model, matrix, geometry hashes, receipts, metadata and
-campaign fingerprints must agree.
+campaign fingerprints must agree. Earlier v4 matrices also fail the updated
+canonical assay checks; neither analyzer offers an independent activity override.
+Keep those campaigns intact and use their archived source for their original
+interpretation. This update requires fresh internal campaign directories.
 
 Python: `study/analyze.py`, using uproot/numpy/matplotlib. Native ROOT:
 [`AnalyzeCompactCampaign`](../analysis/common_c++/README.md), consuming a completed,
@@ -16,8 +19,8 @@ Both use the same operation order:
 `activity * quantity * 60 * 60 * 24 * 365 / actual_generated_primaries`.
 Bq/kg uses constructed component kg; **Bq/piece uses actual placement count**.
 Lens and Resistors are per piece. Lens U/Th/K activities are exactly
-4.72689e-4 / 1.564101e-4 / 1.19133e-3 Bq/piece, from
-**`CYGNO_radioactivity_excel_suprasil`**. The spreadsheet's 3.843 kg is ONE
+<7.14798e-5 / <3.5885934e-6 / (6.4466325 ± 0.468846)e-5 Bq/piece, from
+**`nEXO-1805.11142v2-table6.1-Heraeus-quartz`**. The retained reference mass of 3.843 kg is ONE
 physical lens, already included in those values. Never multiply by it again or
 use the Geant4 lens mass. Lens transport geometry remains unchanged.
 For planar 11×7, 308 actual lens placements enter normalization.

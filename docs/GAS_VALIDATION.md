@@ -1,5 +1,14 @@
 # Gas-background validation, 2026-10-30
 
+**Current assay update (2026-11-05):** the only active default now has
+22 material contributions (24 with optional gas): SNO acrylic GEM U/Th,
+unreported GEM K omitted by optimistic assumption, and Heraeus quartz lens
+U/Th/K normalized per physical piece. See [current source specification](STUDY_SOURCES.md).
+The dated execution evidence below predates this assay update; its 23/25 counts
+and old lens values describe historical runs, not an active assay alternative.
+Fresh internal campaigns are required; old artifacts and checksums are preserved.
+
+
 Scope: current v4 internal gas extension. [Scientific assumptions](GAS_BACKGROUNDS.md)
 and the unchanged [production gates](TWO_STAGE_VALIDATION.md) remain authoritative.
 Passing synthetic analysis tests does not qualify decay transport or predict rates.
