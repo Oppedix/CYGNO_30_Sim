@@ -171,6 +171,28 @@ struct Contribution {
 };
 
 // Display copies keep axis ranges/styles independent of saved numerical objects.
+void addRankedCategories(THStack& stack, TLegend& legend,
+                         const std::vector<std::unique_ptr<TH1D>>& spectra,
+                         double low, double high) {
+    std::vector<std::pair<double, std::size_t>> order;
+    for (std::size_t c = 0; c < spectra.size(); ++c) {
+        const auto& h = *spectra[c];
+        double annual = 0.;
+        for (int bin = 1; bin <= h.GetNbinsX(); ++bin) {
+            const double left = h.GetXaxis()->GetBinLowEdge(bin), width = h.GetBinWidth(bin);
+            const double overlap = std::clamp(high - left, 0., width) - std::clamp(low - left, 0., width);
+            annual += h.GetBinContent(bin) * overlap;
+        }
+        order.emplace_back(annual, c);
+    }
+    // Equal contributions, including zeros, retain the canonical category order.
+    std::stable_sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (const auto& entry : order) {
+        const auto c = entry.second;
+        stack.Add(spectra[c].get());
+        legend.AddEntry(spectra[c].get(), categories[c].c_str(), "f");
+    }
+}
 void saveFigure(TCanvas& canvas, const fs::path& stem) {
     fs::create_directories(stem.parent_path());
     for (const char* extension : {"png", "pdf"}) {
@@ -202,9 +224,8 @@ void exportRangeStack(const fs::path& stem, const std::vector<std::unique_ptr<TH
     for (int c=0; c<static_cast<int>(categories.size()); ++c) {
         copies.emplace_back(static_cast<TH1D*>(spectra[c]->Clone()));
         copies.back()->SetDirectory(nullptr);
-        stack.Add(copies.back().get());
-        legend.AddEntry(copies.back().get(),categories[c].c_str(),"f");
     }
+    addRankedCategories(stack, legend, copies, low, high);
     const bool nonempty=std::isfinite(minimum);
     canvas.SetLogy(nonempty);
     stack.SetMinimum(nonempty ? minimum*.25 : 0.);
@@ -987,10 +1008,7 @@ int main(int argc, char** argv) try {
         THStack stack("categories", title);
         TLegend legend(.72, .57, .95, .84);
         legend.SetBorderSize(0); legend.SetFillStyle(0); legend.SetTextSize(.028);
-        for (int c = 0; c < static_cast<int>(categories.size()); ++c) {
-            stack.Add(categoryHistograms[cut][c].get());
-            legend.AddEntry(categoryHistograms[cut][c].get(), categories[c].c_str(), "f");
-        }
+        addRankedCategories(stack, legend, categoryHistograms[cut], 0., maximumEnergy);
         const bool nonempty = std::isfinite(minimumPositive);
         canvas.SetLogy(nonempty);
         stack.SetMinimum(nonempty ? minimumPositive * .25 : 0.);

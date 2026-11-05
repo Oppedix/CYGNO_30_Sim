@@ -481,7 +481,7 @@ may differ due to creation-time metadata.
 ## Additional presentation figures
 
 The original full-range `figure7.5`, `figure7.6`, `figure_multivolume_veto` and
-`figure_multisite_veto` PNG/PDF pairs keep their names and rendering behavior.
+`figure_multisite_veto` PNG/PDF pairs keep their names.
 New `figures/overlays/no_cut_vs_final.png/pdf` and
 `figures/overlays/fiducial_vs_final.png/pdf` compare **total normalized spectra**
 against `fiducial_20mm_single_volume_prompt_single_site`, with distinct solid and
@@ -489,12 +489,26 @@ dashed lines. Log-Y is used when positive data exist.
 
 `figures/stacks/` adds `*_0_100keV.png/pdf` and `*_100_2000keV.png/pdf` for
 `no_cut`, `fiducial_20mm`, `fiducial_20mm_single_volume` and `final`: eight
-additional stack pairs. These change display axis ranges only. No bins,
+additional stack pairs. No bins,
 selection logic, normalization, category weights or numerical counters change.
 All additional drawing uses detached histogram copies.
+
+All twelve genuine stacks add categories from smallest to largest integrated
+normalized annual contribution for that selection and displayed interval
+(0–2000, 0–100 or 100–2000 keV). The ranking integrates counts/keV/year times
+the overlapping width of each regular bin; boundary bins are weighted only by
+their overlap, and underflow/overflow are excluded. Ties, including zeros,
+retain the canonical category order. Legends follow the same insertion order.
+Colors, names, saved histograms, normalization and numerical results are unchanged.
+External single-campaign and joined figures remain overlays: `total` already
+includes the other channels, whose energy spectra are not additive bin by bin.
 
 `tests/test_topology.py` compiles the same source with only the added export
 calls removed and compares every saved ROOT histogram/content/error and tree
 counter exactly, plus all four original PNG files byte-for-byte. It also checks
 the ten new PNG/PDF pairs exist and retains the independent Python numerical
 oracle. This regression runs when ROOT is available.
+It also tests deliberately unsorted spectra, unequal bin widths, partial bins,
+all four selections and three displayed ranges, ties, zero categories and legend object order.
+A fixed-order comparison executable verifies unchanged ROOT contents/errors,
+statistics, trees, rates/variances, cutflows, provenance and total-overlay PNGs.

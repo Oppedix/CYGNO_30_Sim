@@ -188,9 +188,16 @@ class CppTopologyTests(unittest.TestCase):
         libdir=Path(subprocess.check_output(['root-config','--libdir'],text=True).strip())
         libraries=['-lRooFitHS3']
         if list(libdir.glob('libRooFitJSONInterface.*')): libraries.append('-lRooFitJSONInterface')
+        cls.flags=[*flags,*libraries]
         subprocess.run(['c++','-O3','-std=c++17','-ffp-contract=off',str(rt.REPO/'analysis/common_c++/AnalyzeCompactCampaign.cpp'),
                         '-I'+str(rt.REPO),*flags,*libraries,'-o',str(cls.binary)],check=True,capture_output=True)
         source=(rt.REPO/'analysis/common_c++/AnalyzeCompactCampaign.cpp').read_text()
+        sort='std::stable_sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.first < b.first; });'
+        assert source.count(sort)==1
+        unsorted_source=cls.root/'unsorted.cpp'; unsorted_source.write_text(source.replace(sort,''))
+        cls.unsorted=cls.root/'unsorted'
+        subprocess.run(['c++','-O3','-std=c++17','-ffp-contract=off',str(unsorted_source),
+                        '-I'+str(rt.REPO),*cls.flags,'-o',str(cls.unsorted)],check=True,capture_output=True)
         source=re.sub(r'        // BEGIN additional stack figures.*?        // END additional stack figures',
                       '',source,flags=re.S)
         source=re.sub(r'    // BEGIN additional overlay figures.*?    // END additional overlay figures',
@@ -213,6 +220,98 @@ class CppTopologyTests(unittest.TestCase):
         self.check_baseline(before,after)
         self.assertEqual(len(list((after/'figures').rglob('*.png'))),10)
         self.assertEqual(len(list((after/'figures').rglob('*.pdf'))),10)
+
+    def test_stack_order_by_displayed_annual_contribution(self):
+        source=self.root/'stack_order.cpp'
+        source.write_text('#define main campaignMain\n#include "'+str(rt.REPO/'analysis/common_c++/AnalyzeCompactCampaign.cpp')+'"\n#undef main\n'+r'''
+#include <cassert>
+#include <TLegendEntry.h>
+int main() {
+    categories = {"A", "Zero", "C", "Tie Z", "Tie A"};
+    const double edges[] = {0., 60., 120., 2000.}; // 100 keV splits a bin.
+    const double density[4][5][3] = {
+        {{10,0,0}, {0,0,0}, {0,1,1}, {1,1,0}, {1,1,0}},
+        {{1,0,0}, {0,0,0}, {0,.5,0}, {.25,.25,0}, {.25,.25,0}},
+        {{.5,0,0}, {0,0,0}, {0,.5,0}, {.25,0,0}, {.25,0,0}},
+        {{0,0,0}, {0,0,0}, {0,.05,0}, {.1,0,0}, {.1,0,0}}
+    };
+    const double ranges[3][2] = {{0,2000}, {0,100}, {100,2000}};
+    const int expected[4][3][5] = {
+        {{1,3,4,0,2}, {1,2,3,4,0}, {0,1,3,4,2}},
+        {{1,2,3,4,0}, {1,2,3,4,0}, {0,1,3,4,2}},
+        {{1,3,4,0,2}, {1,3,4,2,0}, {0,1,3,4,2}},
+        {{0,1,2,3,4}, {0,1,2,3,4}, {0,1,3,4,2}}
+    };
+    for (int cut=0; cut<selectionCount; ++cut) {
+        std::vector<std::unique_ptr<TH1D>> spectra, originals;
+        for (int c=0; c<5; ++c) {
+            auto h=std::make_unique<TH1D>(categories[c].c_str(),"",3,edges);
+            h->SetDirectory(nullptr); h->SetFillColor(c+2);
+            h->SetBinContent(0,1e200); h->SetBinContent(4,1e200);
+            for (int bin=1; bin<=3; ++bin) {
+                h->SetBinContent(bin,density[cut][c][bin-1]); h->SetBinError(bin,.125*c);
+            }
+            originals.emplace_back(static_cast<TH1D*>(h->Clone()));
+            originals.back()->SetDirectory(nullptr); spectra.push_back(std::move(h));
+        }
+        for (int range=0; range<3; ++range) {
+            THStack stack("test_stack",""); TLegend legend;
+            addRankedCategories(stack,legend,spectra,ranges[range][0],ranges[range][1]);
+            assert(stack.GetHists()->GetSize()==5 && legend.GetListOfPrimitives()->GetSize()==5);
+            for (int i=0; i<5; ++i) {
+                const int c=expected[cut][range][i];
+                assert(stack.GetHists()->At(i)==spectra[c].get());
+                auto* entry=dynamic_cast<TLegendEntry*>(legend.GetListOfPrimitives()->At(i));
+                assert(entry && entry->GetObject()==spectra[c].get());
+                assert(entry->GetLabel()==categories[c]);
+            }
+        }
+        for (int c=0; c<5; ++c) {
+            assert(std::string(spectra[c]->GetName())==categories[c]);
+            assert(spectra[c]->GetFillColor()==originals[c]->GetFillColor());
+            assert(spectra[c]->GetEntries()==originals[c]->GetEntries());
+            for (int bin=0; bin<=4; ++bin) {
+                assert(spectra[c]->GetBinContent(bin)==originals[c]->GetBinContent(bin));
+                assert(spectra[c]->GetBinError(bin)==originals[c]->GetBinError(bin));
+            }
+        }
+        for (const auto& h : spectra) h->Reset();
+        THStack empty("empty",""); TLegend emptyLegend;
+        addRankedCategories(empty,emptyLegend,spectra,0.,2000.);
+        for (int c=0; c<5; ++c) assert(empty.GetHists()->At(c)==spectra[c].get());
+    }
+    // Equal annual contributions in different uniform bins must remain ties.
+    std::vector<std::unique_ptr<TH1D>> uniform;
+    for (int c=0; c<5; ++c) {
+        uniform.push_back(histogram(categories[c]));
+        uniform.back()->SetBinContent(1+100*c,1./binWidth);
+    }
+    THStack tied("tied",""); TLegend tiedLegend;
+    addRankedCategories(tied,tiedLegend,uniform,0.,2000.);
+    for (int c=0; c<5; ++c) assert(tied.GetHists()->At(c)==uniform[c].get());
+    return 0;
+}
+''')
+        binary=self.root/'stack_order'
+        subprocess.run(['c++','-O2','-std=c++17','-ffp-contract=off',str(source),
+                        '-I'+str(rt.REPO),*self.flags,'-o',str(binary)],check=True,capture_output=True)
+        subprocess.run([str(binary)],check=True,capture_output=True)
+
+    def test_stack_sort_preserves_all_numerical_outputs(self):
+        campaign=self.root/'sorted-figure-campaign'
+        make_campaign(campaign,'cygno-11x7-v1','cygno-copper-cathode-v4',gas_bkg=True)
+        snapshots={p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()}
+        before=self.root/'unsorted-figures'; after=self.root/'sorted-figures'
+        self.run_analysis(campaign,before,binary=self.unsorted)
+        self.run_analysis(campaign,after)
+        self.check_baseline(before,after,compare_figures=False)
+        for name in ('summary.txt','cutflow.md','normalization-scenario.json'):
+            self.assertEqual((before/name).read_bytes(),(after/name).read_bytes(),name)
+        for name in ('no_cut_vs_final.png','fiducial_vs_final.png'):
+            self.assertEqual((before/'figures/overlays'/name).read_bytes(),
+                             (after/'figures/overlays'/name).read_bytes(),name)
+        self.assertNotEqual((before/'figure7.5.png').read_bytes(),(after/'figure7.5.png').read_bytes())
+        self.assertEqual(snapshots,{p:p.read_bytes() for p in campaign.rglob('*') if p.is_file()})
 
     def test_invalid_coincidence(self):
         for value in ('0','-1','nan','inf','1junk'):
@@ -418,15 +517,28 @@ class CppTopologyTests(unittest.TestCase):
             for field in ('Contribution','Category','Window','Count','RatePerYear','VariancePerYear2'):
                 np.testing.assert_array_equal(old[field],new[field][mask])
 
-    def check_baseline(self,before,after):
-        for name in ('figure7.5.png','figure7.6.png','figure_multivolume_veto.png','figure_multisite_veto.png'):
-            self.assertEqual((before/name).read_bytes(),(after/name).read_bytes(),name)
+    def check_baseline(self,before,after,compare_figures=True):
+        if compare_figures:
+            for name in ('figure7.5.png','figure7.6.png','figure_multivolume_veto.png','figure_multisite_veto.png'):
+                self.assertEqual((before/name).read_bytes(),(after/name).read_bytes(),name)
         with uproot.open(before/'analysis.root') as old,uproot.open(after/'analysis.root') as new:
+            self.assertEqual(old.keys(recursive=True,cycle=False),new.keys(recursive=True,cycle=False))
             for key in old.keys(recursive=True,cycle=False):
                 obj=old[key]
                 if getattr(obj,'classname',None)=='TH1D':
                     np.testing.assert_array_equal(obj.values(flow=True),new[key].values(flow=True))
                     np.testing.assert_array_equal(obj.errors(flow=True),new[key].errors(flow=True))
+                    for member in ('fEntries','fTsumw','fTsumw2','fTsumwx','fTsumwx2',
+                                   'fMinimum','fMaximum','fNormFactor','fFillColor','fLineColor','fName','fTitle'):
+                        self.assertEqual(obj.member(member),new[key].member(member),(key,member))
+                    np.testing.assert_array_equal(obj.axis().edges(),new[key].axis().edges())
                 elif getattr(obj,'classname',None)=='TTree':
+                    self.assertEqual(obj.typenames(),new[key].typenames())
                     for field,values in obj.arrays(library='np').items():
                         np.testing.assert_array_equal(values,new[key][field].array(library='np'))
+                elif getattr(obj,'classname','').startswith('TParameter'):
+                    self.assertEqual(obj.member('fVal'),new[key].member('fVal'))
+                elif getattr(obj,'classname',None)=='TObjString':
+                    self.assertEqual(str(obj),str(new[key]))
+                elif getattr(obj,'classname',None)=='TNamed':
+                    self.assertEqual(obj.member('fTitle'),new[key].member('fTitle'))

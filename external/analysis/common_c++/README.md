@@ -4,6 +4,11 @@ For logical multi-campaign joins and billion-primary totals, build the
 [compatible external entry point](../../merge/README.md). It includes this
 original source unchanged and retains the same standalone invocation.
 
+Both external entry points retain overlaid channel spectra, not additive stacks.
+`total` already includes the other channels, whose separately histogrammed
+energies are not additive bin by bin. The internal magnitude-sorted stack rule
+does not apply to these overlays; their channel order and colors are unchanged.
+
 ## Compile
 
 Activate the analysis machine's actual ROOT environment (`root-config` and
